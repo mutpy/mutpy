@@ -5,4 +5,6 @@ class Mutator:
         self.target_ast = target_ast
         self.mutation_cfg = mutation_cfg
     def mutate(self):
-        yield operator.ArithmeticOperatorReplacement().visit(self.target_ast)
+        op = operator.ArithmeticOperatorReplacement()
+        for mutant in op.incremental_visit(self.target_ast):
+            yield mutant
