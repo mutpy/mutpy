@@ -37,8 +37,6 @@ class MutationController:
             self.view.start()
             for op, lineno, mutant_ast in mutant_generator.mutate():
                 self.view.mutation(op, lineno, mutant_ast)
-                if self.mutation_cfg.show_mutants:
-                    print(codegen.to_source(mutant_ast))
                 all_mutations += 1
                 mutant_module = self.create_mutant_module(target_module, mutant_ast)
                 if self.run_tests_with_mutant(test_modules, mutant_module):
@@ -64,7 +62,6 @@ class MutationController:
             suite.run(result)
             duration = time.time() - start
             if result.wasSuccessful():
-                #print('Passed original test! ({} s)'.format(duration))
                 test_modules.append((test_module, duration))
             else:
                 raise TestsFailAtOriginal(result)

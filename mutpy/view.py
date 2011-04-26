@@ -7,6 +7,7 @@ class TextMutationView:
         self.level_print('Start mutation process:')
         self.level_print('target: {}'.format(cfg.target), 2)
         self.level_print('tests: {}'.format(', '.join(cfg.test)), 2)
+        self.cfg = cfg
     
     def start(self):
         self.level_print('Start mutants generation and execution:')
@@ -34,13 +35,21 @@ class TextMutationView:
         
     def mutation(self, op, lineno, mutant):
         self.level_print('{:<3} line {:<3}: '.format(op.name(), lineno), ended=False, level=2)
-        mutant_src = codegen.to_source(mutant)
+        if self.cfg.show_mutants:
+            self.print_code(mutant, lineno)
         
-    def print_code(self, mutatnt):
+    def print_code(self, mutant, lineno):
+        mutant_src = codegen.to_source(mutant)
         src_lines = mutant_src.split("\n")
-        src_lines[lineno] = colored(src_lines[lineno], 'red')
+        
+        n = 0
+        while n < len(src_lines):
+            src_lines[n] = '{:>3}: {}'.format(n+1, src_lines[n])
+            n +=1
+        
+        src_lines[lineno-1] = colored(src_lines[lineno-1], 'yellow')
         snippet = src_lines[max(0, lineno - 5):min(len(src_lines), lineno+5)]
-        print("\n\n----------------------------\n"+"\n".join(snippet)+"\n----------------------------\n")
+        print("\n{}\n".format('-'*80)+"\n".join(snippet)+"\n{}".format('-'*80))
     
     def killed(self, t):
         self.level_print(time(t) + ' ' + colored('killed', 'green') , continuation=True)
