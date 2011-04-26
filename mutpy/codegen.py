@@ -92,13 +92,19 @@ class SourceGenerator(NodeVisitor):
         self.indentation = 0
         self.new_lines = 0
 
-    def write(self, x):
+    def write(self, x, node=None):
+        if node is not None:
+            lines = len("".join(self.result).split('\n'))
+            line_diff = node.lineno - (lines + 1)
+            if line_diff > 0:
+                self.result.append('\n' * line_diff)
+                
         if self.new_lines:
             if self.result:
-                self.result.append('\n' * self.new_lines)
+                self.result.append('\n')
             self.result.append(self.indent_with * self.indentation)
             self.new_lines = 0
-            
+        
         self.result.append(x)
 
     def newline(self, node=None, extra=0):
@@ -185,10 +191,9 @@ class SourceGenerator(NodeVisitor):
         self.generic_visit(node)
 
     def visit_FunctionDef(self, node):
-        self.newline(extra=1)
         self.decorators(node)
         self.newline(node)
-        self.write('def %s(' % node.name)
+        self.write('def %s(' % node.name, node)
         self.signature(node.args)
         self.write('):')
         self.body(node.body)
@@ -202,10 +207,9 @@ class SourceGenerator(NodeVisitor):
                 have_args.append(True)
                 self.write('(')
 
-        self.newline(extra=2)
         self.decorators(node)
         self.newline(node)
-        self.write('class %s' % node.name)
+        self.write('class %s' % node.name, node)
         for base in node.bases:
             paren_or_comma()
             self.visit(base)
