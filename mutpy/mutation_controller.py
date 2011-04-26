@@ -1,27 +1,51 @@
 import ast
 import unittest
 import types
+import time
+import threading
+import multiprocessing
+import sys
+import trace
+import inspect
+import ctypes
 from mutpy import mutator
+from mutpy import codegen
 
 class TestsFailAtOriginal(Exception):
-    pass
+    
+    def __init__(self, result=None):
+        self.result = result
 
 class MutationController:
-    def __init__(self, target_name, tests_name, mutation_cfg):
-        self.target_name = target_name
-        self.tests_name = tests_name
+    
+    def __init__(self, mutation_cfg, view):
+        self.target_name = mutation_cfg.target
+        self.tests_name = mutation_cfg.test
         self.mutation_cfg = mutation_cfg
+        self.view = view
+        
     def run(self):
+        self.view.initialize(self.mutation_cfg)
         try:
             target_module = self.load_target_module()
             target_ast = self.create_target_ast(target_module)
             test_modules = self.load_and_check_tests()
+            self.view.passed(test_modules)
             mutant_generator = self.create_mutator(target_ast)
-            for mutant_ast in mutant_generator.mutate():
+            all_mutations = 0
+            killed = 0
+            self.view.start()
+            for op, lineno, mutant_ast in mutant_generator.mutate():
+                self.view.mutation(op, lineno, mutant_ast)
+                if self.mutation_cfg.show_mutants:
+                    print(codegen.to_source(mutant_ast))
+                all_mutations += 1
                 mutant_module = self.create_mutant_module(target_module, mutant_ast)
-                self.run_tests_with_mutant(test_modules, mutant_module)
-        except TestsFailAtOriginal:
-            print('Failed original test!')
+                if self.run_tests_with_mutant(test_modules, mutant_module):
+                    killed += 1
+            self.view.end(100*killed/all_mutations, killed, all_mutations, 0)
+        except TestsFailAtOriginal as error:
+            self.view.failed(error.result)
 
     def load_target_module(self):
         return __import__(self.target_name, globals(), locals())
@@ -36,12 +60,14 @@ class MutationController:
             test_module = __import__(test, globals(), locals())
             suite = unittest.TestLoader().loadTestsFromModule(test_module)
             result = unittest.TestResult()
+            start = time.time()
             suite.run(result)
+            duration = time.time() - start
             if result.wasSuccessful():
-                print('Passed original test!')
-                test_modules.append(test_module)
+                #print('Passed original test! ({} s)'.format(duration))
+                test_modules.append((test_module, duration))
             else:
-                raise TestsFailAtOriginal()
+                raise TestsFailAtOriginal(result)
             
         return test_modules
         
@@ -55,12 +81,41 @@ class MutationController:
         return mutant_module
         
     def run_tests_with_mutant(self, tests_modules, mutant_module):
-        for test_module in tests_modules:
+        for test_module, duration in tests_modules:
             test_module.__dict__[mutant_module.__name__] = mutant_module
             suite = unittest.TestLoader().loadTestsFromModule(test_module)
             result = unittest.TestResult()
-            suite.run(result)
+            result.failfast = True #?
+            start = time.time()
+            runner = lambda: suite.run(result)
+            runner_thread = KillableThread(target=runner)
+            runner_thread.start()
+            runner_thread.join(5*duration if duration > 1 else 1)
+            mutant_duration = time.time() - start
+            
+            if runner_thread.is_alive():
+                runner_thread.kill()
+                self.view.timeout()
+                return False
+                
+            if result.errors: # np. TypeError
+                self.view.error()
+                return True
+                
             if result.wasSuccessful():
-                print('Survived!')
+                self.view.survived(mutant_duration)
+                return False
             else:
-                print('Killed!')
+                self.view.killed(mutant_duration)
+                return True
+    
+class KillableThread(threading.Thread):
+    
+    def kill(self):
+        if self.isAlive():
+            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ctypes.py_object(SystemExit))
+            if res == 0:
+                raise ValueError("Invalid thread id.")
+            elif res != 1:
+                ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, 0)
+                raise SystemError("Thread killing failed.")
