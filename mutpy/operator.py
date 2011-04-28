@@ -39,7 +39,15 @@ class NodeIncrementalTransformer(ast.NodeTransformer):
                 
         return visitor(node)
         
+    @staticmethod
+    def getattr_like(ob, attr):
+        for a in dir(ob):
+            if a.startswith(attr):
+                yield getattr(ob, attr)
+
+
 class Operator(NodeIncrementalTransformer):
+    
     def name(self):
         return ''.join([c for c in self.__class__.__name__ if str.isupper(c)])
         
@@ -49,10 +57,12 @@ class Operator(NodeIncrementalTransformer):
 
 
 class ArithmeticOperatorReplacement(Operator):
+    
     def visit_Add(self, node):
         return self.mutate(ast.copy_location(ast.Sub(), node))
         
 class ConstantReplacement(Operator):
+    
     def visit_Num(self, node):
         return self.mutate(ast.copy_location(ast.Num(n=node.n+1), node))
         
@@ -65,6 +75,7 @@ class ConstantReplacement(Operator):
         return self.mutate(ast.copy_location(ast.Str(s=new_s), node))
 
 class StatementDeletion(Operator):
+    
     def delete_statement(self, node):
         return self.mutate(ast.copy_location(ast.Pass(), node))
         
@@ -75,6 +86,7 @@ class StatementDeletion(Operator):
         return self.delete_statement(node)
         
 class ConditionNegation(Operator):
+    
     def visit_While(self, node):
         not_node = ast.UnaryOp(op=ast.Not(), operand=node.test)
         ast.copy_location(not_node, node)
@@ -82,11 +94,7 @@ class ConditionNegation(Operator):
         return self.mutate(node)
     
 class SliceIndexReplace(Operator):
+    
     def visit_Slice(self, node):
         node.lower, node.upper, node.step = node.upper, node.step, node.lower
         return self.mutate(node)
-
-def getattr_like(ob, attr):
-    for a in dir(ob):
-        if a.startswith(attr):
-            yield getattr(ob, attr)

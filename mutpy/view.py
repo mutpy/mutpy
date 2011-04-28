@@ -12,11 +12,12 @@ class TextMutationView:
     def start(self):
         self.level_print('Start mutants generation and execution:')
         
-    def end(self, score, killed_mutants, all_mutants, incompetent_mutatnts):
-         self.level_print('Mutation score: {}'.format(colored('{:.1f}%'.format(score), 'blue', attrs=['bold'])))
-         self.level_print('all: {}'.format(all_mutants), 2)
-         self.level_print('killed: {}'.format(killed_mutants), 2)
-         self.level_print('incompetent: {}'.format(incompetent_mutatnts), 2)
+    def end(self, score, t):
+         self.level_print('Mutation score {}: {}'.format(time(t), colored('{:.1f}%'.format(score.count()), 'blue', attrs=['bold'])))
+         self.level_print('all: {}'.format(score.all_mutants), 2)
+         self.level_print('killed: {}'.format(score.killed_mutants), 2)
+         self.level_print('incompetent: {}'.format(score.incompetent_mutants), 2)
+         self.level_print('timeout: {}'.format(score.timeout_mutants), 2)
     
     def passed(self, tests):
         self.level_print('All tests passed:')
@@ -31,7 +32,7 @@ class TextMutationView:
                 self.level_print('error in {} - {} '.format(error[0], error[1].split("\n")[-2]), 2)
                 
         for fail in result.failures:
-                self.level_print('fail in {} - {})'.format(fail[0], fail[1].split("\n")[-2]), 2)
+                self.level_print('fail in {} - {}'.format(fail[0], fail[1].split("\n")[-2]), 2)
         
     def mutation(self, op, lineno, mutant):
         self.level_print('{:<3} line {:<3}: '.format(op.name(), lineno), ended=False, level=2)
@@ -39,13 +40,8 @@ class TextMutationView:
             self.print_code(mutant, lineno)
         
     def print_code(self, mutant, lineno):
-        mutant_src = codegen.to_source(mutant)
+        mutant_src = codegen.to_source(mutant, line_numeration = True)
         src_lines = mutant_src.split("\n")
-        
-        n = 0
-        while n < len(src_lines):
-            src_lines[n] = '{:>3}: {}'.format(n+1, src_lines[n])
-            n +=1
         
         src_lines[lineno-1] = colored(src_lines[lineno-1], 'yellow')
         snippet = src_lines[max(0, lineno - 5):min(len(src_lines), lineno+5)]
