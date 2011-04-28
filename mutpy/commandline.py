@@ -1,13 +1,13 @@
 import argparse
-from mutpy import mutation_controller, view
+from mutpy import controller, view
 
 VERSION = 0.1
 
 def main(argv):
     parser = build_parser()
     args = parser.parse_args()
-    controller = mutation_controller.MutationController(args, view.TextMutationView())
-    controller.run()
+    mutation_controller = controller.MutationController(args, view.TextMutationView())
+    mutation_controller.run()
 
 def build_parser():
     DEF_TIMEOUT_FACTOR = 5
