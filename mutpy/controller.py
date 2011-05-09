@@ -41,34 +41,34 @@ class MutationScore:
     
 class MutationController:
     
-    def __init__(self, mutation_cfg, view):
+    def __init__(self, mutation_cfg, views=None):
         self.target_name = mutation_cfg.target
         self.tests_name = mutation_cfg.test
         self.mutation_cfg = mutation_cfg
-        self.view = view
+        self.views = views if views is not None else []
         
     def run(self):
         start_time = time.time()
-        self.view.initialize(self.mutation_cfg)
+        self.notify_all_views('initialize', self.mutation_cfg)
         target_module = self.load_target_module()
         target_ast = self.create_target_ast(target_module)
         
         try:
             test_modules = self.load_and_check_tests()
-            self.view.passed(test_modules)
+            self.notify_all_views('passed', test_modules)
             mutant_generator = self.create_mutator(target_ast)
             score = MutationScore()
-            self.view.start()
+            self.notify_all_views('start')
             
             for op, lineno, mutant_ast in mutant_generator.mutate():
-                self.view.mutation(op, lineno, mutant_ast)
+                self.notify_all_views('mutation' , op, lineno, mutant_ast)
                 score.inc_all()
                 mutant_module = self.create_mutant_module(target_module, mutant_ast)
                 self.run_tests_with_mutant(test_modules, mutant_module, score)
                     
-            self.view.end(score, time.time() - start_time)
+            self.notify_all_views('end', score, time.time() - start_time)
         except TestsFailAtOriginal as error:
-            self.view.failed(error.result)        
+            self.notify_all_views('failed', error.result)        
 
     def load_target_module(self):
         if self.target_name.endswith('.py'):
@@ -121,16 +121,28 @@ class MutationController:
             
             if runner_thread.is_alive():
                 runner_thread.kill()
-                self.view.timeout()
+                self.notify_all_views('timeout')
                 score.inc_timeout()
             elif result.errors:
-                self.view.error()
+                self.notify_all_views('error')
                 score.inc_incompetent()
             elif result.wasSuccessful():
-                self.view.survived(mutant_duration)
+                self.notify_all_views('survived', mutant_duration)
             else:
-                self.view.killed(mutant_duration)
+                self.notify_all_views('killed', mutant_duration)
                 score.inc_killed()
+                
+    def add_view(self, view):
+        self.views.append(view)
+    
+    def del_view(self, view):
+        self.views.remove(view)
+        
+    def notify_all_views(self, notify, *kwargs):
+        for view in self.views:
+            if hasattr(view, notify):
+                attr = getattr(view, notify)
+                attr(*kwargs)
     
 class KillableThread(threading.Thread):
     
