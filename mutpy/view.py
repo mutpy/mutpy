@@ -1,19 +1,53 @@
+import time
 from mutpy.termcolor import colored
 from mutpy import codegen
 
-class TextMutationView:
+class QuietTextMutationView:
+    
+    def __init__(self, cfg):
+        self.cfg = cfg
+        
+    def end(self, score, time):
+         self.level_print('Mutation score {}: {}'.format(self.time_format(time), self.decorate('{:.1f}%'.format(score.count()), 'blue', attrs=['bold'])))
+    
+    def level_print(self, msg, level=1, ended=True, continuation=False):
+        end = "\n" if ended else ""
+        
+        if continuation:
+            print(msg, end=end)
+        else:
+            if level == 1:
+                prefix = self.decorate('[*]', 'blue')
+            elif level == 2:
+                prefix = self.decorate('   -', 'cyan')
+            
+            print('{} {}'.format(prefix, msg), end=end)
+
+    def decorate(self, text, color=None, on_color=None, attrs=None):
+        if self.cfg.colored_output:
+            return colored(text, color, on_color, attrs)
+        else:
+            return text
+    
+    @staticmethod        
+    def time_format(time=None):
+        if time is None:
+            return '[    -    ]'
+        else:
+            return '[{:.5f} s]'.format(time)
+        
+class TextMutationView(QuietTextMutationView):
     
     def initialize(self, cfg):
         self.level_print('Start mutation process:')
         self.level_print('target: {}'.format(cfg.target), 2)
         self.level_print('tests: {}'.format(', '.join(cfg.test)), 2)
-        self.cfg = cfg
-    
+        
     def start(self):
         self.level_print('Start mutants generation and execution:')
         
-    def end(self, score, t):
-         self.level_print('Mutation score {}: {}'.format(time(t), colored('{:.1f}%'.format(score.count()), 'blue', attrs=['bold'])))
+    def end(self, score, time):
+         super().end(score, time)
          self.level_print('all: {}'.format(score.all_mutants), 2)
          self.level_print('killed: {}'.format(score.killed_mutants), 2)
          self.level_print('incompetent: {}'.format(score.incompetent_mutants), 2)
@@ -23,10 +57,10 @@ class TextMutationView:
         self.level_print('All tests passed:')
         
         for test, t in tests:
-            self.level_print('{} {}'.format(test.__name__, time(t)), 2)
+            self.level_print('{} {}'.format(test.__name__, self.time_format(t)), 2)
     
     def failed(self, result):
-        self.level_print(colored('Tests failed:', 'red', attrs=['bold']))
+        self.level_print(self.decorate('Tests failed:', 'red', attrs=['bold']))
         
         for error in result.errors:
                 self.level_print('error in {} - {} '.format(error[0], error[1].split("\n")[-2]), 2)
@@ -43,37 +77,27 @@ class TextMutationView:
         mutant_src = codegen.to_source(mutant, line_numeration = True)
         src_lines = mutant_src.split("\n")
         
-        src_lines[lineno-1] = colored(src_lines[lineno-1], 'yellow')
+        src_lines[lineno-1] = self.decorate(src_lines[lineno-1], 'yellow')
         snippet = src_lines[max(0, lineno - 5):min(len(src_lines), lineno+5)]
         print("\n{}\n".format('-'*80)+"\n".join(snippet)+"\n{}".format('-'*80))
     
-    def killed(self, t):
-        self.level_print(time(t) + ' ' + colored('killed', 'green') , continuation=True)
+    def killed(self, time):
+        self.level_print(self.time_format(time) + ' ' + self.decorate('killed', 'green') , continuation=True)
     
-    def survived(self, t):
-        self.level_print(time(t) + ' ' + colored('survieved', 'red'), continuation=True)
+    def survived(self, time):
+        self.level_print(self.time_format(time) + ' ' + self.decorate('survived', 'red'), continuation=True)
     
     def timeout(self):
-        self.level_print(time() + ' ' + colored('timeout', 'yellow'), continuation=True)
+        self.level_print(self.time_format() + ' ' + self.decorate('timeout', 'yellow'), continuation=True)
     
     def error(self):
-        self.level_print(time() + ' ' + colored('incompetent', 'cyan'),  continuation=True)
+        self.level_print(self.time_format() + ' ' + self.decorate('incompetent', 'cyan'),  continuation=True)
     
-    def level_print(self, msg, level=1, ended=True, continuation=False):
-        end = "\n" if ended else ""
+
         
-        if continuation:
-            print(msg, end=end)
-        else:
-            if level == 1:
-                prefix = colored('[*]', 'blue')
-            elif level == 2:
-                prefix = colored('   -', 'cyan')
-            
-            print('{} {}'.format(prefix, msg), end=end)
+class YAMLRaportMutationView:
     
-def time(t=None):
-    if t is None:
-        return '[    -    ]'
-    else:
-        return '[{:.5f} s]'.format(t)
+    def __init__(self, file_name):
+        file = open(file_name, 'w')
+        file.write('# raport genereted by MutPy - {}'.format(time.ctime()))
+        file.close()
