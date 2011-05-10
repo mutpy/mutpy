@@ -1,4 +1,5 @@
 import argparse
+
 from mutpy import controller, view
 
 VERSION = 0.1
@@ -30,7 +31,8 @@ def build_parser():
     parser.add_argument('target', help='target module to mutate')
     parser.add_argument('test', nargs='+', help='module with unit test')
     parser.add_argument('--raport', '-r', type=str, help='generate YAML raport', metavar='RAPORT_FILE')
-    parser.add_argument('--timeout-factor', '-t', type=float, default=DEF_TIMEOUT_FACTOR, help='test for mutants max timeout factor (default {})'.format(DEF_TIMEOUT_FACTOR))
+    parser.add_argument('--timeout-factor', '-t', type=float, default=DEF_TIMEOUT_FACTOR,
+                        help='test for mutants max timeout factor (default {})'.format(DEF_TIMEOUT_FACTOR))
     parser.add_argument('--show-mutants', '-m', action='store_true', help='show mutants')
     parser.add_argument('--quiet', '-q', action='store_true', help='quiet mode')
     parser.add_argument('--colored-output', '-c', action='store_true', help='try print colored output')
