@@ -1,6 +1,7 @@
 import ast
 import copy
 
+
 class NodeIncrementalTransformer(ast.NodeTransformer):
     
     def incremental_visit(self, node):
@@ -64,7 +65,7 @@ class ArithmeticOperatorReplacement(Operator):
 class ConstantReplacement(Operator):
     
     def visit_Num(self, node):
-        return self.mutate(ast.copy_location(ast.Num(n=node.n+1), node))
+        return self.mutate(ast.copy_location(ast.Num(n=node.n + 1), node))
         
     def visit_Str(self, node):
         if node.s:

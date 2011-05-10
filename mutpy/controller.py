@@ -38,7 +38,7 @@ class MutationScore:
         self.incompetent_mutants = incompetent_mutants
         
     def count(self):
-        return (self.killed_mutants/(self.all_mutants-self.incompetent_mutants))*100
+        return (self.killed_mutants / (self.all_mutants - self.incompetent_mutants)) * 100
     
     def inc_all(self):
         self.all_mutants += 1
@@ -211,7 +211,7 @@ class ModulesLoader:
             
             attr = module
             for part in to_mutate:
-                if hasattr(attr,part):
+                if hasattr(attr, part):
                     parent, attr = attr, getattr(attr, part)
                 else:
                     raise ModulesLoaderException(name)

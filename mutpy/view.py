@@ -1,6 +1,6 @@
 import time
-from mutpy.termcolor import colored
-from mutpy import codegen
+
+from mutpy import codegen, termcolor
 
 
 class ViewNotifier:   
@@ -24,7 +24,7 @@ class ViewNotifier:
     def __getattr__(self, name):
         if name.startswith(ViewNotifier.PREFIX):
             notify = name[len(ViewNotifier.PREFIX):]
-            return lambda *args: self.notify_all_views(notify, *args)
+            return lambda * args: self.notify_all_views(notify, *args)
         else:
             raise AttributeError(name)
 
@@ -35,7 +35,9 @@ class QuietTextMutationView:
         self.cfg = cfg
         
     def end(self, score, time):
-         self.level_print('Mutation score {}: {}'.format(self.time_format(time), self.decorate('{:.1f}%'.format(score.count()), 'blue', attrs=['bold'])))
+         self.level_print('Mutation score {}: {}'.format(self.time_format(time),
+                                                         self.decorate('{:.1f}%'.format(score.count()),
+                                                                       'blue', attrs=['bold'])))
     
     def level_print(self, msg, level=1, ended=True, continuation=False):
         end = "\n" if ended else ""
@@ -52,7 +54,7 @@ class QuietTextMutationView:
 
     def decorate(self, text, color=None, on_color=None, attrs=None):
         if self.cfg.colored_output:
-            return colored(text, color, on_color, attrs)
+            return termcolor.colored(text, color, on_color, attrs)
         else:
             return text
     
@@ -103,12 +105,12 @@ class TextMutationView(QuietTextMutationView):
             self.print_code(mutant, lineno)
         
     def print_code(self, mutant, lineno):
-        mutant_src = codegen.to_source(mutant, line_numeration = True)
+        mutant_src = codegen.to_source(mutant, line_numeration=True)
         src_lines = mutant_src.split("\n")
         
-        src_lines[lineno-1] = self.decorate(src_lines[lineno-1], 'yellow')
-        snippet = src_lines[max(0, lineno - 5):min(len(src_lines), lineno+5)]
-        print("\n{}\n".format('-'*80)+"\n".join(snippet)+"\n{}".format('-'*80))
+        src_lines[lineno - 1] = self.decorate(src_lines[lineno - 1], 'yellow')
+        snippet = src_lines[max(0, lineno - 5):min(len(src_lines), lineno + 5)]
+        print("\n{}\n".format('-'*80) + "\n".join(snippet) + "\n{}".format('-'*80))
     
     def killed(self, time):
         self.level_print(self.time_format(time) + ' ' + self.decorate('killed', 'green') , continuation=True)
@@ -120,9 +122,8 @@ class TextMutationView(QuietTextMutationView):
         self.level_print(self.time_format() + ' ' + self.decorate('timeout', 'yellow'), continuation=True)
     
     def error(self):
-        self.level_print(self.time_format() + ' ' + self.decorate('incompetent', 'cyan'),  continuation=True)
+        self.level_print(self.time_format() + ' ' + self.decorate('incompetent', 'cyan'), continuation=True)
     
-
         
 class YAMLRaportMutationView:
     
