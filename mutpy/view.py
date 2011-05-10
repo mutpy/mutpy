@@ -2,6 +2,33 @@ import time
 from mutpy.termcolor import colored
 from mutpy import codegen
 
+
+class ViewNotifier:   
+    PREFIX = 'notify_'
+    
+    def __init__(self, views):
+        self.views = views
+                     
+    def add_view(self, view):
+        self.views.append(view)
+    
+    def del_view(self, view):
+        self.views.remove(view)
+        
+    def notify_all_views(self, notify, *kwargs):
+        for view in self.views:
+            if hasattr(view, notify):
+                attr = getattr(view, notify)
+                attr(*kwargs)
+                
+    def __getattr__(self, name):
+        if name.startswith(ViewNotifier.PREFIX):
+            notify = name[len(ViewNotifier.PREFIX):]
+            return lambda *args: self.notify_all_views(notify, *args)
+        else:
+            raise AttributeError(name)
+
+
 class QuietTextMutationView:
     
     def __init__(self, cfg):
@@ -36,6 +63,7 @@ class QuietTextMutationView:
         else:
             return '[{:.5f} s]'.format(time)
         
+
 class TextMutationView(QuietTextMutationView):
     
     def initialize(self, cfg):
@@ -56,8 +84,9 @@ class TextMutationView(QuietTextMutationView):
     def passed(self, tests):
         self.level_print('All tests passed:')
         
-        for test, t in tests:
-            self.level_print('{} {}'.format(test.__name__, self.time_format(t)), 2)
+        for test, target, time in tests:
+            test_name = test.__name__ + ('.' + target if target else '')
+            self.level_print('{} {}'.format(test_name, self.time_format(time)), 2)
     
     def failed(self, result):
         self.level_print(self.decorate('Tests failed:', 'red', attrs=['bold']))
