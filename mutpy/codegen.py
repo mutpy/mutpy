@@ -102,21 +102,18 @@ class SourceGenerator(NodeVisitor):
         self.result.append(x)
         
     def correct_line_number(self, node):
-        if node is not None:
-            lines = len("".join(self.result).split('\n')) if self.result else 0
-            line_diff = node.lineno - (lines + 1)
-        
-            if line_diff > 0:
-                self.result.append('\n' * line_diff)
-            
-            if not lines:
-                self.new_line = False
-                
         if self.new_line:
             if self.result:
                 self.result.append('\n')
             self.result.append(self.indent_with * self.indentation)
             self.new_line = False
+            
+        if node:
+            lines = len("".join(self.result).split('\n')) if self.result else 0
+            line_diff = node.lineno - lines
+        
+            if line_diff:
+                self.result.append(('\n' + (self.indent_with * self.indentation)) * line_diff)
                 
     def newline(self, node=None):
         self.new_line = True
@@ -288,7 +285,7 @@ class SourceGenerator(NodeVisitor):
 
     def visit_Pass(self, node):
         self.newline(node)
-        self.write('pass')
+        self.write('pass', node)
 
     def visit_Print(self, node):
         # XXX: python 2.6 only
