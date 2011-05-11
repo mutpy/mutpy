@@ -35,7 +35,7 @@ class QuietTextMutationView:
         self.cfg = cfg
         
     def end(self, score, time):
-         self.level_print('Mutation score {}: {}'.format(self.time_format(time),
+        self.level_print('Mutation score {}: {}'.format(self.time_format(time),
                                                          self.decorate('{:.1f}%'.format(score.count()),
                                                                        'blue', attrs=['bold'])))
     
@@ -77,11 +77,11 @@ class TextMutationView(QuietTextMutationView):
         self.level_print('Start mutants generation and execution:')
         
     def end(self, score, time):
-         super().end(score, time)
-         self.level_print('all: {}'.format(score.all_mutants), 2)
-         self.level_print('killed: {}'.format(score.killed_mutants), 2)
-         self.level_print('incompetent: {}'.format(score.incompetent_mutants), 2)
-         self.level_print('timeout: {}'.format(score.timeout_mutants), 2)
+        super().end(score, time)
+        self.level_print('all: {}'.format(score.all_mutants), 2)
+        self.level_print('killed: {}'.format(score.killed_mutants), 2)
+        self.level_print('incompetent: {}'.format(score.incompetent_mutants), 2)
+        self.level_print('timeout: {}'.format(score.timeout_mutants), 2)
     
     def passed(self, tests):
         self.level_print('All tests passed:')
@@ -105,7 +105,8 @@ class TextMutationView(QuietTextMutationView):
             self.print_code(mutant, lineno)
         
     def print_code(self, mutant, lineno):
-        mutant_src = codegen.to_source(mutant, line_numeration=True)
+        mutant_src = codegen.to_source(mutant)
+        mutant_src = codegen.add_line_numbers(mutant_src)
         src_lines = mutant_src.split("\n")
         
         src_lines[lineno - 1] = self.decorate(src_lines[lineno - 1], 'yellow')
