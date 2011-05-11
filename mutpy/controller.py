@@ -3,10 +3,6 @@ import unittest
 import types
 import time
 import threading
-import multiprocessing
-import sys
-import trace
-import inspect
 import ctypes
 from os import path
 import imp
@@ -163,7 +159,6 @@ class KillableThread(threading.Thread):
             if res == 0:
                 raise ValueError("Invalid thread id.")
             elif res != 1:
-                ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, 0)
                 raise SystemError("Thread killing failed.")
 
 
@@ -207,12 +202,12 @@ class ModulesLoader:
                     to_mutate = [parts.pop()] + to_mutate
             
             for part in parts[1:]:
-                parent, module = module, getattr(module, part)
+                module = getattr(module, part)
             
             attr = module
             for part in to_mutate:
                 if hasattr(attr, part):
-                    parent, attr = attr, getattr(attr, part)
+                    attr = getattr(attr, part)
                 else:
                     raise ModulesLoaderException(name)
             

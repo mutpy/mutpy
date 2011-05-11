@@ -2,7 +2,6 @@ import unittest
 import ast
 
 from mutpy import codegen
-from curses.ascii import SI
 
 
 EOL = '\n'
