@@ -91,8 +91,8 @@ class MutationController(view.ViewNotifier):
         return __import__(self.target_name, globals(), locals())
         
     def create_target_ast(self, target_module):
-        target_file = open(target_module.__file__)
-        return ast.parse(target_file.read())
+        with open(target_module.__file__) as target_file: 
+            return ast.parse(target_file.read())
         
     def load_and_check_tests(self):
         test_modules = []
