@@ -68,12 +68,7 @@ class ConstantReplacement(Operator):
         return self.mutate(ast.copy_location(ast.Num(n=node.n + 1), node))
         
     def visit_Str(self, node):
-        if node.s:
-            new_s = ''
-        else:
-            new_s = 'mutpy'
-        
-        return self.mutate(ast.copy_location(ast.Str(s=new_s), node))
+        return self.mutate(ast.copy_location(ast.Str(s='mutpy'), node))
 
 class StatementDeletion(Operator):
     
