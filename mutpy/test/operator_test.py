@@ -8,9 +8,8 @@ class OperatorTestCase(unittest.TestCase):
 	
 	def assert_mutation(self, original, mutants):
 		original_ast = ast.parse(original)
-		op = operator.ConstantReplacement()
 		
-		for mutant, _ in op.incremental_visit(original_ast):
+		for mutant, _ in self.__class__.op.incremental_visit(original_ast):
 			mutant_code = codegen.to_source(mutant)
 			self.assertIn(mutant_code, mutants)
 			mutants.remove(mutant_code)
@@ -20,6 +19,10 @@ class OperatorTestCase(unittest.TestCase):
 
 class ConstantReplacementTest(OperatorTestCase):
 	
+	@classmethod
+	def setUpClass(cls):
+		cls.op = operator.ConstantReplacement()
+		
 	def test_numbers_increment(self):
 		self.assert_mutation('2 + 3 - 99', ['3 + 3 - 99', '2 + 4 - 99', '2 + 3 - 100'])
 		
