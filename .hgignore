@@ -1,3 +1,8 @@
 syntax:glob
 
 *.pyc
+
+# PyDev stuff
+.project
+.pydevproject
+.settings/*
