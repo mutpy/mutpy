@@ -184,6 +184,7 @@ class ModulesLoader:
             try:
                 module_detalis = imp.find_module(module_name, search_path)
                 module = imp.load_module(module_name, *module_detalis)
+                module_detalis[0].close()
             except ImportError:
                 raise ModulesLoaderException(name)
             
