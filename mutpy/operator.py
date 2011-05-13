@@ -2,7 +2,7 @@ import ast
 import copy
 
 
-class NodeIncrementalTransformer(ast.NodeTransformer):
+class MutationOperator(ast.NodeTransformer):
     
     def incremental_visit(self, node, to_mutate):
         self.global_mutation = 0
@@ -45,52 +45,53 @@ class NodeIncrementalTransformer(ast.NodeTransformer):
         for a in dir(ob):
             if a.startswith(attr):
                 yield getattr(ob, attr)
-
-
-class Operator(NodeIncrementalTransformer):
     
     def name(self):
         return ''.join([c for c in self.__class__.__name__ if str.isupper(c)])
         
-    def mutate(self, node):
+    def mutate_node(self, node):
         self.mutate_lineno = node.lineno if hasattr(node, 'lineno') else self.curr_line
         return node
 
 
-class ArithmeticOperatorReplacement(Operator):
+class ArithmeticOperatorReplacement(MutationOperator):
     
     def visit_Add(self, node):
-        return self.mutate(ast.copy_location(ast.Sub(), node))
+        return self.mutate_node(ast.copy_location(ast.Sub(), node))
+
         
-class ConstantReplacement(Operator):
+class ConstantReplacement(MutationOperator):
     
     def visit_Num(self, node):
-        return self.mutate(ast.copy_location(ast.Num(n=node.n + 1), node))
+        return self.mutate_node(ast.copy_location(ast.Num(n=node.n + 1), node))
         
     def visit_Str(self, node):
-        return self.mutate(ast.copy_location(ast.Str(s='mutpy'), node))
+        return self.mutate_node(ast.copy_location(ast.Str(s='mutpy'), node))
 
-class StatementDeletion(Operator):
+
+class StatementDeletion(MutationOperator):
     
     def delete_statement(self, node):
-        return self.mutate(ast.copy_location(ast.Pass(), node))
+        return self.mutate_node(ast.copy_location(ast.Pass(), node))
         
     def visit_Assign(self, node):
         return self.delete_statement(node)
     
     def visit_Return(self, node):
         return self.delete_statement(node)
-        
-class ConditionNegation(Operator):
+ 
+       
+class ConditionNegation(MutationOperator):
     
     def visit_While(self, node):
         not_node = ast.UnaryOp(op=ast.Not(), operand=node.test)
         ast.copy_location(not_node, node)
         node.test = not_node
-        return self.mutate(node)
+        return self.mutate_node(node)
+
     
-class SliceIndexReplace(Operator):
+class SliceIndexReplace(MutationOperator):
     
     def visit_Slice(self, node):
         node.lower, node.upper, node.step = node.upper, node.step, node.lower
-        return self.mutate(node)
+        return self.mutate_node(node)
