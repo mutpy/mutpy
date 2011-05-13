@@ -44,11 +44,11 @@ def build_views(cfg):
     views = []
     
     if cfg.quiet:
-        views.append(view.QuietTextMutationView(cfg))
+        views.append(view.QuietTextView(cfg))
     else:
-        views.append(view.TextMutationView(cfg))
+        views.append(view.TextView(cfg))
     
     if cfg.raport is not None:
-        views.append(view.YAMLRaportMutationView(cfg.raport))
+        views.append(view.YAMLRaportView(cfg.raport))
     
     return views

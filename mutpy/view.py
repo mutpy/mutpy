@@ -15,11 +15,11 @@ class ViewNotifier:
     def del_view(self, view):
         self.views.remove(view)
         
-    def notify_all_views(self, notify, *kwargs):
+    def notify_all_views(self, notify, *args):
         for view in self.views:
             if hasattr(view, notify):
                 attr = getattr(view, notify)
-                attr(*kwargs)
+                attr(*args)
                 
     def __getattr__(self, name):
         if name.startswith(ViewNotifier.PREFIX):
@@ -29,7 +29,7 @@ class ViewNotifier:
             raise AttributeError(name)
 
 
-class QuietTextMutationView:
+class QuietTextView:
     
     def __init__(self, cfg):
         self.cfg = cfg
@@ -66,7 +66,7 @@ class QuietTextMutationView:
             return '[{:.5f} s]'.format(time)
         
 
-class TextMutationView(QuietTextMutationView):
+class TextView(QuietTextView):
     
     def initialize(self):
         self.level_print('Start mutation process:')
@@ -129,7 +129,7 @@ class TextMutationView(QuietTextMutationView):
         self.level_print(self.time_format() + ' ' + self.decorate('incompetent', 'cyan'), continuation=True)
     
         
-class YAMLRaportMutationView:
+class YAMLRaportView:
     
     def __init__(self, file_name):
         file = open(file_name, 'w')
