@@ -9,7 +9,7 @@ class OperatorTestCase(unittest.TestCase):
 	def assert_mutation(self, original, mutants):
 		original_ast = ast.parse(original)
 		
-		for mutant, _ in self.__class__.op.incremental_visit(original_ast):
+		for mutant, _ in self.__class__.op.incremental_visit(original_ast, None):
 			mutant_code = codegen.to_source(mutant)
 			self.assertIn(mutant_code, mutants)
 			mutants.remove(mutant_code)

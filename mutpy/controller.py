@@ -7,7 +7,7 @@ import ctypes
 from os import path
 import imp
 
-from mutpy import mutator, view
+from mutpy import view
 
 
 class TestsFailAtOriginal(Exception):
@@ -51,27 +51,25 @@ class MutationScore:
             
 class MutationController(view.ViewNotifier):
     
-    def __init__(self, mutation_cfg, views=None):
+    def __init__(self, loader, views, mutant_generator, timeout_factor):
         super().__init__(views)
-        self.target_name = mutation_cfg.target
-        self.tests_name = mutation_cfg.test
-        self.mutation_cfg = mutation_cfg
-        self.loader = ModulesLoader(self.target_name, self.tests_name)
+        self.loader = loader
+        self.mutant_generator = mutant_generator
+        self.timeout_factor = timeout_factor
         
     def run(self):
         start_time = time.time()
-        self.notify_initialize(self.mutation_cfg)
-        target_module, to_mutate = self.loader.load_target()
-        target_ast = self.create_target_ast(target_module)
+        self.notify_initialize()
         
         try:
+            target_module, to_mutate = self.loader.load_target()
+            target_ast = self.create_target_ast(target_module)
             test_modules = self.load_and_check_tests()
             self.notify_passed(test_modules)
-            mutant_generator = self.create_mutator(target_ast)
             score = MutationScore()
             self.notify_start()
             
-            for op, lineno, mutant_ast in mutant_generator.mutate():
+            for op, lineno, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate):
                 self.notify_mutation(op, lineno, mutant_ast)
                 score.inc_all()
                 mutant_module = self.create_mutant_module(target_module, mutant_ast)
@@ -79,12 +77,9 @@ class MutationController(view.ViewNotifier):
                     
             self.notify_end(score, time.time() - start_time)
         except TestsFailAtOriginal as error:
-            self.notify_failed(error.result)        
-
-    def load_target_module(self):
-        if self.target_name.endswith('.py'):
-            self.target_name = self.target_name[:-3]
-        return __import__(self.target_name, globals(), locals())
+            self.notify_failed(error.result)
+        except ModulesLoaderException as error:
+            self.notify_cant_load(error.name)        
         
     def create_target_ast(self, target_module):
         with open(target_module.__file__) as target_file: 
@@ -108,16 +103,14 @@ class MutationController(view.ViewNotifier):
             
         return test_modules
         
-    def create_mutator(self, target_ast):
-        return mutator.Mutator(target_ast, self.mutation_cfg)
-        
     def create_mutant_module(self, target_module, mutant_ast):
         mutant_code = compile(mutant_ast, 'mutant', 'exec')
         mutant_module = types.ModuleType(target_module.__name__.split('.')[-1])
         exec(mutant_code, mutant_module.__dict__)
         return mutant_module
         
-    def run_tests_with_mutant(self, tests_modules, mutant_module, score):
+
+    def create_test_suite(self, tests_modules, mutant_module):
         suite = unittest.TestSuite()
         total_duration = 0
         for test_module, target_test, duration in tests_modules:
@@ -127,13 +120,17 @@ class MutationController(view.ViewNotifier):
             else:
                 suite.addTests(unittest.TestLoader().loadTestsFromModule(test_module))
             total_duration += duration
-            
+        
+        return suite, total_duration
+
+    def run_tests_with_mutant(self, tests_modules, mutant_module, score):
+        suite, total_duration = self.create_test_suite(tests_modules, mutant_module)
         result = unittest.TestResult()
         result.failfast = True
         start = time.time()
         runner_thread = KillableThread(target=lambda: suite.run(result))
         runner_thread.start()
-        live_time = self.mutation_cfg.timeout_factor * total_duration if total_duration > 1 else 1
+        live_time = self.timeout_factor * total_duration if total_duration > 1 else 1
         runner_thread.join(live_time)
         mutant_duration = time.time() - start
         
@@ -219,4 +216,17 @@ class ModulesLoader:
     
     def load_tests(self):
         return [self.load(test) for test in self.tests]
+    
+class Mutator:
+    
+    def __init__(self, operators):
+        self.operators = operators
+    
+    def add_operator(self, operator):
+        self.operators.append(operator)
+        
+    def mutate(self, target_ast, to_mutate):
+        for op in self.operators:
+            for mutant, lineno in op.incremental_visit(target_ast, to_mutate):
+                yield op, lineno, mutant
     

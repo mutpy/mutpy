@@ -4,7 +4,7 @@ import copy
 
 class NodeIncrementalTransformer(ast.NodeTransformer):
     
-    def incremental_visit(self, node):
+    def incremental_visit(self, node, to_mutate):
         self.global_mutation = 0
         self.mutation_flag = False
         ast.fix_missing_locations(node)

@@ -68,10 +68,10 @@ class QuietTextMutationView:
 
 class TextMutationView(QuietTextMutationView):
     
-    def initialize(self, cfg):
+    def initialize(self):
         self.level_print('Start mutation process:')
-        self.level_print('target: {}'.format(cfg.target), 2)
-        self.level_print('tests: {}'.format(', '.join(cfg.test)), 2)
+        self.level_print('target: {}'.format(self.cfg.target), 2)
+        self.level_print('tests: {}'.format(', '.join(self.cfg.test)), 2)
         
     def start(self):
         self.level_print('Start mutants generation and execution:')
@@ -103,6 +103,9 @@ class TextMutationView(QuietTextMutationView):
         self.level_print('{:<3} line {:<3}: '.format(op.name(), lineno), ended=False, level=2)
         if self.cfg.show_mutants:
             self.print_code(mutant, lineno)
+    
+    def cant_load(self, name):
+        self.level_print(self.decorate('Bad path: ', 'red', attrs=['bold']) + name)
         
     def print_code(self, mutant, lineno):
         mutant_src = codegen.to_source(mutant)
