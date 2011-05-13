@@ -61,9 +61,28 @@ class ModulesLoaderTest(unittest.TestCase):
         self.assertMultiLineEqual(module.__file__, self.__class__.tmp + 'a/b/c/sample.py')
         self.assertMultiLineEqual(module.__name__, 'a.b.c.sample')
         
-    def test_bad_target(self):
+    def test_bad_target_class(self):
         self.assertRaises(controller.ModulesLoaderException, lambda : self.loader.load('a.b.c.sample.Y'))
+    
+    def test_bad_target_method(self):
+        self.assertRaises(controller.ModulesLoaderException, lambda : self.loader.load('a.b.c.sample.X.g'))
+        
+    def test_bad_module(self):    
+        self.assertRaises(controller.ModulesLoaderException, lambda : self.loader.load('a.b.c.example'))
+    
+    def test_bad_file(self):    
+        self.assertRaises(controller.ModulesLoaderException, lambda : self.loader.load('a/b/c/example.py'))
+        
         
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.tmp)
+        
+        
+class MutationScoreTest(unittest.TestCase):
+    
+    def test_score(self):
+        score = controller.MutationScore(all_mutants=11, killed_mutants=5, incompetent_mutants=1)
+        self.assertEqual(score.count(), 50)
+        score.inc_killed()
+        self.assertEqual(score.count(), 60)
