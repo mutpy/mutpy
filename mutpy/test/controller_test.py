@@ -26,12 +26,12 @@ class ModulesLoaderTest(unittest.TestCase):
         self.loader = controller.ModulesLoader(None, None)
         
     def test_load_file(self):
-        module, to_mutate = self.loader.load(self.__class__.tmp + 'a/b/c/sample.py')
+        module, to_mutate = self.loader.load(ModulesLoaderTest.tmp + 'a/b/c/sample.py')
         
         self.assertIsNone(to_mutate)
         self.assertIsInstance(module, types.ModuleType)
         self.assertTrue(hasattr(module, 'X'))
-        self.assertMultiLineEqual(module.__file__, self.__class__.tmp + 'a/b/c/sample.py')
+        self.assertMultiLineEqual(module.__file__, ModulesLoaderTest.tmp + 'a/b/c/sample.py')
         self.assertMultiLineEqual(module.__name__, 'sample')
         
     def test_load_module(self):
@@ -40,7 +40,7 @@ class ModulesLoaderTest(unittest.TestCase):
         self.assertIsNone(to_mutate)
         self.assertIsInstance(module, types.ModuleType)
         self.assertTrue(hasattr(module, 'X'))
-        self.assertMultiLineEqual(module.__file__, self.__class__.tmp + 'a/b/c/sample.py')
+        self.assertMultiLineEqual(module.__file__, ModulesLoaderTest.tmp + 'a/b/c/sample.py')
         self.assertMultiLineEqual(module.__name__, 'a.b.c.sample')
         
     def test_target_class(self):
@@ -49,7 +49,7 @@ class ModulesLoaderTest(unittest.TestCase):
         self.assertMultiLineEqual(to_mutate, 'X')
         self.assertIsInstance(module, types.ModuleType)
         self.assertTrue(hasattr(module, 'X'))
-        self.assertMultiLineEqual(module.__file__, self.__class__.tmp + 'a/b/c/sample.py')
+        self.assertMultiLineEqual(module.__file__, ModulesLoaderTest.tmp + 'a/b/c/sample.py')
         self.assertMultiLineEqual(module.__name__, 'a.b.c.sample')
     
     def test_target_method(self):
@@ -58,7 +58,7 @@ class ModulesLoaderTest(unittest.TestCase):
         self.assertMultiLineEqual(to_mutate, 'X.f')
         self.assertIsInstance(module, types.ModuleType)
         self.assertTrue(hasattr(module, 'X'))
-        self.assertMultiLineEqual(module.__file__, self.__class__.tmp + 'a/b/c/sample.py')
+        self.assertMultiLineEqual(module.__file__, ModulesLoaderTest.tmp + 'a/b/c/sample.py')
         self.assertMultiLineEqual(module.__name__, 'a.b.c.sample')
         
     def test_bad_target_class(self):

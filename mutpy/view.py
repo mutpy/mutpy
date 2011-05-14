@@ -79,9 +79,12 @@ class TextView(QuietTextView):
     def end(self, score, time):
         super().end(score, time)
         self.level_print('all: {}'.format(score.all_mutants), 2)
-        self.level_print('killed: {}'.format(score.killed_mutants), 2)
-        self.level_print('incompetent: {}'.format(score.incompetent_mutants), 2)
-        self.level_print('timeout: {}'.format(score.timeout_mutants), 2)
+        self.level_print('killed: {} ({:.1f}%)'.format(score.killed_mutants,
+                                                   100 * score.killed_mutants / score.all_mutants), 2)
+        self.level_print('incompetent: {} ({:.1f}%)'.format(score.incompetent_mutants,
+                                                        100 * score.incompetent_mutants / score.all_mutants), 2)
+        self.level_print('timeout: {} ({:.1f}%)'.format(score.timeout_mutants,
+                                                    100 * score.timeout_mutants / score.all_mutants), 2)
     
     def passed(self, tests):
         self.level_print('All tests passed:')
