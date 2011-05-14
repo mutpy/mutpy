@@ -179,11 +179,15 @@ class SourceGenerator(NodeVisitor):
 
     def visit_ImportFrom(self, node):
         self.newline(node)
-        self.write('from %s%s import ' % ('.' * node.level, node.module))
-        for idx, item in enumerate(node.names):
-            if idx:
-                self.write(', ')
-            self.write(item)
+        
+        imports = []
+        for alias in node.names:
+            name = alias.name
+            if alias.asname:
+                name += ' as ' + alias.asname
+            imports.append(name)
+            
+        self.write('from {} import {}'.format(node.module, ', '.join(imports)))
 
     def visit_Import(self, node):
         self.newline(node)
@@ -307,10 +311,11 @@ class SourceGenerator(NodeVisitor):
     def visit_Delete(self, node):
         self.newline(node)
         self.write('del ')
-        for idx, target in enumerate(node):
-            if idx:
-                self.write(', ')
+        
+        for target in node.targets:
             self.visit(target)
+            if target is not node.targets[-1]:
+                self.write(', ')
 
     def visit_TryExcept(self, node):
         self.newline(node)
