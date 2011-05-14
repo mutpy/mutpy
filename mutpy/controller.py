@@ -73,7 +73,11 @@ class MutationController(view.ViewNotifier):
                 self.notify_mutation(op, lineno, mutant_ast)
                 score.inc_all()
                 mutant_module = self.create_mutant_module(target_module, mutant_ast)
-                self.run_tests_with_mutant(test_modules, mutant_module, score)
+                if mutant_module:
+                    self.run_tests_with_mutant(test_modules, mutant_module, score)
+                else:
+                    score.inc_incompetent()
+                    self.notify_error()
                     
             self.notify_end(score, time.time() - start_time)
         except TestsFailAtOriginal as error:
@@ -104,9 +108,13 @@ class MutationController(view.ViewNotifier):
         return test_modules
         
     def create_mutant_module(self, target_module, mutant_ast):
-        mutant_code = compile(mutant_ast, 'mutant', 'exec')
-        mutant_module = types.ModuleType(target_module.__name__.split('.')[-1])
-        exec(mutant_code, mutant_module.__dict__)
+        try:
+            mutant_code = compile(mutant_ast, 'mutant', 'exec')
+            mutant_module = types.ModuleType(target_module.__name__.split('.')[-1])
+            exec(mutant_code, mutant_module.__dict__)
+        except Exception:
+            return None
+        
         return mutant_module
         
 
