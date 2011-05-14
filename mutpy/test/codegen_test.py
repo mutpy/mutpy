@@ -55,3 +55,27 @@ class CodegenTest(unittest.TestCase):
         
     def test_simple_class(self):
         self.assert_code_equal(CLASS_DEF + EOL + IDENT + FUNC_DEF + EOL + IDENT + IDENT + SIMPLE_ASSIGN)
+        
+    def test_import(self):
+        self.assert_code_equal("import x")
+    
+    def test_import_package(self):
+        self.assert_code_equal("import x.y.z")
+        
+    def test_import_from(self):
+        self.assert_code_equal("from y import x")
+        
+    def test_import_multi_from(self):
+        self.assert_code_equal("from y import x, z, q")
+        
+    def test_import_from_as(self):
+        self.assert_code_equal("from y import x as z")
+        
+    def test_import_multi_from_as(self):
+        self.assert_code_equal("from y import x as z, a as b")
+        
+    def test_delete(self):
+        self.assert_code_equal("del x")
+        
+    def test_delete_multi(self):
+        self.assert_code_equal("del x, y, z")
