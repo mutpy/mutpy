@@ -79,3 +79,9 @@ class CodegenTest(unittest.TestCase):
         
     def test_delete_multi(self):
         self.assert_code_equal("del x, y, z")
+        
+    def test_while_with_compare(self):
+        self.assert_code_equal("while (not i != 1):" + EOL + IDENT + SIMPLE_ASSIGN)
+        
+    def test_extra_line_before_while(self):
+        self.assert_code_equal(SIMPLE_ASSIGN + EOL + EOL + "while False:" + EOL + IDENT + PASS)

@@ -4,12 +4,30 @@ import ast
 from mutpy import operator, codegen
 
 
+class MutationOperatorTest(unittest.TestCase):
+	
+	def test_getattr_like(self):
+		
+		class X:
+			def visit_A(self): pass
+			def visit_A_1(self): pass
+			def visit_A2(self): pass
+			def visitA(self): pass
+			def visit_B(self): pass
+		
+		x = X()
+		visits_method = ['visit_A', 'visit_A_1', 'visit_A2']
+		
+		for attr in operator.MutationOperator.getattr_like(x, 'visit_A'):
+			self.assertIn(attr.__name__, visits_method)
+			visits_method.remove(attr.__name__)
+
 class OperatorTestCase(unittest.TestCase):
 	
 	def assert_mutation(self, original, mutants):
 		original_ast = ast.parse(original)
 		
-		for mutant, _ in self.__class__.op.incremental_visit(original_ast, None):
+		for mutant, _ in self.__class__.op.mutate(original_ast, None):
 			mutant_code = codegen.to_source(mutant)
 			self.assertIn(mutant_code, mutants)
 			mutants.remove(mutant_code)
@@ -27,7 +45,8 @@ class ConstantReplacementTest(OperatorTestCase):
 		self.assert_mutation('2 + 3 - 99', ['3 + 3 - 99', '2 + 4 - 99', '2 + 3 - 100'])
 		
 	def test_string_replacement(self):
-		self.assert_mutation("x = 'ham' + 'egs'", ["x = 'mutpy' + 'egs'", "x = 'ham' + 'mutpy'"])
+		self.assert_mutation("x = 'ham' + 'egs'",
+							["x = 'mutpy' + 'egs'", "x = 'ham' + 'mutpy'", "x = '' + 'egs'", "x = 'ham' + ''"])
 		
 
 class ArithmeticOperatorReplacementTest(OperatorTestCase):

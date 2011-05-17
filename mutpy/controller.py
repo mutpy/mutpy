@@ -235,6 +235,6 @@ class Mutator:
         
     def mutate(self, target_ast, to_mutate):
         for op in self.operators:
-            for mutant, lineno in op.incremental_visit(target_ast, to_mutate):
+            for mutant, lineno in op.mutate(target_ast, to_mutate):
                 yield op, lineno, mutant
     
