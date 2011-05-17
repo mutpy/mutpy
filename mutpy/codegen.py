@@ -272,7 +272,7 @@ class SourceGenerator(NodeVisitor):
 
     def visit_While(self, node):
         self.newline(node)
-        self.write('while ')
+        self.write('while ', node)
         self.visit(node.test)
         self.write(':')
         self.body_or_else(node)
