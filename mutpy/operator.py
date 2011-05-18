@@ -2,6 +2,8 @@ import ast
 import copy
 
 
+class MutationResign(Exception): pass
+
 class MutationOperator(ast.NodeTransformer):
     
     def mutate(self, node, to_mutate):
@@ -14,6 +16,7 @@ class MutationOperator(ast.NodeTransformer):
             new_node = self.visit(node_copy)
             if self.visitor_number == 0:
                 self.global_mutation += 1
+                
             if self.mutation_flag == False:
                 break
             else:
@@ -30,22 +33,35 @@ class MutationOperator(ast.NodeTransformer):
         method = 'visit_' + node.__class__.__name__
         visitors = MutationOperator.getattr_like(self, method)
         if not visitors:
-            visitor = self.generic_visit
+            new_node = self.generic_visit(node)
         else:
             if self.current_visit < self.global_mutation:
-                visitor = self.generic_visit
                 self.current_visit += 1
+                new_node = self.generic_visit(node)
             else:
-                self.mutate_lineno = node.lineno if hasattr(node, 'lineno') else self.curr_line
-                self.mutation_flag = True
-                visitor = visitors[self.visitor_number]
-                if visitor is visitors[-1]:
+                while self.visitor_number < len(visitors):
+                    visitor = visitors[self.visitor_number]
+                    try:
+                        new_node = visitor(node)
+                        self.mutate_lineno = node.lineno if hasattr(node, 'lineno') else self.curr_line
+                        self.mutation_flag = True
+                        
+                        if visitor is visitors[-1]:
+                            self.visitor_number = 0
+                            self.current_visit += 1
+                        else:
+                            self.visitor_number += 1
+                        
+                        break
+                    except MutationResign:
+                        self.visitor_number += 1
+                        self.global_mutation += 1 
+                else:
                     self.visitor_number = 0
                     self.current_visit += 1
-                else:
-                    self.visitor_number += 1
-                
-        return visitor(node)
+                    new_node = self.generic_visit(node)
+                    
+        return new_node
         
     @staticmethod
     def getattr_like(ob, attr_like):
@@ -70,6 +86,9 @@ class ConstantReplacement(MutationOperator):
         return ast.copy_location(ast.Str(s='mutpy'), node)
     
     def visit_Str_empty(self, node):
+        if not node.s:
+            raise MutationResign()
+        
         return ast.copy_location(ast.Str(s=''), node)
 
 class StatementDeletion(MutationOperator):
