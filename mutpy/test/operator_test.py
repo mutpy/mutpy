@@ -48,6 +48,11 @@ class ConstantReplacementTest(OperatorTestCase):
 		self.assert_mutation("x = 'ham' + 'egs'",
 							["x = 'mutpy' + 'egs'", "x = 'ham' + 'mutpy'", "x = '' + 'egs'", "x = 'ham' + ''"])
 		
+	def test_resign_if_empty(self):
+		self.assert_mutation("'ham' + ''", ["'mutpy' + ''", "'' + ''", "'ham' + 'mutpy'" ])
+
+	def test_resign_first(self):
+		self.assert_mutation("'' + 'ham'", ["'' + 'mutpy'", "'' + ''", "'mutpy' + 'ham'" ])
 
 class ArithmeticOperatorReplacementTest(OperatorTestCase):
 	
