@@ -79,12 +79,14 @@ class TextView(QuietTextView):
     def end(self, score, time):
         super().end(score, time)
         self.level_print('all: {}'.format(score.all_mutants), 2)
-        self.level_print('killed: {} ({:.1f}%)'.format(score.killed_mutants,
-                                                   100 * score.killed_mutants / score.all_mutants), 2)
-        self.level_print('incompetent: {} ({:.1f}%)'.format(score.incompetent_mutants,
-                                                        100 * score.incompetent_mutants / score.all_mutants), 2)
-        self.level_print('timeout: {} ({:.1f}%)'.format(score.timeout_mutants,
-                                                    100 * score.timeout_mutants / score.all_mutants), 2)
+        
+        if score.all_mutants:
+            self.level_print('killed: {} ({:.1f}%)'.format(score.killed_mutants,
+                                                       100 * score.killed_mutants / score.all_mutants), 2)
+            self.level_print('incompetent: {} ({:.1f}%)'.format(score.incompetent_mutants,
+                                                            100 * score.incompetent_mutants / score.all_mutants), 2)
+            self.level_print('timeout: {} ({:.1f}%)'.format(score.timeout_mutants,
+                                                        100 * score.timeout_mutants / score.all_mutants), 2)
     
     def passed(self, tests):
         self.level_print('All tests passed:')
@@ -114,8 +116,7 @@ class TextView(QuietTextView):
         mutant_src = codegen.to_source(mutant)
         mutant_src = codegen.add_line_numbers(mutant_src)
         src_lines = mutant_src.split("\n")
-        
-        src_lines[lineno - 1] = self.decorate(src_lines[lineno - 1], 'yellow')
+        src_lines[lineno - 1] = self.decorate('~' + src_lines[lineno - 1][1:], 'yellow')
         snippet = src_lines[max(0, lineno - 5):min(len(src_lines), lineno + 5)]
         print("\n{}\n".format('-'*80) + "\n".join(snippet) + "\n{}".format('-'*80))
     

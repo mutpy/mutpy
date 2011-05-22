@@ -53,6 +53,13 @@ class ConstantReplacementTest(OperatorTestCase):
 
 	def test_resign_first(self):
 		self.assert_mutation("'' + 'ham'", ["'' + 'mutpy'", "'' + ''", "'mutpy' + 'ham'" ])
+		
+	def test_not_mutate_function(self):
+		self.assert_mutation("@notmutate\ndef x():\n\t'ham'", [])
+		
+	def test_not_mutate_class(self):
+		self.assert_mutation("@notmutate\nclass X:\n\t'ham'", [])	
+		
 
 class ArithmeticOperatorReplacementTest(OperatorTestCase):
 	
