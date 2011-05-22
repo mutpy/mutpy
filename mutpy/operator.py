@@ -1,5 +1,6 @@
 import ast
 import copy
+import re
 
 def notmutate(sth):
     return sth
@@ -86,7 +87,8 @@ class MutationOperator(ast.NodeTransformer):
         
     @staticmethod
     def getattr_like(ob, attr_like):
-        return [getattr(ob, attr) for attr in dir(ob) if attr.startswith(attr_like)]
+        pattern = re.compile(attr_like + "_\w+")
+        return [getattr(ob, attr) for attr in dir(ob) if attr == attr_like or pattern.match(attr)]
     
     def name(self):
         return ''.join([c for c in self.__class__.__name__ if str.isupper(c)])
@@ -103,7 +105,83 @@ class ArithmeticOperatorReplacement(MutationOperator):
     def visit_Add(self, node):
         return ast.Sub()
     
+    def visit_Sub(self, node):
+        return ast.Add()
+    
+    def visit_Mult_to_Div(self, node):
+        return ast.Div()
+    
+    def visit_Mult_to_FloorDiv(self, node):
+        return ast.FloorDiv()
+    
+    def visit_Div_to_Mult(self, node):
+        return ast.Mult()
+    
+    def visit_Div_to_FloorDiv(self, node):
+        return ast.FloorDiv()
+    
+    def visit_FloorDiv_to_Div(self, node):
+        return ast.Div()
+    
+    def visit_FloorDiv_to_Mult(self, node):
+        return ast.Mult()
+    
+    def visit_Mod(self, node):
+        return ast.Mult()
+    
+
+class BinaryOperatorReplacement(MutationOperator):
+    
+    def visit_BitAnd(self, node):
+        return ast.BitOr()
+    
+    def visit_BitOr(self, node):
+        return ast.BitAnd()
+    
+    def visit_BitXor(self, node):
+        return ast.BitAnd()
+    
+    def visit_LShift(self, node):
+        return ast.RShift()
+    
+    def visit_RShift(self, node):
+        return ast.LShift()
+    
+
+class LogicaOperatorReplacement(MutationOperator):
+    
+    def visit_And(self, node):
+        return ast.Or()
+    
+    def visit_Or(self, node):
+        return ast.And()
+
+class ConditionalOperatorReplacement(MutationOperator):
+    
+    def visit_Lt(self, node):
+        return ast.Gt()
+    
+    def visit_Lt_to_LtE(self, node):
+        return ast.LtE()
         
+    def visit_Gt(self, node):
+        return ast.Lt()
+    
+    def visit_Gt_to_GtE(self, node):
+        return ast.GtE()
+    
+    def visit_LtE(self, node):
+        return ast.GtE()
+    
+    def visit_LtE_to_Lt(self, node):
+        return ast.Lt()
+    
+    def visit_GtE(self, node):
+        return ast.LtE()
+    
+    def visit_GtE_to_Gt(self, node):
+        return ast.Gt()
+    
 class ConstantReplacement(MutationOperator):
     
     def visit_Num(self, node):
