@@ -66,11 +66,13 @@ class MutationOperator(ast.NodeTransformer):
                 new_node = visitor(node)
                 self.mutate_lineno = node.lineno if hasattr(node, 'lineno') else self.curr_line
                 self.mutation_flag = True
+                ast.copy_location(new_node, node)
                 if visitor is visitors[-1]:
                     self.visit_method_number = 0
                     self.visited_node_number += 1
                 else:
                     self.visit_method_number += 1
+                    
                 break
             except MutationResign:
                 self.visit_method_number += 1
@@ -99,40 +101,36 @@ class MutationOperator(ast.NodeTransformer):
 class ArithmeticOperatorReplacement(MutationOperator):
     
     def visit_Add(self, node):
-        return ast.copy_location(ast.Sub(), node)
-
+        return ast.Sub()
+    
         
 class ConstantReplacement(MutationOperator):
     
     def visit_Num(self, node):
-        return ast.copy_location(ast.Num(n=node.n + 1), node)
+        return ast.Num(n=node.n + 1)
     
     def visit_Str(self, node):
-        return ast.copy_location(ast.Str(s='mutpy'), node)
+        return ast.Str(s='mutpy')
     
     def visit_Str_empty(self, node):
         if not node.s:
             raise MutationResign()
         
-        return ast.copy_location(ast.Str(s=''), node)
+        return ast.Str(s='')
 
 class StatementDeletion(MutationOperator):
     
-    def delete_statement(self, node):
-        return ast.copy_location(ast.Pass(), node)
-        
     def visit_Assign(self, node):
-        return self.delete_statement(node)
+        return ast.Pass()
     
     def visit_Return(self, node):
-        return self.delete_statement(node)
+        return ast.Pass()
  
        
 class ConditionNegation(MutationOperator):
     
     def visit_While(self, node):
         not_node = ast.UnaryOp(op=ast.Not(), operand=node.test)
-        ast.copy_location(not_node, node)
         node.test = not_node
         return node
 
