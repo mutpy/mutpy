@@ -1,5 +1,8 @@
-class Simple():
-    
+from mutpy.operator import notmutate
+
+
+class Simple:
+        
     def add(self, x , y):
         return x + y
     
@@ -8,12 +11,13 @@ class Simple():
 
     def addEtc(self, x):
         return x + ' etc.'
-
+    
     def loop(self):
         i = 0
         
         while i != 100:
             i = i + 1
+            
         return i
         
     def lastTwo(self, x):
@@ -21,3 +25,8 @@ class Simple():
         
     def emptyString(self):
         return ''
+    
+    @notmutate
+    def equivalent(self, x):
+        return x[-1:-1:-1]
+        

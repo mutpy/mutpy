@@ -78,9 +78,10 @@ def to_source(node, indent_with=' ' * 4):
 def add_line_numbers(source):
     lines = source.split('\n')      
     n = 0
+    digits_number = len(str(len(lines)))
     
     while n < len(lines):
-        lines[n] = '{:>3}: {}'.format(n + 1, lines[n])
+        lines[n] = '{:>{}}: {}'.format(n + 1, digits_number + 1, lines[n])
         n += 1
         
     return '\n'.join(lines)
@@ -117,6 +118,7 @@ class SourceGenerator(NodeVisitor):
                 
     def newline(self, node=None):
         self.new_line = True
+        self.correct_line_number(node)
 
     def body(self, statements):
         self.new_line = True
@@ -272,7 +274,7 @@ class SourceGenerator(NodeVisitor):
 
     def visit_While(self, node):
         self.newline(node)
-        self.write('while ', node)
+        self.write('while ')
         self.visit(node.test)
         self.write(':')
         self.body_or_else(node)

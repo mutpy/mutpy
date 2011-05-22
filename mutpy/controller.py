@@ -34,7 +34,8 @@ class MutationScore:
         self.incompetent_mutants = incompetent_mutants
         
     def count(self):
-        return (self.killed_mutants / (self.all_mutants - self.incompetent_mutants)) * 100
+        bottom = self.all_mutants - self.incompetent_mutants
+        return ((self.killed_mutants / bottom) * 100) if bottom else 0
     
     def inc_all(self):
         self.all_mutants += 1
