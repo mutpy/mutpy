@@ -12,17 +12,17 @@ class MutationOperatorTest(unittest.TestCase):
 	def test_getattr_like(self):
 		
 		class X:
-			def visit_A(self): pass
-			def visit_A_1(self): pass
-			def visit_A_2(self): pass
-			def visit_AB(self): pass
-			def visitA(self): pass
-			def visit_B(self): pass
+			def mutate_A(self): pass
+			def mutate_A_1(self): pass
+			def mutate_A_2(self): pass
+			def mutate_AB(self): pass
+			def mutateA(self): pass
+			def mutate_B(self): pass
 		
 		x = X()
-		visits_method = ['visit_A', 'visit_A_1', 'visit_A_2']
+		visits_method = ['mutate_A', 'mutate_A_1', 'mutate_A_2']
 		
-		for attr in operator.MutationOperator.getattr_like(x, 'visit_A'):
+		for attr in operator.MutationOperator.getattr_like(x, 'mutate_A'):
 			self.assertIn(attr.__name__, visits_method)
 			visits_method.remove(attr.__name__)
 
