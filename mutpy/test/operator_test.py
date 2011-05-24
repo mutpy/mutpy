@@ -2,7 +2,7 @@ import unittest
 import ast
 
 from mutpy import operator, codegen
-
+from mutpy.test.codegen_test import EOL, INDENT, PASS
 
 class MutationOperatorTest(unittest.TestCase):
 	
@@ -56,10 +56,10 @@ class ConstantReplacementTest(OperatorTestCase):
 		self.assert_mutation("'' + 'ham'", ["'' + 'mutpy'", "'' + ''", "'mutpy' + 'ham'" ])
 		
 	def test_not_mutate_function(self):
-		self.assert_mutation("@notmutate\ndef x():\n\t'ham'", [])
+		self.assert_mutation("@notmutate" + EOL + "def x():" + EOL + INDENT + "'ham'", [])
 		
 	def test_not_mutate_class(self):
-		self.assert_mutation("@notmutate\nclass X:\n\t'ham'", [])	
+		self.assert_mutation("@notmutate" + EOL + "class X:" + EOL + INDENT + "'ham'", [])
 		
 
 class ArithmeticOperatorReplacementTest(OperatorTestCase):
@@ -139,6 +139,26 @@ class ConditionalOperatorReplacementTest(OperatorTestCase):
 		
 	def test_gte(self):
 		self.assert_mutation('x >= y', ['x <= y', 'x > y'])
+		
+	def test_eq(self):
+		self.assert_mutation('x == y', ['x != y'])
+		
+	def test_not_eq(self):
+		self.assert_mutation('x != y', ['x == y'])
+
+
+class UnaryOperatorReplacementTest(OperatorTestCase):
+	
+	@classmethod
+	def setUpClass(cls):
+		cls.op = operator.UnaryOperatorReplacement()
+		
+	def test_usub(self):
+		self.assert_mutation('(-x)', ['(+x)'])
+		
+	def test_uadd(self):
+		self.assert_mutation('(+x)', ['(-x)'])
+
 
 class SliceIndexReplaceTest(OperatorTestCase):
 	
@@ -158,4 +178,98 @@ class ConditionNegationTest(OperatorTestCase):
 		
 	def test_negate_while_condition(self):
 		self.assert_mutation("while x:\n    pass", ["while (not x):\n    pass"])
+		
+	def test_negate_if_condition(self):
+		self.assert_mutation('if x:\n    pass', ['if (not x):\n    pass'])
+
+
+class MembershipTestReplacementTest(OperatorTestCase):
 	
+	@classmethod
+	def setUpClass(cls):
+		cls.op = operator.MembershipTestReplacement()
+	
+	def test_in_to_not_in(self):
+		self.assert_mutation('x in y', ['x not in y'])
+		
+	def test_not_in_to_in(self):
+		self.assert_mutation('x not in y', ['x in y'])
+		
+		
+class ExceptionHandleDeletionTest(OperatorTestCase):
+
+	@classmethod
+	def setUpClass(cls):
+		cls.op = operator.ExceptionHandleDeletion()
+		
+	def test_delete_except(self):
+		self.assert_mutation('try:' + EOL + INDENT + PASS + EOL + 'except Z:' + EOL + INDENT + PASS,
+							['try:' + EOL + INDENT + PASS])
+		
+	def test_delete_two_except(self):
+		self.assert_mutation('try:' + EOL + INDENT + PASS + EOL + 'except Z:' + EOL 
+							+ INDENT + PASS + EOL + 'except Y:' + EOL + INDENT + PASS,
+							['try:' + EOL + INDENT + PASS + EOL * 3 + 'except Y:' + EOL + INDENT + PASS,
+							 'try:' + EOL + INDENT + PASS + EOL + 'except Z:' + EOL + INDENT + PASS])
+		
+
+class ZeroIterationLoopTest(OperatorTestCase):
+	
+	@classmethod
+	def setUpClass(cls):
+		cls.op = operator.ZeroIterationLoop()
+		
+	def test_for_zero_iteration(self):
+		self.assert_mutation('for x in y:' + EOL + INDENT + PASS, ['for x in y:' + EOL + INDENT + 'break']) 	
+
+	def test_multiline_for_zero_iteration(self):
+		self.assert_mutation('for x in y:' + EOL + INDENT + PASS + EOL + INDENT + PASS,
+							['for x in y:' + EOL + INDENT + 'break'])
+		
+	def test_while_zero_iteration(self):
+		self.assert_mutation('while x:' + EOL + INDENT + PASS, ['while x:' + EOL + INDENT + 'break'])
+		
+
+class OneIterationLoopTest(OperatorTestCase):
+	
+	@classmethod
+	def setUpClass(cls):
+		cls.op = operator.OneIterationLoop()
+		
+	def test_for_one_iteration(self):
+		self.assert_mutation('for x in y:' + EOL + INDENT + PASS,
+							['for x in y:' + EOL + INDENT + PASS + EOL + INDENT + 'break']) 
+		
+	def test_while_one_iteration(self):	
+		self.assert_mutation('while x:' + EOL + INDENT + PASS,
+							['while x:' + EOL + INDENT + PASS + EOL + INDENT + 'break'])
+		
+
+class ReverseIterationLoopTest(OperatorTestCase):
+	
+	@classmethod
+	def setUpClass(cls):
+		cls.op = operator.ReverseIterationLoop()
+		
+	def test_for_reverse(self):
+		self.assert_mutation('for x in y:' + EOL + INDENT + PASS,
+							['for x in reversed(y):' + EOL + INDENT + PASS])
+		
+
+class StatementDeletionTest(OperatorTestCase):
+	
+	@classmethod
+	def setUpClass(cls):
+		cls.op = operator.StatementDeletion()
+		
+	def test_return_deletion(self):
+		self.assert_mutation('def f():' + EOL + INDENT + 'return 1', ['def f():' + EOL + INDENT + PASS])
+		
+	def test_assign_deletion(self):
+		self.assert_mutation('x = 1', [PASS])
+
+	def test_fuction_call_deletion(self):
+		self.assert_mutation('f()', ['pass'])
+	
+	def test_assign_with_call_deletion(self):
+		self.assert_mutation('x = f()', ['pass'])

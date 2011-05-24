@@ -37,7 +37,16 @@ def build_mutator(cfg):
                      operator.ConstantReplacement(),
                      operator.StatementDeletion(),
                      operator.ConditionNegation(),
-                     operator.SliceIndexReplace()]
+                     operator.SliceIndexReplace(),
+                     operator.BinaryOperatorReplacement(),
+                     operator.LogicaOperatorReplacement(),
+                     operator.ConditionalOperatorReplacement(),
+                     operator.ExceptionHandleDeletion(),
+                     operator.MembershipTestReplacement(),
+                     operator.OneIterationLoop(),
+                     operator.ZeroIterationLoop(),
+                     operator.ReverseIterationLoop(),
+                     operator.UnaryOperatorReplacement()]
     return controller.Mutator(operators)
     
 def build_views(cfg):

@@ -109,7 +109,7 @@ class SourceGenerator(NodeVisitor):
             self.result.append(self.indent_with * self.indentation)
             self.new_line = False
             
-        if node:
+        if node and hasattr(node, 'lineno'):
             lines = len("".join(self.result).split('\n')) if self.result else 0
             line_diff = node.lineno - lines
         
@@ -248,7 +248,7 @@ class SourceGenerator(NodeVisitor):
         self.visit(node.test)
         self.write(':')
         self.body(node.body)
-        while True:
+        while node.orelse:
             else_ = node.orelse
             if len(else_) == 1 and isinstance(else_[0], If):
                 node = else_[0]
@@ -575,7 +575,7 @@ class SourceGenerator(NodeVisitor):
                 self.write(' if ')
                 self.visit(if_)
 
-    def visit_excepthandler(self, node):
+    def visit_ExceptHandler(self, node):
         self.newline(node)
         self.write('except')
         if node.type is not None:
