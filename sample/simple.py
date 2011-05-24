@@ -29,4 +29,9 @@ class Simple:
     @notmutate
     def equivalent(self, x):
         return x[-1:-1:-1]
+    
+    def is_odd(self, x):
+        if x % 2:
+            return True
+        return False
         
