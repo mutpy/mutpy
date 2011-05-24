@@ -1,8 +1,10 @@
 syntax:glob
 
 *.pyc
+build/*
 
 # PyDev stuff
 .project
 .pydevproject
 .settings/*
+syntax: glob
