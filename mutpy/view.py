@@ -116,6 +116,7 @@ class TextView(QuietTextView):
         mutant_src = codegen.to_source(mutant)
         mutant_src = codegen.add_line_numbers(mutant_src)
         src_lines = mutant_src.split("\n")
+        lineno = min(lineno, len(src_lines))
         src_lines[lineno - 1] = self.decorate('~' + src_lines[lineno - 1][1:], 'yellow')
         snippet = src_lines[max(0, lineno - 5):min(len(src_lines), lineno + 5)]
         print("\n{}\n".format('-'*80) + "\n".join(snippet) + "\n{}".format('-'*80))

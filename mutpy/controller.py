@@ -6,6 +6,7 @@ import threading
 import ctypes
 from os import path
 import imp
+import sys
 
 from mutpy import view
 
@@ -113,7 +114,7 @@ class MutationController(view.ViewNotifier):
             mutant_code = compile(mutant_ast, 'mutant', 'exec')
             mutant_module = types.ModuleType(target_module.__name__.split('.')[-1])
             exec(mutant_code, mutant_module.__dict__)
-        except Exception:
+        except Exception as e:
             return None
         
         return mutant_module
@@ -187,14 +188,23 @@ class ModulesLoader:
             search_path = [path.dirname(name)]
             file_name = path.basename(name)
             module_name = file_name[:-3]
+            self.extend_path(name)
             try:
                 module_detalis = imp.find_module(module_name, search_path)
                 module = imp.load_module(module_name, *module_detalis)
                 module_detalis[0].close()
-            except ImportError:
+            except ImportError as e:
                 raise ModulesLoaderException(name)
             
             return module, None
+        
+    def extend_path(self, name):
+        p = path.dirname(name)
+        sys.path.append(p)
+        
+        while path.exists(p + '/__init__.py'):
+            p = path.split(p)[0]
+            sys.path.append(p)
     
     def load_module(self, name):
             parts = name.split('.')
@@ -236,6 +246,6 @@ class Mutator:
         
     def mutate(self, target_ast, to_mutate):
         for op in self.operators:
-            for mutant, lineno in op.mutate(target_ast, to_mutate):
+            for mutant, lineno in op().mutate(target_ast, to_mutate):
                 yield op, lineno, mutant
     

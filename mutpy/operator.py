@@ -27,10 +27,8 @@ class MutationOperator(ast.NodeTransformer):
                 break
             
             self.mutation_flag = False
-            
+            ast.fix_missing_locations(new_node)
             yield new_node, self.mutate_lineno
-        
-
 
     def visit(self, node):
         if hasattr(node, 'lineno'):
@@ -90,15 +88,15 @@ class MutationOperator(ast.NodeTransformer):
         pattern = re.compile(attr_like + "_\w+")
         return [getattr(ob, attr) for attr in dir(ob) if attr == attr_like or pattern.match(attr)]
     
-    def name(self):
-        return ''.join([c for c in self.__class__.__name__ if str.isupper(c)])
+    @classmethod
+    def name(cls):
+        return ''.join([c for c in cls.__name__ if str.isupper(c)])
 
     def find_visitors(self, node):
         method_prefix = 'visit_' + node.__class__.__name__
         visitors = MutationOperator.getattr_like(self, method_prefix)
         return visitors
-
-        
+  
 
 class ArithmeticOperatorReplacement(MutationOperator):
     
@@ -156,6 +154,7 @@ class LogicaOperatorReplacement(MutationOperator):
     def visit_Or(self, node):
         return ast.And()
 
+
 class ConditionalOperatorReplacement(MutationOperator):
     
     def visit_Lt(self, node):
@@ -212,6 +211,7 @@ class ConstantReplacement(MutationOperator):
         
         return ast.Str(s='')
 
+
 class StatementDeletion(MutationOperator):
     
     def visit_Assign(self, node):
@@ -243,6 +243,7 @@ class SliceIndexReplace(MutationOperator):
     def visit_Slice(self, node):
         node.lower, node.upper, node.step = node.upper, node.step, node.lower
         return node
+
     
 class MembershipTestReplacement(MutationOperator):
     
@@ -251,6 +252,7 @@ class MembershipTestReplacement(MutationOperator):
     
     def visit_NotIn(self, node):
         return ast.In()
+
     
 class ExceptionHandleDeletion(MutationOperator):
     
@@ -270,6 +272,7 @@ class ZeroIterationLoop(MutationOperator):
     def visit_While(self, node):
         return self.zero_iteration(node)
 
+
 class OneIterationLoop(MutationOperator):
     
     def one_iteration(self, node):
@@ -287,5 +290,20 @@ class ReverseIterationLoop(MutationOperator):
     
     def visit_For(self, node):
         old_iter = node.iter
-        node.iter = ast.Call(func=ast.Name(id='reversed'), args=[old_iter], keywords=[], starargs=None, kwargs=None)
+        node.iter = ast.Call(func=ast.Name(id=reversed.__name__, ctx=ast.Load()),
+                             args=[old_iter], keywords=[], starargs=None, kwargs=None)
         return node
+
+
+class SelfWordDeletion(MutationOperator):
+    
+    def visit_Attribute(self, node):
+        try:
+            if node.value.id == 'self':
+                return ast.Name(id=node.attr, ctx=ast.Load())
+            else:
+                raise MutationResign()
+        except AttributeError:
+            raise MutationResign()
+
+

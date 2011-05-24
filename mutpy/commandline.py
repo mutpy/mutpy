@@ -33,20 +33,22 @@ def build_controller(cfg):
     return controller.MutationController(loader, views, mutant_generator, cfg.timeout_factor)
 
 def build_mutator(cfg):
-    operators = [operator.ArithmeticOperatorReplacement(),
-                     operator.ConstantReplacement(),
-                     operator.StatementDeletion(),
-                     operator.ConditionNegation(),
-                     operator.SliceIndexReplace(),
-                     operator.BinaryOperatorReplacement(),
-                     operator.LogicaOperatorReplacement(),
-                     operator.ConditionalOperatorReplacement(),
-                     operator.ExceptionHandleDeletion(),
-                     operator.MembershipTestReplacement(),
-                     operator.OneIterationLoop(),
-                     operator.ZeroIterationLoop(),
-                     operator.ReverseIterationLoop(),
-                     operator.UnaryOperatorReplacement()]
+    operators = {operator.ArithmeticOperatorReplacement,
+                     operator.ConstantReplacement,
+                     operator.StatementDeletion,
+                     operator.ConditionNegation,
+                     operator.SliceIndexReplace,
+                     operator.BinaryOperatorReplacement,
+                     operator.LogicaOperatorReplacement,
+                     operator.ConditionalOperatorReplacement,
+                     operator.ExceptionHandleDeletion,
+                     operator.MembershipTestReplacement,
+                     operator.OneIterationLoop,
+                     operator.ZeroIterationLoop,
+                     operator.ReverseIterationLoop,
+                     operator.UnaryOperatorReplacement,
+                     operator.SelfWordDeletion}
+
     return controller.Mutator(operators)
     
 def build_views(cfg):
