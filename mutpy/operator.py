@@ -15,7 +15,6 @@ class MutationOperator(ast.NodeTransformer):
         self.muteted_node_number = 0
         self.visit_method_number = 0
         self.mutation_flag = False
-        
         while True:
             self.visited_node_number = 0
             node_copy = copy.deepcopy(node)
@@ -67,7 +66,8 @@ class MutationOperator(ast.NodeTransformer):
                 new_node = visitor(node)
                 self.mutate_lineno = node.lineno if hasattr(node, 'lineno') else self.curr_line
                 self.mutation_flag = True
-                ast.copy_location(new_node, node)
+                if new_node:
+                    ast.copy_location(new_node, node)
                 if visitor is visitors[-1]:
                     self.visit_method_number = 0
                     self.visited_node_number += 1
@@ -182,6 +182,22 @@ class ConditionalOperatorReplacement(MutationOperator):
     def visit_GtE_to_Gt(self, node):
         return ast.Gt()
     
+    def visit_Eq(self, node):
+        return ast.NotEq()
+
+    def visit_NotEq(self, node):
+        return ast.Eq()
+
+
+class UnaryOperatorReplacement(MutationOperator):
+    
+    def visit_USub(self, node):
+        return ast.UAdd()
+    
+    def visit_UAdd(self, node):
+        return ast.USub()
+    
+        
 class ConstantReplacement(MutationOperator):
     
     def visit_Num(self, node):
@@ -203,18 +219,73 @@ class StatementDeletion(MutationOperator):
     
     def visit_Return(self, node):
         return ast.Pass()
+    
+    def visit_Expr(self, node):
+        return ast.Pass()
  
        
 class ConditionNegation(MutationOperator):
     
-    def visit_While(self, node):
+    def negate_test(self, node):
         not_node = ast.UnaryOp(op=ast.Not(), operand=node.test)
         node.test = not_node
         return node
+    
+    def visit_While(self, node):
+        return self.negate_test(node)
+    
+    def visit_If(self, node):
+        return self.negate_test(node)
 
     
 class SliceIndexReplace(MutationOperator):
     
     def visit_Slice(self, node):
         node.lower, node.upper, node.step = node.upper, node.step, node.lower
+        return node
+    
+class MembershipTestReplacement(MutationOperator):
+    
+    def visit_In(self, node):
+        return ast.NotIn()
+    
+    def visit_NotIn(self, node):
+        return ast.In()
+    
+class ExceptionHandleDeletion(MutationOperator):
+    
+    def visit_ExceptHandler(self, node):
+        return None
+
+
+class ZeroIterationLoop(MutationOperator):
+    
+    def zero_iteration(self, node):
+        node.body = [ast.Break()]
+        return node
+    
+    def visit_For(self, node):
+        return self.zero_iteration(node)
+    
+    def visit_While(self, node):
+        return self.zero_iteration(node)
+
+class OneIterationLoop(MutationOperator):
+    
+    def one_iteration(self, node):
+        node.body.append(ast.Break())
+        return node
+    
+    def visit_For(self, node):
+        return self.one_iteration(node)
+    
+    def visit_While(self, node):
+        return self.one_iteration(node)
+    
+    
+class ReverseIterationLoop(MutationOperator):
+    
+    def visit_For(self, node):
+        old_iter = node.iter
+        node.iter = ast.Call(func=ast.Name(id='reversed'), args=[old_iter], keywords=[], starargs=None, kwargs=None)
         return node
