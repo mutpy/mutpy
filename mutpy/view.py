@@ -1,4 +1,5 @@
 import time
+import yaml
 
 from mutpy import codegen, termcolor
 
@@ -137,6 +138,30 @@ class TextView(QuietTextView):
 class YAMLRaportView:
     
     def __init__(self, file_name):
-        file = open(file_name, 'w')
-        file.write('# raport genereted by MutPy - {}'.format(time.ctime()))
-        file.close()
+        self.file_name = file_name
+        self.to_dump = []
+        
+    def end_mutation(self, status, time):
+        self.current_mutation['status'] = status
+        self.current_mutation['time'] = time
+        self.to_dump.append(self.current_mutation)
+        
+    def mutation(self, op, lineno, mutant):
+        self.current_mutation = {'operator': op.__name__,
+                                 'line': lineno}
+        
+    def killed(self, time):
+        self.end_mutation('killed', time)
+        
+    def survived(self, time):
+        self.end_mutation('survived', time)
+    
+    def error(self):
+        self.end_mutation('incompetent', None)
+        
+    def timeout(self):
+        self.end_mutation('timeout', None)
+            
+    def end(self, score, time):
+        with open(self.file_name, 'w') as stream:
+            yaml.dump(self.to_dump, stream, default_flow_style=False)
