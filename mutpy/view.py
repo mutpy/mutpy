@@ -32,8 +32,8 @@ class ViewNotifier:
 
 class QuietTextView:
     
-    def __init__(self, cfg):
-        self.cfg = cfg
+    def __init__(self, colored_output=False):
+        self.colored_output = colored_output
         
     def end(self, score, time):
         self.level_print('Mutation score {}: {}'.format(self.time_format(time),
@@ -54,7 +54,7 @@ class QuietTextView:
             print('{} {}'.format(prefix, msg), end=end)
 
     def decorate(self, text, color=None, on_color=None, attrs=None):
-        if self.cfg.colored_output:
+        if self.colored_output:
             return termcolor.colored(text, color, on_color, attrs)
         else:
             return text
@@ -69,10 +69,14 @@ class QuietTextView:
 
 class TextView(QuietTextView):
     
-    def initialize(self):
+    def __init__(self, colored_output=False, show_mutants=False):
+        super().__init__(colored_output)
+        self.show_mutants = show_mutants
+    
+    def initialize(self, target, tests):
         self.level_print('Start mutation process:')
-        self.level_print('target: {}'.format(self.cfg.target), 2)
-        self.level_print('tests: {}'.format(', '.join(self.cfg.test)), 2)
+        self.level_print('target: {}'.format(target), 2)
+        self.level_print('tests: {}'.format(', '.join(tests)), 2)
         
     def start(self):
         self.level_print('Start mutants generation and execution:')
@@ -107,7 +111,7 @@ class TextView(QuietTextView):
         
     def mutation(self, op, lineno, mutant):
         self.level_print('{:<3} line {:<3}: '.format(op.name(), lineno), ended=False, level=2)
-        if self.cfg.show_mutants:
+        if self.show_mutants:
             self.print_code(mutant, lineno)
     
     def cant_load(self, name):
@@ -139,12 +143,17 @@ class YAMLRaportView:
     
     def __init__(self, file_name):
         self.file_name = file_name
-        self.to_dump = []
+        self.mutation_info = []
+        self.stream = open(self.file_name, 'w')
+        
+    def initialize(self, target, tests):
+        init = {'target': target, 'tests': tests}
+        self.dump(init)
         
     def end_mutation(self, status, time):
         self.current_mutation['status'] = status
         self.current_mutation['time'] = time
-        self.to_dump.append(self.current_mutation)
+        self.mutation_info.append(self.current_mutation)
         
     def mutation(self, op, lineno, mutant):
         self.current_mutation = {'operator': op.__name__,
@@ -163,5 +172,10 @@ class YAMLRaportView:
         self.end_mutation('timeout', None)
             
     def end(self, score, time):
-        with open(self.file_name, 'w') as stream:
-            yaml.dump(self.to_dump, stream, default_flow_style=False)
+        self.dump(self.mutation_info)
+        
+    def dump(self, to_dump):
+        yaml.dump(to_dump, self.stream, default_flow_style=False)
+        
+    def __del__(self):
+        self.stream.close()

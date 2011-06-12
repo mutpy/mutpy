@@ -207,7 +207,7 @@ class ExceptionHandleDeletionTest(OperatorTestCase):
 		
 	def test_delete_except(self):
 		self.assert_mutation('try:' + EOL + INDENT + PASS + EOL + 'except Z:' + EOL + INDENT + PASS,
-							['try:' + EOL + INDENT + PASS])
+							[PASS])
 		
 	def test_delete_two_except(self):
 		self.assert_mutation('try:' + EOL + INDENT + PASS + EOL + 'except Z:' + EOL 
