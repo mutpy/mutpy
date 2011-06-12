@@ -55,9 +55,9 @@ def build_views(cfg):
     views = []
     
     if cfg.quiet:
-        views.append(view.QuietTextView(cfg))
+        views.append(view.QuietTextView(cfg.colored_output))
     else:
-        views.append(view.TextView(cfg))
+        views.append(view.TextView(cfg.colored_output, cfg.show_mutants))
     
     if cfg.raport is not None:
         views.append(view.YAMLRaportView(cfg.raport))

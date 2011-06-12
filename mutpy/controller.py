@@ -61,7 +61,7 @@ class MutationController(view.ViewNotifier):
         
     def run(self):
         start_time = time.time()
-        self.notify_initialize()
+        self.notify_initialize(self.loader.target, self.loader.tests)
         
         try:
             target_module, to_mutate = self.loader.load_target()
@@ -85,7 +85,9 @@ class MutationController(view.ViewNotifier):
         except TestsFailAtOriginal as error:
             self.notify_failed(error.result)
         except ModulesLoaderException as error:
-            self.notify_cant_load(error.name)        
+            self.notify_cant_load(error.name)
+        except KeyboardInterrupt:
+            self.notify_end(score, time.time() - start_time)        
         
     def create_target_ast(self, target_module):
         with open(target_module.__file__) as target_file: 
