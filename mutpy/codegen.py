@@ -8,46 +8,46 @@
     :copyright: Copyright 2008 by Armin Ronacher.
     :license: BSD.
 """
-from ast import *
-
+import ast
 
 BOOLOP_SYMBOLS = {
-    And:        'and',
-    Or:         'or'
+    ast.And:        'and',
+    ast.Or:         'or'
 }
 
 BINOP_SYMBOLS = {
-    Add:        '+',
-    Sub:        '-',
-    Mult:       '*',
-    Div:        '/',
-    FloorDiv:   '//',
-    Mod:        '%',
-    LShift:     '<<',
-    RShift:     '>>',
-    BitOr:      '|',
-    BitAnd:     '&',
-    BitXor:     '^'
+    ast.Add:        '+',
+    ast.Sub:        '-',
+    ast.Mult:       '*',
+    ast.Div:        '/',
+    ast.FloorDiv:   '//',
+    ast.Mod:        '%',
+    ast.LShift:     '<<',
+    ast.RShift:     '>>',
+    ast.BitOr:      '|',
+    ast.BitAnd:     '&',
+    ast.BitXor:     '^',
+    ast.Pow:        '**'
 }
 
 CMPOP_SYMBOLS = {
-    Eq:         '==',
-    Gt:         '>',
-    GtE:        '>=',
-    In:         'in',
-    Is:         'is',
-    IsNot:      'is not',
-    Lt:         '<',
-    LtE:        '<=',
-    NotEq:      '!=',
-    NotIn:      'not in'
+    ast.Eq:         '==',
+    ast.Gt:         '>',
+    ast.GtE:        '>=',
+    ast.In:         'in',
+    ast.Is:         'is',
+    ast.IsNot:      'is not',
+    ast.Lt:         '<',
+    ast.LtE:        '<=',
+    ast.NotEq:      '!=',
+    ast.NotIn:      'not in'
 }
 
 UNARYOP_SYMBOLS = {
-    Invert:     '~',
-    Not:        'not',
-    UAdd:       '+',
-    USub:       '-'
+    ast.Invert:     '~',
+    ast.Not:        'not',
+    ast.UAdd:       '+',
+    ast.USub:       '-'
 }
 
 ALL_SYMBOLS = {}
@@ -86,7 +86,7 @@ def add_line_numbers(source):
         
     return '\n'.join(lines)
 
-class SourceGenerator(NodeVisitor):
+class SourceGenerator(ast.NodeVisitor):
     """This visitor is able to transform a well formed syntax tree into python
     sourcecode.  For more details have a look at the docstring of the
     `node_to_source` function.
@@ -250,7 +250,7 @@ class SourceGenerator(NodeVisitor):
         self.body(node.body)
         while node.orelse:
             else_ = node.orelse
-            if len(else_) == 1 and isinstance(else_[0], If):
+            if len(else_) == 1 and isinstance(else_[0], ast.If):
                 node = else_[0]
                 self.newline()
                 self.write('elif ')
@@ -428,7 +428,8 @@ class SourceGenerator(NodeVisitor):
             self.visit(item)
         self.write(idx and ')' or ',)')
 
-    def sequence_visit(left, right):
+    
+    def sequence_visit(left, right): #@NoSelf
         def visit(self, node):
             self.write(left)
             for idx, item in enumerate(node.elts):
@@ -496,7 +497,7 @@ class SourceGenerator(NodeVisitor):
             self.visit(node.upper)
         if node.step is not None:
             self.write(':')
-            if not (isinstance(node.step, Name) and node.step.id == 'None'):
+            if not (isinstance(node.step, ast.Name) and node.step.id == 'None'):
                 self.visit(node.step)
 
     def visit_ExtSlice(self, node):
@@ -518,7 +519,7 @@ class SourceGenerator(NodeVisitor):
     def visit_Ellipsis(self, node):
         self.write('Ellipsis')
 
-    def generator_visit(left, right):
+    def generator_visit(left, right): #@NoSelf
         def visit(self, node):
             self.write(left)
             self.visit(node.elt)

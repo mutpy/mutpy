@@ -1,4 +1,4 @@
-from mutpy.operator import notmutate
+from mutpy.operators import notmutate
 
 
 class Simple:
@@ -14,7 +14,7 @@ class Simple:
     
     def loop(self):
         i = 0
-        
+
         while i != 100:
             i = i + 1
             
