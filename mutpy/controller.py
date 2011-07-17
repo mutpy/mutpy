@@ -9,7 +9,8 @@ import imp
 import sys
 
 from mutpy import view
-
+from unittest.result import TestResult
+from _pyio import StringIO
 
 class TestsFailAtOriginal(Exception):
     
@@ -53,11 +54,12 @@ class MutationScore:
             
 class MutationController(view.ViewNotifier):
     
-    def __init__(self, loader, views, mutant_generator, timeout_factor):
+    def __init__(self, loader, views, mutant_generator, timeout_factor, disable_stdout=False):
         super().__init__(views)
         self.loader = loader
         self.mutant_generator = mutant_generator
         self.timeout_factor = timeout_factor
+        self.stdout_manager = StdoutManager(disable_stdout)
         
     def run(self):
         start_time = time.time()
@@ -102,7 +104,9 @@ class MutationController(view.ViewNotifier):
                 suite = unittest.TestLoader().loadTestsFromModule(test_module)
             result = unittest.TestResult()
             start = time.time()
+            self.stdout_manager.disable_stdout()
             suite.run(result)
+            self.stdout_manager.enable_stdout()
             duration = time.time() - start
             if result.wasSuccessful():
                 test_modules.append((test_module, target_test, duration))
@@ -115,8 +119,10 @@ class MutationController(view.ViewNotifier):
         try:
             mutant_code = compile(mutant_ast, 'mutant', 'exec')
             mutant_module = types.ModuleType(target_module.__name__.split('.')[-1])
+            self.stdout_manager.disable_stdout()
             exec(mutant_code, mutant_module.__dict__)
-        except Exception as e:
+            self.stdout_manager.enable_stdout()
+        except Exception:
             return None
         
         return mutant_module
@@ -126,6 +132,8 @@ class MutationController(view.ViewNotifier):
         suite = unittest.TestSuite()
         total_duration = 0
         for test_module, target_test, duration in tests_modules:
+            old_module = test_module.__dict__[mutant_module.__name__]
+            mutant_module.__file__ = old_module.__file__
             test_module.__dict__[mutant_module.__name__] = mutant_module
             if target_test:
                 suite.addTests(unittest.TestLoader().loadTestsFromName(target_test, test_module))
@@ -136,27 +144,33 @@ class MutationController(view.ViewNotifier):
         return suite, total_duration
 
     def run_tests_with_mutant(self, tests_modules, mutant_module, score):
+        
         suite, total_duration = self.create_test_suite(tests_modules, mutant_module)
-        result = unittest.TestResult()
+        result = CustomTestResult()
         result.failfast = True
         start = time.time()
         runner_thread = KillableThread(target=lambda: suite.run(result))
+        self.stdout_manager.disable_stdout()
         runner_thread.start()
         live_time = self.timeout_factor * total_duration if total_duration > 1 else 1
         runner_thread.join(live_time)
+        self.stdout_manager.enable_stdout()
         mutant_duration = time.time() - start
-        
         if runner_thread.is_alive():
             runner_thread.kill()
             self.notify_timeout()
             score.inc_timeout()
-        elif result.errors:
+        elif result.type_error:
             self.notify_error()
             score.inc_incompetent()
         elif result.wasSuccessful():
             self.notify_survived(mutant_duration)
-        else:       
-            self.notify_killed(mutant_duration)
+        else:
+            if result.failures:
+                killer = result.failures[0][0]
+            elif result.errors:
+                killer = result.errors[0][0]
+            self.notify_killed(mutant_duration, killer)
             score.inc_killed()
         
       
@@ -195,18 +209,18 @@ class ModulesLoader:
                 module_detalis = imp.find_module(module_name, search_path)
                 module = imp.load_module(module_name, *module_detalis)
                 module_detalis[0].close()
-            except ImportError as e:
+            except ImportError:
                 raise ModulesLoaderException(name)
             
             return module, None
         
     def extend_path(self, name):
         p = path.dirname(name)
-        sys.path.append(p)
+        sys.path = [p] + sys.path
         
         while path.exists(p + '/__init__.py'):
             p = path.split(p)[0]
-            sys.path.append(p)
+            sys.path = [p] + sys.path
     
     def load_module(self, name):
             parts = name.split('.')
@@ -233,7 +247,8 @@ class ModulesLoader:
             return module, '.'.join(to_mutate) if to_mutate else None
         
     def load_target(self):
-        return self.load(self.target)
+        loaded_target = self.load(self.target)
+        return loaded_target
     
     def load_tests(self):
         return [self.load(test) for test in self.tests]
@@ -250,4 +265,29 @@ class Mutator:
         for op in self.operators:
             for mutant, lineno in op().mutate(target_ast, to_mutate):
                 yield op, lineno, mutant
+
     
+class StdoutManager:
+    
+    def __init__(self, disable=True):
+        self.disable = disable
+        
+    def disable_stdout(self):
+        if self.disable:
+            sys.stdout = StringIO()
+        
+    def enable_stdout(self):
+        sys.stdout = sys.__stdout__
+
+
+class CustomTestResult(TestResult):
+    
+    def __init__(self, *args, **kwargs):
+        self.type_error = None
+        super(CustomTestResult, self).__init__(*args, **kwargs)
+    
+    def addError(self, test, err):
+        if err[0] == TypeError:
+            self.type_error = err
+        else:
+            super(CustomTestResult, self).addError(test, err)

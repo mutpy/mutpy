@@ -1,7 +1,7 @@
 import unittest
 import ast
 
-from mutpy import operator, codegen
+from mutpy import operators, codegen
 
 EOL = '\n'
 INDENT = ' ' * 4
@@ -22,7 +22,7 @@ class MutationOperatorTest(unittest.TestCase):
 		x = X()
 		visits_method = ['mutate_A', 'mutate_A_1', 'mutate_A_2']
 		
-		for attr in operator.MutationOperator.getattr_like(x, 'mutate_A'):
+		for attr in operators.MutationOperator.getattr_like(x, 'mutate_A'):
 			self.assertIn(attr.__name__, visits_method)
 			visits_method.remove(attr.__name__)
 
@@ -43,7 +43,7 @@ class ConstantReplacementTest(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operator.ConstantReplacement()
+		cls.op = operators.ConstantReplacement()
 		
 	def test_numbers_increment(self):
 		self.assert_mutation('2 + 3 - 99', ['3 + 3 - 99', '2 + 4 - 99', '2 + 3 - 100'])
@@ -69,7 +69,7 @@ class ArithmeticOperatorReplacementTest(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operator.ArithmeticOperatorReplacement()
+		cls.op = operators.ArithmeticOperatorReplacement()
 		
 	def test_add_to_sub_replacement(self):
 		self.assert_mutation('x + y + z', ['x - y + z', 'x + y - z'])
@@ -77,8 +77,8 @@ class ArithmeticOperatorReplacementTest(OperatorTestCase):
 	def test_sub_to_add_replacement(self):
 		self.assert_mutation('x - y', ['x + y'])
 		
-	def test_mult_to_div_replacement(self):
-		self.assert_mutation('x * y', ['x / y', 'x // y'])
+	def test_mult_to_div_and_pow_replacement(self):
+		self.assert_mutation('x * y', ['x / y', 'x // y', 'x ** y'])
 		
 	def test_div_replacement(self):
 		self.assert_mutation('x / y', ['x * y', 'x // y'])
@@ -89,12 +89,15 @@ class ArithmeticOperatorReplacementTest(OperatorTestCase):
 	def test_mod_to_mult(self):
 		self.assert_mutation('x % y', ['x * y'])
 		
+	def test_pow_to_mult(self):
+		self.assert_mutation('x ** y', ['x * y'])
+		
 
 class BinaryOperatorReplacement(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operator.BinaryOperatorReplacement()
+		cls.op = operators.BinaryOperatorReplacement()
 		
 	def test_bin_and_to_bit_or(self):
 		self.assert_mutation('x & y', ['x | y'])
@@ -116,7 +119,7 @@ class LogicaOperatorReplacementTest(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operator.LogicaOperatorReplacement()
+		cls.op = operators.LogicalOperatorReplacement()
 		
 	def test_and_to_or(self):
 		self.assert_mutation('(x and y)', ['(x or y)'])
@@ -129,7 +132,7 @@ class ConditionalOperatorReplacementTest(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operator.ConditionalOperatorReplacement()
+		cls.op = operators.ConditionalOperatorReplacement()
 		
 	def test_lt(self):
 		self.assert_mutation('x < y', ['x > y', 'x <= y'])
@@ -154,7 +157,7 @@ class UnaryOperatorReplacementTest(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operator.UnaryOperatorReplacement()
+		cls.op = operators.UnaryOperatorReplacement()
 		
 	def test_usub(self):
 		self.assert_mutation('(-x)', ['(+x)'])
@@ -163,21 +166,20 @@ class UnaryOperatorReplacementTest(OperatorTestCase):
 		self.assert_mutation('(+x)', ['(-x)'])
 
 
-class SliceIndexReplaceTest(OperatorTestCase):
+class SliceIndexRemoveTest(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operator.SliceIndexReplace()
+		cls.op = operators.SliceIndexRemove()
 		
-	def test_slice_indexes_rotation(self):
-		self.assert_mutation('x[1:2:3] = x[(-4):(-5):(-6)]',
-							['x[2:3:1] = x[(-4):(-5):(-6)]', 'x[1:2:3] = x[(-5):(-6):(-4)]'])
+	def test_slice_indexes_remove(self):
+		self.assert_mutation('x[1:2:3]', ['x[:2:3]', 'x[1::3]', 'x[1:2]'])
 		
 class ConditionNegationTest(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operator.ConditionNegation()
+		cls.op = operators.ConditionNegation()
 		
 	def test_negate_while_condition(self):
 		self.assert_mutation("while x:\n    pass", ["while (not x):\n    pass"])
@@ -190,7 +192,7 @@ class MembershipTestReplacementTest(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operator.MembershipTestReplacement()
+		cls.op = operators.MembershipTestReplacement()
 	
 	def test_in_to_not_in(self):
 		self.assert_mutation('x in y', ['x not in y'])
@@ -203,24 +205,26 @@ class ExceptionHandleDeletionTest(OperatorTestCase):
 
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operator.ExceptionHandleDeletion()
-		
+		cls.op = operators.ExceptionHandleDeletion()
+	
 	def test_delete_except(self):
 		self.assert_mutation('try:' + EOL + INDENT + PASS + EOL + 'except Z:' + EOL + INDENT + PASS,
-							[PASS])
+							['try:' + EOL + INDENT + PASS + EOL + 'except Z:' + EOL + INDENT + 'raise',])
 		
 	def test_delete_two_except(self):
 		self.assert_mutation('try:' + EOL + INDENT + PASS + EOL + 'except Z:' + EOL 
 							+ INDENT + PASS + EOL + 'except Y:' + EOL + INDENT + PASS,
-							['try:' + EOL + INDENT + PASS + EOL * 3 + 'except Y:' + EOL + INDENT + PASS,
-							 'try:' + EOL + INDENT + PASS + EOL + 'except Z:' + EOL + INDENT + PASS])
+							['try:' + EOL + INDENT + PASS + EOL + 'except Z:' + EOL 
+							+ INDENT + 'raise' + EOL + 'except Y:' + EOL + INDENT + PASS,
+							 'try:' + EOL + INDENT + PASS + EOL + 'except Z:' + EOL 
+							+ INDENT + PASS + EOL + 'except Y:' + EOL + INDENT + 'raise'])
 		
 
 class ZeroIterationLoopTest(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operator.ZeroIterationLoop()
+		cls.op = operators.ZeroIterationLoop()
 		
 	def test_for_zero_iteration(self):
 		self.assert_mutation('for x in y:' + EOL + INDENT + PASS, ['for x in y:' + EOL + INDENT + 'break']) 	
@@ -237,7 +241,7 @@ class OneIterationLoopTest(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operator.OneIterationLoop()
+		cls.op = operators.OneIterationLoop()
 		
 	def test_for_one_iteration(self):
 		self.assert_mutation('for x in y:' + EOL + INDENT + PASS,
@@ -252,7 +256,7 @@ class ReverseIterationLoopTest(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operator.ReverseIterationLoop()
+		cls.op = operators.ReverseIterationLoop()
 		
 	def test_for_reverse(self):
 		self.assert_mutation('for x in y:' + EOL + INDENT + PASS,
@@ -263,7 +267,7 @@ class StatementDeletionTest(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operator.StatementDeletion()
+		cls.op = operators.StatementDeletion()
 		
 	def test_return_deletion(self):
 		self.assert_mutation('def f():' + EOL + INDENT + 'return 1', ['def f():' + EOL + INDENT + PASS])
@@ -276,22 +280,3 @@ class StatementDeletionTest(OperatorTestCase):
 	
 	def test_assign_with_call_deletion(self):
 		self.assert_mutation('x = f()', ['pass'])
-
-
-class SelfWordDeletionTest(OperatorTestCase):
-	
-	@classmethod
-	def setUpClass(cls):
-		cls.op = operator.SelfWordDeletion()
-		
-	def test_self_deletion_with_attribute(self):
-		self.assert_mutation('self.x', ['x'])
-		
-	def test_self_deletion_with_method(self):
-		self.assert_mutation('self.f()', ['f()'])
-		
-	def test_self_deletion_with_multi_attribute(self):
-		self.assert_mutation('self.x.y.z', ['x.y.z'])
-		
-	def test_self_deletion_with_multi_attribute_after_method(self):
-		self.assert_mutation('self.f().x.y.z', ['f().x.y.z'])	

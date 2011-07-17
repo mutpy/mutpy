@@ -102,7 +102,6 @@ class TextView(QuietTextView):
     
     def failed(self, result):
         self.level_print(self.decorate('Tests failed:', 'red', attrs=['bold']))
-        
         for error in result.errors:
                 self.level_print('error in {} - {} '.format(error[0], error[1].split("\n")[-2]), 2)
                 
@@ -126,8 +125,9 @@ class TextView(QuietTextView):
         snippet = src_lines[max(0, lineno - 5):min(len(src_lines), lineno + 5)]
         print("\n{}\n".format('-'*80) + "\n".join(snippet) + "\n{}".format('-'*80))
     
-    def killed(self, time):
-        self.level_print(self.time_format(time) + ' ' + self.decorate('killed', 'green') , continuation=True)
+    def killed(self, time, killer):
+        self.level_print(self.time_format(time) + ' ' + self.decorate('killed', 'green') + ' by ' + str(killer), 
+                         continuation=True)
     
     def survived(self, time):
         self.level_print(self.time_format(time) + ' ' + self.decorate('survived', 'red'), continuation=True)
@@ -159,7 +159,7 @@ class YAMLRaportView:
         self.current_mutation = {'operator': op.__name__,
                                  'line': lineno}
         
-    def killed(self, time):
+    def killed(self, time, killer):
         self.end_mutation('killed', time)
         
     def survived(self, time):

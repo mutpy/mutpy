@@ -112,6 +112,9 @@ class ArithmeticOperatorReplacement(MutationOperator):
     def mutate_Mult_to_FloorDiv(self, node):
         return ast.FloorDiv()
     
+    def mutate_Mult_to_Pow(self, node):
+        return ast.Pow()
+    
     def mutate_Div_to_Mult(self, node):
         return ast.Mult()
     
@@ -125,6 +128,9 @@ class ArithmeticOperatorReplacement(MutationOperator):
         return ast.Mult()
     
     def mutate_Mod(self, node):
+        return ast.Mult()
+    
+    def mutate_Pow(self, node):
         return ast.Mult()
     
 
@@ -146,7 +152,7 @@ class BinaryOperatorReplacement(MutationOperator):
         return ast.LShift()
     
 
-class LogicaOperatorReplacement(MutationOperator):
+class LogicalOperatorReplacement(MutationOperator):
     
     def mutate_And(self, node):
         return ast.Or()
@@ -238,10 +244,27 @@ class ConditionNegation(MutationOperator):
         return self.negate_test(node)
 
     
-class SliceIndexReplace(MutationOperator):
+class SliceIndexRemove(MutationOperator):
     
-    def mutate_Slice(self, node):
-        node.lower, node.upper, node.step = node.upper, node.step, node.lower
+    def mutate_Slice_remove_lower(self, node):
+        if not node.lower:
+            raise MutationResign
+        
+        node.lower = None
+        return node
+    
+    def mutate_Slice_remove_upper(self, node):
+        if not node.upper:
+            raise MutationResign
+        
+        node.upper = None
+        return node
+    
+    def mutate_Slice_remove_step(self, node):
+        if not node.step:
+            raise MutationResign
+        
+        node.step = None
         return node
 
     
@@ -257,7 +280,8 @@ class MembershipTestReplacement(MutationOperator):
 class ExceptionHandleDeletion(MutationOperator):
     
     def mutate_ExceptHandler(self, node):
-        return None
+        node.body = [ast.Raise()] 
+        return node
 
 
 class ZeroIterationLoop(MutationOperator):
@@ -293,17 +317,4 @@ class ReverseIterationLoop(MutationOperator):
         node.iter = ast.Call(func=ast.Name(id=reversed.__name__, ctx=ast.Load()),
                              args=[old_iter], keywords=[], starargs=None, kwargs=None)
         return node
-
-
-class SelfWordDeletion(MutationOperator):
-    
-    def mutate_Attribute(self, node):
-        try:
-            if node.value.id == 'self':
-                return ast.Name(id=node.attr, ctx=ast.Load())
-            else:
-                raise MutationResign()
-        except AttributeError:
-            raise MutationResign()
-
 
