@@ -1,6 +1,6 @@
 import argparse
 
-from mutpy import controller, view, operators
+from mutpy import controller, view, operators, experiments
 
 VERSION = 0.1
 
@@ -24,7 +24,8 @@ def build_parser():
     parser.add_argument('--show-mutants', '-m', action='store_true', help='show mutants')
     parser.add_argument('--quiet', '-q', action='store_true', help='quiet mode')
     parser.add_argument('--colored-output', '-c', action='store_true', help='try print colored output')
-    parser.add_argument('--disable-stdout', '-d', action='store_true', help='try disable stdout during tests (this option can damage your test if you interact with sys.stdout)')
+    parser.add_argument('--disable-stdout', '-d', action='store_true', help='try disable stdout during mutation (this option can damage your tests if you interact with sys.stdout)')
+    parser.add_argument('--experimental-operators', '-e', action='store_true', help='use only experimental operators')
     return parser
 
 def build_controller(cfg):
@@ -34,20 +35,23 @@ def build_controller(cfg):
     return controller.MutationController(loader, views, mutant_generator, cfg.timeout_factor, cfg.disable_stdout)
 
 def build_mutator(cfg):
-    operators_set = {operators.ArithmeticOperatorReplacement,
-                     operators.ConstantReplacement,
-                     operators.StatementDeletion,
-                     operators.ConditionNegation,
-                     operators.SliceIndexRemove,
-                     operators.BinaryOperatorReplacement,
-                     operators.LogicalOperatorReplacement,
-                     operators.ConditionalOperatorReplacement,
-                     operators.ExceptionHandleDeletion,
-                     operators.MembershipTestReplacement,
-                     operators.OneIterationLoop,
-                     operators.ZeroIterationLoop,
-                     operators.ReverseIterationLoop,
-                     operators.UnaryOperatorReplacement}
+    if cfg.experimental_operators:
+        operators_set = {experiments.SelfWordDeletion,}
+    else:
+        operators_set = {operators.ArithmeticOperatorReplacement,
+                         operators.ConstantReplacement,
+                         operators.StatementDeletion,
+                         operators.ConditionNegation,
+                         operators.SliceIndexRemove,
+                         operators.BinaryOperatorReplacement,
+                         operators.LogicalOperatorReplacement,
+                         operators.ConditionalOperatorReplacement,
+                         operators.ExceptionHandleDeletion,
+                         operators.MembershipTestReplacement,
+                         operators.OneIterationLoop,
+                         operators.ZeroIterationLoop,
+                         operators.ReverseIterationLoop,
+                         operators.UnaryOperatorReplacement}
 
     return controller.Mutator(operators_set)
     
