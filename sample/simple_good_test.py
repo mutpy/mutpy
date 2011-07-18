@@ -11,10 +11,10 @@ class SimpleGoodTest(unittest.TestCase):
         self.assertEqual(self.simple.add(2, 2), 4)
         
     def test_add_two(self):
-        self.assertEqual(self.simple.addTwo(2), 4)
+        self.assertEqual(self.simple.add_two(2), 4)
         
     def test_add_etc(self):
-        self.assertEqual(self.simple.addEtc('ala, kot, pies'), 'ala, kot, pies etc.')
+        self.assertEqual(self.simple.add_etc('ala, kot, pies'), 'ala, kot, pies etc.')
         
     def test_add_str(self):
         self.assertEqual(self.simple.add('ala', 'kota'), 'alakota')
@@ -23,7 +23,10 @@ class SimpleGoodTest(unittest.TestCase):
         self.assertEqual(self.simple.loop(), 100)
         
     def test_last_two(self):
-        self.assertSameElements(self.simple.lastTwo([1, 2, 3, 4]), [3, 4])
+        self.assertSameElements(self.simple.last_two([1, 2, 3, 4]), [3, 4])
         
     def test_empty_string(self):
-        self.assertEqual(self.simple.emptyString(), '')
+        self.assertEqual(self.simple.empty_string(), '')
+        
+    def test_get_const(self):
+        self.assertEqual(self.simple.get_const(), 1337)
