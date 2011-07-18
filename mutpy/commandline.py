@@ -36,22 +36,9 @@ def build_controller(cfg):
 
 def build_mutator(cfg):
     if cfg.experimental_operators:
-        operators_set = {experiments.SelfWordDeletion,}
+        operators_set = experiments.all_operators
     else:
-        operators_set = {operators.ArithmeticOperatorReplacement,
-                         operators.ConstantReplacement,
-                         operators.StatementDeletion,
-                         operators.ConditionNegation,
-                         operators.SliceIndexRemove,
-                         operators.BinaryOperatorReplacement,
-                         operators.LogicalOperatorReplacement,
-                         operators.ConditionalOperatorReplacement,
-                         operators.ExceptionHandleDeletion,
-                         operators.MembershipTestReplacement,
-                         operators.OneIterationLoop,
-                         operators.ZeroIterationLoop,
-                         operators.ReverseIterationLoop,
-                         operators.UnaryOperatorReplacement}
+        operators_set = operators.all_operators
 
     return controller.Mutator(operators_set)
     

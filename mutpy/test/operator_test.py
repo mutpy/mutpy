@@ -30,14 +30,22 @@ class OperatorTestCase(unittest.TestCase):
 	
 	def assert_mutation(self, original, mutants):
 		original_ast = ast.parse(original)
+		mutants = list(map(OperatorTestCase.remove_extra_lines, mutants))
+		original = OperatorTestCase.remove_extra_lines(original)
 		
 		for mutant, _ in self.__class__.op.mutate(original_ast, None):
-			mutant_code = codegen.to_source(mutant)
+			mutant_code = OperatorTestCase.remove_extra_lines(codegen.to_source(mutant))
 			self.assertIn(mutant_code, mutants)
 			mutants.remove(mutant_code)
 			
 		self.assertListEqual(mutants, [], 'did not generate all mutants')
-
+	
+	@staticmethod
+	def remove_extra_lines(code):
+		parts = code.split(EOL)
+		result = [part for part in parts if part.strip()]
+		return EOL.join(result)
+				
 
 class ConstantReplacementTest(OperatorTestCase):
 	

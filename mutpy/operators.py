@@ -318,3 +318,18 @@ class ReverseIterationLoop(MutationOperator):
                              args=[old_iter], keywords=[], starargs=None, kwargs=None)
         return node
 
+
+all_operators = {ArithmeticOperatorReplacement,
+                 ConstantReplacement,
+                 StatementDeletion,
+                 ConditionNegation,
+                 SliceIndexRemove,
+                 BinaryOperatorReplacement,
+                 LogicalOperatorReplacement,
+                 ConditionalOperatorReplacement,
+                 ExceptionHandleDeletion,
+                 MembershipTestReplacement,
+                 OneIterationLoop,
+                 ZeroIterationLoop,
+                 ReverseIterationLoop,
+                 UnaryOperatorReplacement}

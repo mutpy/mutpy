@@ -6,10 +6,10 @@ class Simple:
     def add(self, x , y):
         return x + y
     
-    def addTwo(self, x):
+    def add_two(self, x):
         return self.add(x, 2)
 
-    def addEtc(self, x):
+    def add_etc(self, x):
         return x + ' etc.'
     
     def loop(self):
@@ -20,10 +20,10 @@ class Simple:
             
         return i
         
-    def lastTwo(self, x):
+    def last_two(self, x):
         return x[-2:]
         
-    def emptyString(self):
+    def empty_string(self):
         return ''
     
     @notmutate
@@ -34,4 +34,7 @@ class Simple:
         if x % 2:
             return True
         return False
-        
+
+    @staticmethod
+    def get_const():
+        return 1337
