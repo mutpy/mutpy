@@ -43,5 +43,4 @@ class ClassmethodDecoratorDeletion(DecoratorDeletionOperator):
 all_operators = {SelfWordDeletion,
                  StaticmethodDecoratorDeletion,
                  ClassmethodDecoratorDeletion}
-        
-# usunięcie classmethod    
+    
