@@ -86,6 +86,12 @@ def add_line_numbers(source):
         
     return '\n'.join(lines)
 
+def remove_extra_lines(source):
+        parts = source.split('\n')
+        result = [part for part in parts if part.strip()]
+        return '\n'.join(result)
+
+
 class SourceGenerator(ast.NodeVisitor):
     """This visitor is able to transform a well formed syntax tree into python
     sourcecode.  For more details have a look at the docstring of the

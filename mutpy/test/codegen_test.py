@@ -114,4 +114,9 @@ class CodegenTest(unittest.TestCase):
         self.assert_code_equal("try:" + EOL + INDENT + PASS + EOL + EOL + EOL + "except Y:" + EOL + INDENT + PASS)
         
     def test_for_break(self):
-        self.assert_code_equal("for x in y:" + EOL + INDENT + "break") 
+        self.assert_code_equal("for x in y:" + EOL + INDENT + "break")
+        
+    def test_remove_extra_lines(self):
+        code = EOL + INDENT + EOL + INDENT + 'pass' + EOL + INDENT + EOL + INDENT + 'pass' + EOL + EOL
+        reduced = codegen.remove_extra_lines(code)
+        self.assertEqual(reduced, INDENT + 'pass' + EOL + INDENT + 'pass')
