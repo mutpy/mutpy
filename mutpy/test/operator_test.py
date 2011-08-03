@@ -282,3 +282,40 @@ class StatementDeletionTest(OperatorTestCase):
 	
 	def test_assign_with_call_deletion(self):
 		self.assert_mutation('x = f()', ['pass'])
+
+
+class ClassmethodDecoratorDeletionTest(OperatorTestCase):
+	
+	@classmethod
+	def setUpClass(cls):
+		cls.op = operators.ClassmethodDecoratorDeletion()
+	
+	def test_single_classmethod_deletion(self):
+		self.assert_mutation('@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' , 
+	                     ['def f():' + EOL + INDENT + 'pass'])
+	
+	def test_classmethod_deletion_with_other(self):
+		self.assert_mutation('@staticmethod' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' , 
+	                     ['@staticmethod' + EOL + 'def f():' + EOL + INDENT + 'pass'])
+		
+	def test_classmethod_deletion_with_other_and_arguments(self):
+		self.assert_mutation('@wraps(func)' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' , 
+	                     ['@wraps(func)' + EOL + 'def f():' + EOL + INDENT + 'pass'])
+		
+
+class ClassmethodDecoratorInsertionTest(OperatorTestCase):
+
+	@classmethod
+	def setUpClass(cls):
+		cls.op = operators.ClassmethodDecoratorInsertion()
+
+	def test_add_classmethod_decorator(self):
+		self.assert_mutation('def f():' + EOL + INDENT + 'pass', 
+	                         ['@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass'])
+
+	def test_not_add_if_already_has_staticmethod(self):
+		self.assert_mutation('@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass', [])
+		
+	def test_classmethod_add_with_other_and_arguments(self):
+		self.assert_mutation('@wraps(func)' + EOL + 'def f():' + EOL + INDENT + 'pass',
+							['@wraps(func)' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' ])		

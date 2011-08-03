@@ -1,11 +1,11 @@
 import unittest
-from sample import simple
+from sample.simple import Simple
 
 
 class SimpleGoodTest(unittest.TestCase):
     
     def setUp(self):
-        self.simple = simple.Simple()
+        self.simple = Simple(1337)
         
     def test_add(self):
         self.assertEqual(self.simple.add(2, 2), 4)
@@ -23,10 +23,17 @@ class SimpleGoodTest(unittest.TestCase):
         self.assertEqual(self.simple.loop(), 100)
         
     def test_last_two(self):
-        self.assertSameElements(self.simple.last_two([1, 2, 3, 4]), [3, 4])
+        self.assertSequenceEqual(self.simple.last_two([1, 2, 3, 4]), [3, 4])
         
     def test_empty_string(self):
         self.assertEqual(self.simple.empty_string(), '')
         
     def test_get_const(self):
         self.assertEqual(self.simple.get_const(), 1337)
+    
+    def test_get_inc_const(self):
+        self.assertEqual(self.simple.get_inc_const(), 1338)
+        self.assertEqual(Simple.get_inc_const(), 1338)
+    
+    def test_get_magic(self):
+        self.assertEqual(self.simple.get_magic(), 1337)

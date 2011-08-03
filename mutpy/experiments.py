@@ -1,5 +1,6 @@
 import ast
-from mutpy.operators import MutationOperator, MutationResign
+from mutpy.operators import MutationOperator, MutationResign,\
+    DecoratorDeletionMutationOperator, DecoratorInsertionMutationOperator
 
 
 class SelfWordDeletion(MutationOperator):
@@ -14,33 +15,19 @@ class SelfWordDeletion(MutationOperator):
             raise MutationResign()
 
 
-class DecoratorDeletionOperator(MutationOperator):
-    
-    def mutate_FunctionDef(self, node):
-        for decorator in node.decorator_list:
-            if decorator.id == self.get_decorator_name():
-                node.decorator_list.remove(decorator)
-                return node
-        else:
-            raise MutationResign()
-        
-    def get_decorator_name(self):
-        raise NotImplementedError()
-
-
-class StaticmethodDecoratorDeletion(DecoratorDeletionOperator):
+class StaticmethodDecoratorDeletion(DecoratorDeletionMutationOperator):
     
     def get_decorator_name(self):
         return 'staticmethod'
 
-        
-class ClassmethodDecoratorDeletion(DecoratorDeletionOperator):
-    
+
+class StaticmethodDecoratorInsertion(DecoratorInsertionMutationOperator):
+
     def get_decorator_name(self):
-        return 'classmethod'
+        return 'staticmethod'
 
 
-all_operators = {SelfWordDeletion,
+all_operators = [SelfWordDeletion,
                  StaticmethodDecoratorDeletion,
-                 ClassmethodDecoratorDeletion}
+                 StaticmethodDecoratorInsertion]
     
