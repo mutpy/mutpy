@@ -8,7 +8,7 @@ from os import path
 import imp
 import sys
 
-from mutpy import view
+from mutpy import views
 from unittest.result import TestResult
 from _pyio import StringIO
 
@@ -52,7 +52,7 @@ class MutationScore:
         self.incompetent_mutants += 1
     
             
-class MutationController(view.ViewNotifier):
+class MutationController(views.ViewNotifier):
     
     def __init__(self, loader, views, mutant_generator, timeout_factor, disable_stdout=False):
         super().__init__(views)
@@ -127,14 +127,11 @@ class MutationController(view.ViewNotifier):
         
         return mutant_module
         
-
     def create_test_suite(self, tests_modules, mutant_module):
         suite = unittest.TestSuite()
         total_duration = 0
         for test_module, target_test, duration in tests_modules:
-            old_module = test_module.__dict__[mutant_module.__name__]
-            mutant_module.__file__ = old_module.__file__
-            test_module.__dict__[mutant_module.__name__] = mutant_module
+            self.inject_mutant(mutant_module, test_module)
             if target_test:
                 suite.addTests(unittest.TestLoader().loadTestsFromName(target_test, test_module))
             else:
@@ -142,6 +139,20 @@ class MutationController(view.ViewNotifier):
             total_duration += duration
         
         return suite, total_duration
+    
+    def inject_mutant(self, mutant_module, test_module):
+        if mutant_module.__name__ in test_module.__dict__: 
+            old_module = test_module.__dict__[mutant_module.__name__]
+            mutant_module.__file__ = old_module.__file__
+            test_module.__dict__[mutant_module.__name__] = mutant_module
+        else:
+            mutant_set = set(mutant_module.__dict__)
+            test_set = set(test_module.__dict__)
+            intersection = (mutant_set & test_set) - {'__builtins__', '__name__', '__doc__'}
+            intersection = {artefact for artefact in intersection if not imp.is_builtin(artefact)}
+            for to_inject in intersection:
+                test_module.__dict__[to_inject] = mutant_module.__dict__[to_inject]
+            
 
     def run_tests_with_mutant(self, tests_modules, mutant_module, score):
         

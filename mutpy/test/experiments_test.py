@@ -36,16 +36,15 @@ class StaticmethodDecoratorDeletionTest(OperatorTestCase):
                              ['@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass'])
 
 
-class ClassmethodDecoratorDeletionTest(OperatorTestCase):
+class StaticmethodDecoratorInsertionTest(OperatorTestCase):
     
     @classmethod
     def setUpClass(cls):
-        cls.op = experiments.ClassmethodDecoratorDeletion()
+        cls.op = experiments.StaticmethodDecoratorInsertion()
         
-    def test_single_classmethod_deletion(self):
-        self.assert_mutation('@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' , 
-                             ['def f():' + EOL + INDENT + 'pass'])
+    def test_add_staticmethod_decorator(self):
+        self.assert_mutation('def f():' + EOL + INDENT + 'pass', 
+                             ['@staticmethod' + EOL + 'def f():' + EOL + INDENT + 'pass'])
         
-    def test_classmethod_deletion_with_other(self):
-        self.assert_mutation('@staticmethod' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' , 
-                             ['@staticmethod' + EOL + 'def f():' + EOL + INDENT + 'pass'])        
+    def test_not_add_if_already_has_staticmethod(self):
+        self.assert_mutation('@staticmethod' + EOL + 'def f():' + EOL + INDENT + 'pass', [])

@@ -10,16 +10,16 @@ class ViewNotifier:
     def __init__(self, views):
         self.views = views
                      
-    def add_view(self, view):
-        self.views.append(view)
+    def add_view(self, views):
+        self.views.append(views)
     
-    def del_view(self, view):
-        self.views.remove(view)
+    def del_view(self, views):
+        self.views.remove(views)
         
     def notify_all_views(self, notify, *args):
-        for view in self.views:
-            if hasattr(view, notify):
-                attr = getattr(view, notify)
+        for views in self.views:
+            if hasattr(views, notify):
+                attr = getattr(views, notify)
                 attr(*args)
                 
     def __getattr__(self, name):

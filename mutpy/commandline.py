@@ -1,6 +1,6 @@
 import argparse
 
-from mutpy import controller, view, operators, experiments
+from mutpy import controller, views, operators, experiments
 
 VERSION = 0.1
 
@@ -12,7 +12,7 @@ def main(argv):
 
 def build_parser():
     DEF_TIMEOUT_FACTOR = 5
-    parser = argparse.ArgumentParser(description='Mutation testing tool for Python 3.x source code. ' + 
+    parser = argparse.ArgumentParser(description='Mutation testing tool for Python 3.x source code. ' +
                                      'You can save arguments in file and run mutpy with @FILE.',
                                      fromfile_prefix_chars='@')
     parser.add_argument('--version', '-v', action='version', version='%(prog)s {}'.format(VERSION))
@@ -41,16 +41,16 @@ def build_mutator(cfg):
         operators_set = operators.all_operators
 
     return controller.Mutator(operators_set)
-    
+
 def build_views(cfg):
-    views = []
-    
+    views_list = []
+
     if cfg.quiet:
-        views.append(view.QuietTextView(cfg.colored_output))
+        views_list.append(views.QuietTextView(cfg.colored_output))
     else:
-        views.append(view.TextView(cfg.colored_output, cfg.show_mutants))
-    
+        views_list.append(views.TextView(cfg.colored_output, cfg.show_mutants))
+
     if cfg.raport is not None:
-        views.append(view.YAMLRaportView(cfg.raport))
-    
-    return views
+        views_list.append(views.YAMLRaportView(cfg.raport))
+
+    return views_list

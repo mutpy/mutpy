@@ -2,6 +2,7 @@ import ast
 import copy
 import re
 
+
 def notmutate(sth):
     return sth
 
@@ -318,8 +319,57 @@ class ReverseIterationLoop(MutationOperator):
                              args=[old_iter], keywords=[], starargs=None, kwargs=None)
         return node
 
+class DecoratorDeletionMutationOperator(MutationOperator):
+    
+    def mutate_FunctionDef(self, node):
+        for decorator in node.decorator_list:
+            if isinstance(decorator, ast.Call):
+                decorator_name = decorator.func.id
+            else:
+                decorator_name = decorator.id
+            if decorator_name == self.get_decorator_name():
+                node.decorator_list.remove(decorator)
+                return node
+        else:
+            raise MutationResign()
+        
+    def get_decorator_name(self):
+        raise NotImplementedError()
 
-all_operators = {ArithmeticOperatorReplacement,
+        
+class ClassmethodDecoratorDeletion(DecoratorDeletionMutationOperator):
+    
+    def get_decorator_name(self):
+        return 'classmethod'
+
+
+class DecoratorInsertionMutationOperator(MutationOperator):
+    
+    def mutate_FunctionDef(self, node):
+        for decorator in node.decorator_list:
+            if isinstance(decorator, ast.Call):
+                decorator_name = decorator.func.id
+            else:
+                decorator_name = decorator.id
+            if decorator_name == self.get_decorator_name():
+                raise MutationResign()
+        
+        decorator = ast.Name(id=self.get_decorator_name(), ctx=ast.Load())
+        node.decorator_list.append(decorator)
+        return node
+    
+    def get_decorator_name(self):
+        raise NotImplementedError()
+    
+
+class ClassmethodDecoratorInsertion(DecoratorInsertionMutationOperator):
+    
+    def get_decorator_name(self):
+        return 'classmethod'      
+            
+
+all_operators = [
+                 ArithmeticOperatorReplacement,
                  ConstantReplacement,
                  StatementDeletion,
                  ConditionNegation,
@@ -332,4 +382,7 @@ all_operators = {ArithmeticOperatorReplacement,
                  OneIterationLoop,
                  ZeroIterationLoop,
                  ReverseIterationLoop,
-                 UnaryOperatorReplacement}
+                 UnaryOperatorReplacement,
+                 ClassmethodDecoratorDeletion,
+                 ClassmethodDecoratorInsertion
+                 ]
