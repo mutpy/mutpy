@@ -5,3 +5,17 @@ About
 MutPy is mutation testing tool for Python 3.x program.
 
 author: Konrad Hałas <hakonrad(at)gmail.com>
+
+====
+Installation
+====
+
+# python3.2 setup.py install
+
+====
+Example
+====
+
+After installation run this command inside MutPy directory:
+
+$ mutpy -t simple.simple -u simple.test -c

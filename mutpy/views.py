@@ -88,6 +88,8 @@ class TextView(QuietTextView):
         if score.all_mutants:
             self.level_print('killed: {} ({:.1f}%)'.format(score.killed_mutants,
                                                        100 * score.killed_mutants / score.all_mutants), 2)
+            self.level_print('survived: {} ({:.1f}%)'.format(score.survived_mutants,
+                                                       100 * score.survived_mutants / score.all_mutants), 2)
             self.level_print('incompetent: {} ({:.1f}%)'.format(score.incompetent_mutants,
                                                             100 * score.incompetent_mutants / score.all_mutants), 2)
             self.level_print('timeout: {} ({:.1f}%)'.format(score.timeout_mutants,
@@ -107,7 +109,6 @@ class TextView(QuietTextView):
 
         for fail in result.failures:
                 self.level_print('fail in {} - {}'.format(fail[0], fail[1].split("\n")[-2]), 2)
-
     def mutation(self, op, filename, lineno, mutant):
         self.level_print('{:<3} {}:{:<3}: '.format(op.name(), filename, lineno), ended=False, level=2)
         if self.show_mutants:
@@ -174,7 +175,7 @@ class YAMLRaportView:
         self.end_mutation('timeout', None)
 
     def end(self, score, time):
-        self.dump({'mutations': self.mutation_info})
+        self.dump({'mutations': self.mutation_info, 'time': time})
 
     def dump(self, to_dump):
         yaml.dump(to_dump, self.stream, default_flow_style=False)
