@@ -12,7 +12,7 @@ def pp(x):
     return '{:.1f}\%'.format(x)
 
 def pf(x):
-    return '{:.2f}\%'.format(x)
+    return '{:.2f}'.format(x)
 
 def get_row(items):
     return COL_SEP.join(map(str, items)) + END_ROW
