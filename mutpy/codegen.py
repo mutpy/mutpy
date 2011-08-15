@@ -516,8 +516,10 @@ class SourceGenerator(ast.NodeVisitor):
             self.visit(item)
 
     def visit_Yield(self, node):
-        self.write('yield ')
-        self.visit(node.value)
+        self.write('yield')
+        if node.value:
+            self.write(' ')
+            self.visit(node.value)
 
     def visit_Lambda(self, node):
         self.write('lambda ')
