@@ -72,18 +72,18 @@ def to_source(node, indent_with=' ' * 4):
     """
     generator = SourceGenerator(indent_with)
     generator.visit(node)
-    
+
     return  ''.join(generator.result)
 
 def add_line_numbers(source):
-    lines = source.split('\n')      
+    lines = source.split('\n')
     n = 0
     digits_number = len(str(len(lines)))
-    
+
     while n < len(lines):
         lines[n] = '{:>{}}: {}'.format(n + 1, digits_number + 1, lines[n])
         n += 1
-        
+
     return '\n'.join(lines)
 
 def remove_extra_lines(source):
@@ -107,21 +107,21 @@ class SourceGenerator(ast.NodeVisitor):
     def write(self, x, node=None):
         self.correct_line_number(node)
         self.result.append(x)
-        
+
     def correct_line_number(self, node):
         if self.new_line:
             if self.result:
                 self.result.append('\n')
             self.result.append(self.indent_with * self.indentation)
             self.new_line = False
-            
+
         if node and hasattr(node, 'lineno'):
             lines = len("".join(self.result).split('\n')) if self.result else 0
             line_diff = node.lineno - lines
-        
+
             if line_diff:
                 self.result.append(('\n' + (self.indent_with * self.indentation)) * line_diff)
-                
+
     def newline(self, node=None):
         self.new_line = True
         self.correct_line_number(node)
@@ -187,14 +187,14 @@ class SourceGenerator(ast.NodeVisitor):
 
     def visit_ImportFrom(self, node):
         self.newline(node)
-        
+
         imports = []
         for alias in node.names:
             name = alias.name
             if alias.asname:
                 name += ' as ' + alias.asname
             imports.append(name)
-            
+
         self.write('from {} import {}'.format(node.module, ', '.join(imports)))
 
     def visit_Import(self, node):
@@ -319,7 +319,7 @@ class SourceGenerator(ast.NodeVisitor):
     def visit_Delete(self, node):
         self.newline(node)
         self.write('del ')
-        
+
         for target in node.targets:
             self.visit(target)
             if target is not node.targets[-1]:
@@ -350,8 +350,11 @@ class SourceGenerator(ast.NodeVisitor):
 
     def visit_Return(self, node):
         self.newline(node)
-        self.write('return ')
-        self.visit(node.value)
+        self.write('return')
+        if node.value:
+            self.write(' ')
+            self.visit(node.value)
+
 
     def visit_Break(self, node):
         self.newline(node)
@@ -434,7 +437,7 @@ class SourceGenerator(ast.NodeVisitor):
             self.visit(item)
         self.write(idx and ')' or ',)')
 
-    
+
     def sequence_visit(left, right): #@NoSelf
         def visit(self, node):
             self.write(left)

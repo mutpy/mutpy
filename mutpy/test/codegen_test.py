@@ -2,7 +2,6 @@ import unittest
 import ast
 
 from mutpy import codegen
-import sys
 
 
 EOL = '\n'
@@ -124,3 +123,6 @@ class CodegenTest(unittest.TestCase):
         code = EOL + INDENT + EOL + INDENT + 'pass' + EOL + INDENT + EOL + INDENT + 'pass' + EOL + EOL
         reduced = codegen.remove_extra_lines(code)
         self.assertEqual(reduced, INDENT + 'pass' + EOL + INDENT + 'pass')
+
+    def test_empty_return(self):
+        self.assert_code_equal("def f():" + EOL + INDENT + 'return')
