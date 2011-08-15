@@ -7,7 +7,7 @@ import sys
 
 from mutpy import controller
 
-@unittest.skip
+
 class ModulesLoaderTest(unittest.TestCase):
 
     @classmethod
@@ -39,14 +39,14 @@ class ModulesLoaderTest(unittest.TestCase):
         self.loader = controller.ModulesLoader(None, None)
 
     def test_load_file(self):
-        module, to_mutate = self.loader.load(ModulesLoaderTest.tmp + 'a/b/c/sample.py')
+        module, to_mutate = self.loader.load(ModulesLoaderTest.tmp + 'a/b/c/sample.py')[0]
 
         self.assert_module(module, 'sample', 'a/b/c/sample.py', ['X'])
         self.assertIsNone(to_mutate)
 
     def test_load_module(self):
         self.add_tmp_to_path()
-        module, to_mutate = self.loader.load('a.b.c.sample')
+        module, to_mutate = self.loader.load('a.b.c.sample')[0]
 
         self.assert_module(module, 'a.b.c.sample', 'a/b/c/sample.py', ['X'])
         self.assertIsNone(to_mutate)
@@ -54,7 +54,7 @@ class ModulesLoaderTest(unittest.TestCase):
 
     def test_target_class(self):
         self.add_tmp_to_path()
-        module, to_mutate = self.loader.load('a.b.c.sample.X')
+        module, to_mutate = self.loader.load('a.b.c.sample.X')[0]
 
         self.assert_module(module, 'a.b.c.sample', 'a/b/c/sample.py', ['X'])
         self.assertMultiLineEqual(to_mutate, 'X')
@@ -62,14 +62,14 @@ class ModulesLoaderTest(unittest.TestCase):
 
     def test_target_method(self):
         self.add_tmp_to_path()
-        module, to_mutate = self.loader.load('a.b.c.sample.X.f')
+        module, to_mutate = self.loader.load('a.b.c.sample.X.f')[0]
 
         self.assert_module(module, 'a.b.c.sample', 'a/b/c/sample.py', ['X'])
         self.assertMultiLineEqual(to_mutate, 'X.f')
         self.remove_tmp_from_path()
 
     def test_load_file_with_import(self):
-        module, to_mutate = self.loader.load(ModulesLoaderTest.tmp + 'a/b/c/sample_test.py')
+        module, to_mutate = self.loader.load(ModulesLoaderTest.tmp + 'a/b/c/sample_test.py')[0]
 
         self.assert_module(module, 'sample_test', 'a/b/c/sample_test.py', [])
         self.assertIsNone(to_mutate)
@@ -92,6 +92,11 @@ class ModulesLoaderTest(unittest.TestCase):
     def test_bad_file(self):
         self.assertRaises(controller.ModulesLoaderException,
                           lambda : self.loader.load(ModulesLoaderTest.tmp + 'a/b/c/example.py'))
+
+    def test_load_package(self):
+        target, test = self.loader.load('a')
+        self.assert_module(target[0], 'a.b.c.sample', 'a/b/c/sample.py', [])
+        self.assert_module(test[0], 'a.b.c.sample_test', 'a/b/c/sample_test.py', [])
 
     @classmethod
     def tearDownClass(cls):
