@@ -126,3 +126,6 @@ class CodegenTest(unittest.TestCase):
 
     def test_empty_return(self):
         self.assert_code_equal("def f():" + EOL + INDENT + 'return')
+
+    def test_empty_yield(self):
+        self.assert_code_equal("def f():" + EOL + INDENT + 'yield')
