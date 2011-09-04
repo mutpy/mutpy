@@ -594,8 +594,7 @@ class SourceGenerator(ast.NodeVisitor):
             self.write(' ')
             self.visit(node.type)
             if node.name is not None:
-                self.write(' as ')
-                self.visit(node.name)
+                self.write(' as ' + node.name)
         self.write(':')
         self.body(node.body)
 
