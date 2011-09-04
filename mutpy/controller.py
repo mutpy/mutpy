@@ -80,17 +80,18 @@ class MutationController(views.ViewNotifier):
             self.notify_failed(error.result)
         except ModulesLoaderException as error:
             self.notify_cant_load(error.name)
-        except KeyboardInterrupt:
-            self.notify_end(score, time.time() - start_time)
 
     def count_score(self):
-        test_modules = self.initialize_mutation()
-        score = MutationScore()
+        try:
+            test_modules = self.initialize_mutation()
+            score = MutationScore()
 
-        for target_module, to_mutate in self.loader.load_target():
-            self.mutate_module(target_module, to_mutate, test_modules, score)
+            for target_module, to_mutate in self.loader.load_target():
+                self.mutate_module(target_module, to_mutate, test_modules, score)
 
-        return score
+            return score
+        except KeyboardInterrupt:
+            return score
 
     def initialize_mutation(self):
         test_modules = self.load_and_check_tests()
