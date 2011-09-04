@@ -11,9 +11,6 @@ HLINE = r'\hline'
 def pp(x):
     return '{:.1f}\%'.format(x)
 
-def pf(x):
-    return '{:.2f}'.format(x)
-
 def get_row(items):
     return COL_SEP.join(map(str, items)) + END_ROW
 
@@ -97,5 +94,5 @@ second_score = score(all_killed, all_timeout, mutation_count - all_incompetent)
 second_table.append_row(['Suma', all_killed, all_timeout, all_survived, pp(first_score), pp(second_score)], hline_before=True, hline_after=False)
 second_table.print_table()
 
-stats_table.append_row([pf(result['time']), mutation_count, all_survived, all_incompetent, all_killed, all_timeout, pp(second_score)])
+stats_table.append_row([int(result['time']), mutation_count, all_survived, all_incompetent, all_killed, all_timeout, pp(second_score)])
 stats_table.print_table()
