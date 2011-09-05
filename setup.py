@@ -6,18 +6,18 @@ from distutils.core import setup, Command
 
 class TestCommand(Command):
     user_options = []
-    
+
     def initialize_options(self):
         pass
-    
+
     def finalize_options(self):
         pass
-    
+
     def run(self):
         tests = unittest.TestLoader().discover('mutpy/test', '*_test.py', '.')
         text_runner = unittest.TextTestRunner()
         text_runner.run(tests)
-        
+
 if sys.hexversion < 0x3020000:
     print('Mutpy requires Python 3.2 or newer!')
     sys.exit()
@@ -29,7 +29,8 @@ setup(name='MutPy',
       author_email='hakonrad@gmail.com',
       url='https://bitbucket.org/khalas/mutpy/',
       packages=['mutpy'],
-      scripts=['bin/mutpy'],
+      scripts=['bin/mut.py'],
+      requires=['yaml'],
       cmdclass={'test': TestCommand},
       classifiers=['Programming Language :: Python :: 3.2',
                    'Environment :: Console',
