@@ -1,5 +1,5 @@
 import unittest
-from simple.simple import Simple
+from example.simple import Simple
 
 
 class SimpleWeekTest(unittest.TestCase):
