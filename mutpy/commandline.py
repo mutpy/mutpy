@@ -26,7 +26,7 @@ def build_parser():
     parser.add_argument('--debug', action='store_true', help='dubug mode')
     parser.add_argument('--colored-output', '-c', action='store_true', help='try print colored output')
     parser.add_argument('--disable-stdout', '-d', action='store_true', help='try disable stdout during mutation (this option can damage your tests if you interact with sys.stdout)')
-    parser.add_argument('--experimental-operators', '-e', action='store_true', help='use only experimental operators')
+    parser.add_argument('--experimental-operators', '-e', action='store_true', help='use experimental operators')
     parser.add_argument('--operator', '-o', type=str, nargs='+', help='use only selected operators (use -l to show all operators)', metavar='OPERATOR')
     parser.add_argument('--list-operators', '-l', action='store_true', help='list available operators')
     return parser
@@ -51,11 +51,13 @@ def build_controller(cfg):
 
 
 def build_mutator(cfg):
+    operators_set = set()
+
     if cfg.experimental_operators:
-        operators_set = experiments.all_operators
-    elif cfg.operator:
+        operators_set.update(experiments.all_operators)
+
+    if cfg.operator:
         name_to_operator = build_name_to_operator_map()
-        operators_set = set()
         for operator in cfg.operator:
             try:
                 operators_set.add(name_to_operator[operator])
@@ -63,7 +65,7 @@ def build_mutator(cfg):
                 print('Unsupported operator {}! Use -l to show all operators.'.format(operator))
                 sys.exit(-1)
     else:
-        operators_set = operators.all_operators
+        operators_set.update(operators.all_operators)
 
     return controller.Mutator(operators_set)
 
