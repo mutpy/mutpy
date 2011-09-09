@@ -19,15 +19,15 @@ class TestCommand(Command):
         text_runner.run(tests)
 
 if sys.hexversion < 0x3020000:
-    print('Mutpy requires Python 3.2 or newer!')
+    print('MutPy requires Python 3.2 or newer!')
     sys.exit()
 
 setup(name='MutPy',
-      version='0.1',
+      version='0.2',
       description='Mutation testing tool for Python 3.x source code.',
       author='Konrad Hałas',
       author_email='hakonrad@gmail.com',
-      url='https://bitbucket.org/khalas/mutpy/',
+      url='http://mutpy.org',
       packages=['mutpy'],
       scripts=['bin/mut.py'],
       requires=['yaml'],
