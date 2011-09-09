@@ -139,7 +139,7 @@ class ArithmeticOperatorReplacement(MutationOperator):
         return ast.Mult()
 
 
-class BinaryOperatorReplacement(MutationOperator):
+class BitwiseOperatorReplacement(MutationOperator):
 
     def mutate_BitAnd(self, node):
         return ast.BitOr()
@@ -222,6 +222,10 @@ class ConstantReplacement(MutationOperator):
 
         return ast.Str(s='')
 
+    @classmethod
+    def name(cls):
+        return 'CRP'
+
 
 class StatementDeletion(MutationOperator):
 
@@ -234,8 +238,12 @@ class StatementDeletion(MutationOperator):
     def mutate_Expr(self, node):
         return ast.Pass()
 
+    @classmethod
+    def name(cls):
+        return 'SDL'
 
-class ConditionNegation(MutationOperator):
+
+class ConditionalOperatorInsertion(MutationOperator):
 
     def negate_test(self, node):
         not_node = ast.UnaryOp(op=ast.Not(), operand=node.test)
@@ -373,18 +381,18 @@ class ClassmethodDecoratorInsertion(DecoratorInsertionMutationOperator):
 
 
 all_operators = [ArithmeticOperatorReplacement,
-                 ConstantReplacement,
-                 StatementDeletion,
-                 ConditionNegation,
-                 SliceIndexRemove,
-                 BinaryOperatorReplacement,
+                 UnaryOperatorReplacement,
+                 BitwiseOperatorReplacement,
                  LogicalOperatorReplacement,
                  ConditionalOperatorReplacement,
+                 ConditionalOperatorInsertion,
+                 ConstantReplacement,
+                 StatementDeletion,
+                 SliceIndexRemove,
                  ExceptionHandleDeletion,
                  MembershipTestReplacement,
                  OneIterationLoop,
                  ZeroIterationLoop,
                  ReverseIterationLoop,
-                 UnaryOperatorReplacement,
                  ClassmethodDecoratorDeletion,
                  ClassmethodDecoratorInsertion]

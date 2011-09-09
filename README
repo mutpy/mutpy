@@ -18,4 +18,6 @@ Example
 
 After installation run this command inside MutPy directory:
 
-$ mutpy -t simple.simple -u simple.test -c
+$ mut.py -t simple.simple -u simple.test -c
+
+More information available on project website - http://mutpy.org.

@@ -95,11 +95,11 @@ class ArithmeticOperatorReplacementTest(OperatorTestCase):
 		self.assert_mutation('x ** y', ['x * y'])
 		
 
-class BinaryOperatorReplacement(OperatorTestCase):
+class BitwiseOperatorReplacement(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operators.BinaryOperatorReplacement()
+		cls.op = operators.BitwiseOperatorReplacement()
 		
 	def test_bin_and_to_bit_or(self):
 		self.assert_mutation('x & y', ['x | y'])
@@ -181,7 +181,7 @@ class ConditionNegationTest(OperatorTestCase):
 	
 	@classmethod
 	def setUpClass(cls):
-		cls.op = operators.ConditionNegation()
+		cls.op = operators.ConditionalOperatorInsertion()
 		
 	def test_negate_while_condition(self):
 		self.assert_mutation("while x:\n    pass", ["while (not x):\n    pass"])
