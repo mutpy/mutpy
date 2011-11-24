@@ -237,6 +237,7 @@ class ModulesLoader:
         self.targets = targets
         self.tests = tests
         self.done = False
+        sys.path.extend(['', '../'])
 
     def load(self, name):
         if self.is_file(name):
