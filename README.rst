@@ -10,13 +10,14 @@ Author: Konrad Hałas <hakonrad(at)gmail.com>
 
 Installation
 ~~~~~~~~~~~~
+::
 
 # python3.2 setup.py install
 
 Example
 ~~~~~~~
 
-After installation run this command inside MutPy directory:
+After installation run this command inside MutPy directory:::
 
 $ mut.py -t simple.simple -u simple.test -c
 
