@@ -1,10 +1,13 @@
 syntax:glob
 
+# Python
 *.pyc
 build/*
 
-# PyDev stuff
+# PyDev
 .project
 .pydevproject
 .settings/*
-syntax: glob
+
+# vim
+.*.swp
