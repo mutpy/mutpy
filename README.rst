@@ -19,7 +19,7 @@ Example
 
 After installation run this command inside MutPy directory:::
 
-$ mut.py -t simple.simple -u simple.test -c
+$ mut.py -t example.simple -u example.test.simple_good_test -c
 
 More information available on project website - http://mutpy.org.
 
