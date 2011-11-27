@@ -233,11 +233,13 @@ class KillableThread(threading.Thread):
 
 class ModulesLoader:
 
-    def __init__(self, targets, tests):
+    def __init__(self, targets, tests, path):
         self.targets = targets
         self.tests = tests
-        self.done = False
-        sys.path.extend(['', '../'])
+        if path:
+            sys.path.append(path)
+        else:
+            sys.path.append('.')
 
     def load(self, name):
         if self.is_file(name):
@@ -260,26 +262,7 @@ class ModulesLoader:
             sys.path_importer_cache.clear()
 
     def load_file(self, name):
-        search_path = [path.dirname(name)]
-        file_name = path.basename(name)
-        module_name = file_name[:-3]
-        self.extend_path(name)
-        try:
-            module_detalis = imp.find_module(module_name, search_path)
-            module = imp.load_module(module_name, *module_detalis)
-            module_detalis[0].close()
-        except ImportError:
-            raise ModulesLoaderException(name)
-
-        return [(module, None)]
-
-    def extend_path(self, name):
-        p = path.dirname(name)
-        sys.path = [p] + sys.path
-
-        while path.exists(p + '/__init__.py'):
-            p = path.split(p)[0]
-            sys.path = [p] + sys.path
+        raise NotImplementedError('File loading is not supported!')
 
     def load_package(self, name):
         package = importlib.import_module(name)
