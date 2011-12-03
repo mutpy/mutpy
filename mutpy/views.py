@@ -109,8 +109,9 @@ class TextView(QuietTextView):
 
         for fail in result.failures:
                 self.level_print('fail in {} - {}'.format(fail[0], fail[1].split("\n")[-2]), 2)
-    def mutation(self, op, filename, lineno, mutant):
-        self.level_print('{:<3} {}:{:<3}: '.format(op.name(), filename, lineno), ended=False, level=2)
+
+    def mutation(self, number, op, filename, lineno, mutant):
+        self.level_print('[#{:>4}] {:<3} {}:{:<3}: '.format(number, op.name(), filename, lineno), ended=False, level=2)
         if self.show_mutants:
             self.print_code(mutant, lineno)
 
@@ -157,8 +158,9 @@ class YAMLRaportView:
         self.current_mutation['killer'] = killer
         self.mutation_info.append(self.current_mutation)
 
-    def mutation(self, op, file, lineno, mutant):
-        self.current_mutation = {'filename': file,
+    def mutation(self, number, op, file, lineno, mutant):
+        self.current_mutation = {'number': number,
+                                 'filename': file,
                                  'operator': op.__name__,
                                  'line': lineno}
 

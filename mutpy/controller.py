@@ -73,6 +73,7 @@ class MutationController(views.ViewNotifier):
         logger.disabled = not debug
 
     def run(self):
+        self.mutation_number = 0
         start_time = time.time()
         self.notify_initialize(self.target_loader.names, self.test_loader.names)
         try:
@@ -103,9 +104,10 @@ class MutationController(views.ViewNotifier):
 
     def mutate_module(self, target_module, to_mutate, test_modules, score):
         target_ast = self.create_target_ast(target_module)
+        filename = path.basename(target_module.__file__)
         for op, lineno, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate):
-            filename = path.basename(target_module.__file__)
-            self.notify_mutation(op, filename, lineno, mutant_ast)
+            self.mutation_number += 1
+            self.notify_mutation(self.mutation_number, op, filename, lineno, mutant_ast)
             score.inc_all()
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
             if mutant_module:
