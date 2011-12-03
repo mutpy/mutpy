@@ -62,9 +62,11 @@ class MutationScore:
 
 class MutationController(views.ViewNotifier):
 
-    def __init__(self, loader, views, mutant_generator, timeout_factor, disable_stdout=False, debug=False):
+    def __init__(self, target_loader, test_loader, views, mutant_generator, 
+                    timeout_factor, disable_stdout=False, debug=False):
         super().__init__(views)
-        self.loader = loader
+        self.target_loader = target_loader
+        self.test_loader = test_loader
         self.mutant_generator = mutant_generator
         self.timeout_factor = timeout_factor
         self.stdout_manager = StdoutManager(disable_stdout)
@@ -72,7 +74,7 @@ class MutationController(views.ViewNotifier):
 
     def run(self):
         start_time = time.time()
-        self.notify_initialize(self.loader.targets, self.loader.tests)
+        self.notify_initialize(self.target_loader.names, self.test_loader.names)
         try:
             score = self.count_score()
             self.notify_end(score, time.time() - start_time)
@@ -86,7 +88,7 @@ class MutationController(views.ViewNotifier):
             test_modules = self.initialize_mutation()
             score = MutationScore()
 
-            for target_module, to_mutate in self.loader.load_target():
+            for target_module, to_mutate in self.target_loader.load():
                 self.mutate_module(target_module, to_mutate, test_modules, score)
 
             return score
@@ -118,7 +120,7 @@ class MutationController(views.ViewNotifier):
 
     def load_and_check_tests(self):
         test_modules = []
-        for test_module, target_test in self.loader.load_tests():
+        for test_module, target_test in self.test_loader.load():
             if target_test:
                 suite = unittest.TestLoader().loadTestsFromName(target_test, test_module)
             else:
@@ -233,15 +235,17 @@ class KillableThread(threading.Thread):
 
 class ModulesLoader:
 
-    def __init__(self, targets, tests, path):
-        self.targets = targets
-        self.tests = tests
-        if path:
-            sys.path.append(path)
-        else:
-            sys.path.append('.')
+    def __init__(self, names, path):
+        self.names = names
+        sys.path.insert(0, path or '.')
 
-    def load(self, name):
+    def load(self):
+        results = []
+        for name in self.names:
+            results += self.load_single(name)
+        return results
+
+    def load_single(self, name):
         if self.is_file(name):
             return self.load_file(name)
         elif self.is_package(name):
@@ -293,18 +297,6 @@ class ModulesLoader:
                 raise ModulesLoaderException(name)
 
         return [(module, '.'.join(to_mutate) if to_mutate else None)]
-
-    def load_names(self, names):
-        results = []
-        for name in names:
-            results += self.load(name)
-        return results
-
-    def load_target(self):
-        return self.load_names(self.targets)
-
-    def load_tests(self):
-        return self.load_names(self.tests)
 
 
 class Mutator:

@@ -1,6 +1,5 @@
 import unittest
 import ast
-
 from mutpy import codegen
 
 
@@ -13,8 +12,6 @@ EMPTY_CLASS = CLASS_DEF + EOL + INDENT + PASS
 FUNC_DEF = 'def f():'
 EMPTY_FUNC = FUNC_DEF + EOL + INDENT + PASS
 
-#print('path in test:', sys.path)
-#print('codegen in test:', codegen.__file__)
 
 class CodegenTest(unittest.TestCase):
 
@@ -132,3 +129,4 @@ class CodegenTest(unittest.TestCase):
 
     def test_empty_yield(self):
         self.assert_code_equal("def f():" + EOL + INDENT + 'yield')
+
