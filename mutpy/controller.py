@@ -74,11 +74,10 @@ class MutationController(views.ViewNotifier):
 
     def run(self):
         self.mutation_number = 0
-        start_time = time.time()
         self.notify_initialize(self.target_loader.names, self.test_loader.names)
         try:
-            score = self.count_score()
-            self.notify_end(score, time.time() - start_time)
+            score, time_reg = self.count_score()
+            self.notify_end(score, time_reg)
         except TestsFailAtOriginal as error:
             self.notify_failed(error.result)
         except ModulesLoaderException as error:
@@ -86,15 +85,19 @@ class MutationController(views.ViewNotifier):
 
     def count_score(self):
         try:
+            time_reg = TimeRegister()
             test_modules = self.initialize_mutation()
             score = MutationScore()
 
             for target_module, to_mutate in self.target_loader.load():
-                self.mutate_module(target_module, to_mutate, test_modules, score)
+                mutate_time_reg = self.mutate_module(target_module, to_mutate, test_modules, score)
+                time_reg.add(mutate_time_reg)
 
-            return score
         except KeyboardInterrupt:
-            return score
+            pass
+        finally:
+            time_reg.stop()
+            return score, time_reg
 
     def initialize_mutation(self):
         test_modules = self.load_and_check_tests()
@@ -103,18 +106,33 @@ class MutationController(views.ViewNotifier):
         return test_modules
 
     def mutate_module(self, target_module, to_mutate, test_modules, score):
+        time_reg = TimeRegister()
+        time_reg.start('generate_ast')
         target_ast = self.create_target_ast(target_module)
+        time_reg.stop_last()
         filename = path.basename(target_module.__file__)
+        inside_time_reg = TimeRegister()
+        inside_time_reg.start('mutate_ast')
         for op, lineno, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate):
+            inside_time_reg.stop_last()
             self.mutation_number += 1
             self.notify_mutation(self.mutation_number, op, filename, lineno, mutant_ast)
             score.inc_all()
+            inside_time_reg.start('build_mutant_module')
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
+            inside_time_reg.stop_last()
             if mutant_module:
+                inside_time_reg.start('run_tests_with_mutant')
                 self.run_tests_with_mutant(test_modules, mutant_module, score)
+                inside_time_reg.stop_last()
             else:
                 score.inc_incompetent()
                 self.notify_error()
+            time_reg.add(inside_time_reg)
+            inside_time_reg = TimeRegister()
+            inside_time_reg.start('mutate_ast')
+
+        return time_reg
 
     def create_target_ast(self, target_module):
         with open(target_module.__file__) as target_file:
@@ -221,7 +239,6 @@ class MutationController(views.ViewNotifier):
                 logger.info(result.errors[0][1])
             self.notify_killed(mutant_duration, killer)
             score.inc_killed()
-
 
 
 class KillableThread(threading.Thread):
@@ -339,3 +356,46 @@ class CustomTestResult(unittest.TestResult):
             self.type_error = err
         else:
             super(CustomTestResult, self).addError(test, err)
+
+
+class TimeRegister:
+    timer = time.time
+
+    def __init__(self, start=True):
+        self.tasks = {}
+        self.tasks_starts = {}
+        self.last_task = None
+        self.main_task = None 
+        if start:
+            self.start()
+
+    def start(self, task=None):
+        if task:
+            self.last_task = task
+            self.tasks_starts[task] = self.timer()
+        else:
+            self.last_task = None
+            self.main_task_start = self.timer()
+
+    def stop(self, task=None):
+        if task:
+            if task not in self.tasks:
+                self.tasks[task] = 0
+            self.tasks[task] += self.timer() - self.tasks_starts[task]
+        else:
+            self.main_task = self.timer() - self.main_task_start
+
+    def stop_last(self):
+        self.stop(self.last_task)
+
+    def add(self, other_time_reg):
+        for task in other_time_reg.tasks:
+            if task in self.tasks:
+                self.tasks[task] += other_time_reg.tasks[task]
+            else:
+                self.tasks[task] = other_time_reg.tasks[task]
+    
+    @property
+    def other(self):
+        return self.main_task - sum(self.tasks.values())
+
