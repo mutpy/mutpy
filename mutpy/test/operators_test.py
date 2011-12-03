@@ -1,6 +1,5 @@
 import unittest
 import ast
-
 from mutpy import operators, codegen
 
 EOL = '\n'
@@ -319,3 +318,4 @@ class ClassmethodDecoratorInsertionTest(OperatorTestCase):
 	def test_classmethod_add_with_other_and_arguments(self):
 		self.assert_mutation('@wraps(func)' + EOL + 'def f():' + EOL + INDENT + 'pass',
 							['@wraps(func)' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' ])		
+

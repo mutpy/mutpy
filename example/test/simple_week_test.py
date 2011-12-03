@@ -9,3 +9,4 @@ class SimpleWeekTest(unittest.TestCase):
 
     def test_add(self):
         self.assertEqual(self.simple.add(4, 8), 12)
+

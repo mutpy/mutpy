@@ -37,3 +37,4 @@ class SimpleGoodTest(unittest.TestCase):
 
     def test_get_magic(self):
         self.assertEqual(self.simple.get_magic(), 1337)
+

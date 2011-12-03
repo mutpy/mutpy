@@ -48,3 +48,4 @@ class StaticmethodDecoratorInsertionTest(OperatorTestCase):
 
     def test_not_add_if_already_has_staticmethod(self):
         self.assert_mutation('@staticmethod' + EOL + 'def f():' + EOL + INDENT + 'pass', [])
+

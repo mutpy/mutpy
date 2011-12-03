@@ -1,7 +1,6 @@
 import argparse
-
-from mutpy import controller, views, operators, experiments
 import sys
+from mutpy import controller, views, operators, experiments
 
 VERSION = 0.2
 
@@ -17,7 +16,8 @@ def build_parser():
                                      fromfile_prefix_chars='@')
     parser.add_argument('--version', '-v', action='version', version='%(prog)s {}'.format(VERSION))
     parser.add_argument('--target', '-t', type=str, nargs='+', help='target module to mutate')
-    parser.add_argument('--unit-test', '-u', type=str, nargs='+', help='target module, test class, test method with unit test')
+    parser.add_argument('--unit-test', '-u', type=str, nargs='+', 
+                        help='target module, test class, test method with unit test')
     parser.add_argument('--report', '-r', type=str, help='generate YAML report', metavar='REPORT_FILE')
     parser.add_argument('--timeout-factor', '-f', type=float, default=DEF_TIMEOUT_FACTOR,
                         help='test for mutants max timeout factor (default {})'.format(DEF_TIMEOUT_FACTOR))
@@ -25,9 +25,12 @@ def build_parser():
     parser.add_argument('--quiet', '-q', action='store_true', help='quiet mode')
     parser.add_argument('--debug', action='store_true', help='dubug mode')
     parser.add_argument('--colored-output', '-c', action='store_true', help='try print colored output')
-    parser.add_argument('--disable-stdout', '-d', action='store_true', help='try disable stdout during mutation (this option can damage your tests if you interact with sys.stdout)')
+    parser.add_argument('--disable-stdout', '-d', action='store_true', 
+                        help='try disable stdout during mutation '
+                        '(this option can damage your tests if you interact with sys.stdout)')
     parser.add_argument('--experimental-operators', '-e', action='store_true', help='use experimental operators')
-    parser.add_argument('--operator', '-o', type=str, nargs='+', help='use only selected operators (use -l to show all operators)', metavar='OPERATOR')
+    parser.add_argument('--operator', '-o', type=str, nargs='+', 
+                        help='use only selected operators (use -l to show all operators)', metavar='OPERATOR')
     parser.add_argument('--list-operators', '-l', action='store_true', help='list available operators')
     parser.add_argument('--path', '-p', type=str, metavar='DIR', help='extend Python path')
     return parser
@@ -47,8 +50,15 @@ def run_mutpy(parser):
 def build_controller(cfg):
     built_views = build_views(cfg)
     mutant_generator = build_mutator(cfg)
-    loader = controller.ModulesLoader(cfg.target, cfg.unit_test, cfg.path)
-    return controller.MutationController(loader, built_views, mutant_generator, cfg.timeout_factor, cfg.disable_stdout, cfg.debug)
+    target_loader = controller.ModulesLoader(cfg.target, cfg.path)
+    test_loader = controller.ModulesLoader(cfg.unit_test, cfg.path)
+    return controller.MutationController(target_loader=target_loader, 
+                                         test_loader=test_loader, 
+                                         views=built_views, 
+                                         mutant_generator=mutant_generator, 
+                                         timeout_factor=cfg.timeout_factor, 
+                                         disable_stdout=cfg.disable_stdout, 
+                                         debug=cfg.debug)
 
 
 def build_mutator(cfg):
