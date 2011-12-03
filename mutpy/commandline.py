@@ -62,21 +62,23 @@ def build_controller(cfg):
 
 
 def build_mutator(cfg):
-    operators_set = set()
+    operators_set = [] 
 
     if cfg.experimental_operators:
-        operators_set.update(experiments.all_operators)
+        operators_set.extend(experiments.all_operators)
 
     if cfg.operator:
         name_to_operator = build_name_to_operator_map()
         for operator in cfg.operator:
             try:
-                operators_set.add(name_to_operator[operator])
+                operator_class = name_to_operator[operator]
+                if operator_class not in operators_set:
+                    operators_set.append(operator_class)
             except KeyError:
                 print('Unsupported operator {}! Use -l to show all operators.'.format(operator))
                 sys.exit(-1)
     else:
-        operators_set.update(operators.all_operators)
+        operators_set.extend(operators.all_operators)
 
     return controller.Mutator(operators_set)
 

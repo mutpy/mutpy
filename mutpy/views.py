@@ -35,8 +35,8 @@ class QuietTextView:
     def __init__(self, colored_output=False):
         self.colored_output = colored_output
 
-    def end(self, score, time):
-        self.level_print('Mutation score {}: {}'.format(self.time_format(time),
+    def end(self, score, time_reg):
+        self.level_print('Mutation score {}: {}'.format(self.time_format(time_reg.main_task),
                                                          self.decorate('{:.1f}%'.format(score.count()),
                                                                        'blue', attrs=['bold'])))
 
@@ -81,8 +81,8 @@ class TextView(QuietTextView):
     def start(self):
         self.level_print('Start mutants generation and execution:')
 
-    def end(self, score, time):
-        super().end(score, time)
+    def end(self, score, time_reg):
+        super().end(score, time_reg)
         self.level_print('all: {}'.format(score.all_mutants), 2)
 
         if score.all_mutants:
@@ -176,11 +176,16 @@ class YAMLRaportView:
     def timeout(self):
         self.end_mutation('timeout', None)
 
-    def end(self, score, time):
-        self.dump({'mutations': self.mutation_info, 'time': time})
+    def end(self, score, time_reg):
+        time_stats = {'total': time_reg.main_task,
+                      'tasks': time_reg.tasks,
+                      'other': time_reg.other}
+        self.dump({'mutations': self.mutation_info, 
+                   'time_stats': time_stats})
 
     def dump(self, to_dump):
         yaml.dump(to_dump, self.stream, default_flow_style=False)
 
     def __del__(self):
         self.stream.close()
+
