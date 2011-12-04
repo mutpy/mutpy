@@ -1,6 +1,7 @@
 import ast
 import copy
 import re
+from mutpy.controller import TimeRegister
 
 
 def notmutate(sth):
@@ -17,9 +18,14 @@ class MutationOperator(ast.NodeTransformer):
         self.mutate_method_number = 0
         self.mutation_flag = False
         while True:
+            time_reg = TimeRegister('mutation_operator')
             self.visited_node_number = 0
+            time_reg.start('node_copy')
             node_copy = copy.deepcopy(node)
+            time_reg.stop_last()
+            time_reg.start('visit_node')
             new_node = self.visit(node_copy)
+            time_reg.stop_last()
 
             if not self.mutate_method_number:
                 self.muteted_node_number += 1
@@ -28,8 +34,10 @@ class MutationOperator(ast.NodeTransformer):
                 break
 
             self.mutation_flag = False
+            time_reg.start('fix_missing_locations')
             ast.fix_missing_locations(new_node)
-            yield new_node, self.mutate_lineno
+            time_reg.stop_last()
+            yield new_node, self.mutate_lineno, time_reg
 
     def visit(self, node):
         if hasattr(node, 'lineno'):
@@ -396,3 +404,4 @@ all_operators = [ArithmeticOperatorReplacement,
                  ReverseIterationLoop,
                  ClassmethodDecoratorDeletion,
                  ClassmethodDecoratorInsertion]
+

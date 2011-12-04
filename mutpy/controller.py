@@ -84,8 +84,8 @@ class MutationController(views.ViewNotifier):
             self.notify_cant_load(error.name)
 
     def count_score(self):
+        time_reg = TimeRegister()
         try:
-            time_reg = TimeRegister()
             test_modules = self.initialize_mutation()
             score = MutationScore()
 
@@ -95,9 +95,9 @@ class MutationController(views.ViewNotifier):
 
         except KeyboardInterrupt:
             pass
-        finally:
-            time_reg.stop()
-            return score, time_reg
+            
+        time_reg.stop()
+        return score, time_reg
 
     def initialize_mutation(self):
         test_modules = self.load_and_check_tests()
@@ -111,10 +111,9 @@ class MutationController(views.ViewNotifier):
         target_ast = self.create_target_ast(target_module)
         time_reg.stop_last()
         filename = path.basename(target_module.__file__)
-        inside_time_reg = TimeRegister()
-        inside_time_reg.start('mutate_ast')
-        for op, lineno, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate):
-            inside_time_reg.stop_last()
+        inside_time_reg = TimeRegister('mutate_ast_loop')
+        for op, lineno, mutant_ast, mutate_time_reg in self.mutant_generator.mutate(target_ast, to_mutate):
+            inside_time_reg.add_child(mutate_time_reg)
             self.mutation_number += 1
             self.notify_mutation(self.mutation_number, op, filename, lineno, mutant_ast)
             score.inc_all()
@@ -128,9 +127,8 @@ class MutationController(views.ViewNotifier):
             else:
                 score.inc_incompetent()
                 self.notify_error()
-            time_reg.add(inside_time_reg)
-            inside_time_reg = TimeRegister()
-            inside_time_reg.start('mutate_ast')
+            time_reg.add_child(inside_time_reg)
+            inside_time_reg = TimeRegister('mutate_ast_loop')
 
         return time_reg
 
@@ -328,8 +326,8 @@ class Mutator:
 
     def mutate(self, target_ast, to_mutate):
         for op in self.operators:
-            for mutant, lineno in op().mutate(target_ast, to_mutate):
-                yield op, lineno, mutant
+            for mutant, lineno, time_reg in op().mutate(target_ast, to_mutate):
+                yield op, lineno, mutant, time_reg
 
 
 class StdoutManager:
@@ -361,9 +359,11 @@ class CustomTestResult(unittest.TestResult):
 class TimeRegister:
     timer = time.time
 
-    def __init__(self, start=True):
+    def __init__(self, name='', start=True):
+        self.name = name
         self.tasks = {}
         self.tasks_starts = {}
+        self.children = {}
         self.last_task = None
         self.main_task = None 
         if start:
@@ -394,8 +394,32 @@ class TimeRegister:
                 self.tasks[task] += other_time_reg.tasks[task]
             else:
                 self.tasks[task] = other_time_reg.tasks[task]
-    
+
+        for child in other_time_reg.children.values():
+            self.add_child(child)
+
+    def add_child(self, child_time_reg):
+        other_name = child_time_reg.name
+        if not child_time_reg.main_task:
+            child_time_reg.stop()
+
+        if other_name in self.children:
+            self.children[other_name].main_task += child_time_reg.main_task
+            self.children[other_name].add(child_time_reg) 
+        else:
+           self.children[other_name] = child_time_reg
+
     @property
     def other(self):
-        return self.main_task - sum(self.tasks.values())
+        return self.main_task - (sum(self.tasks.values()) + sum(child.main_task for child in self.children.values()))
+
+    def stats(self):
+        stats = self.tasks.copy()
+        stats['total'] = self.main_task
+        stats['other'] = self.other
+        for child_name in self.children:
+            child_stat = self.children[child_name].stats()
+            stats[child_name] = child_stat
+
+        return stats
 
