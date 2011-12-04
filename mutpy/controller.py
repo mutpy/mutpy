@@ -1,18 +1,12 @@
-from _pyio import StringIO
-from mutpy import views
 from os import path
 import ast
-import ctypes
 import imp
-import importlib
 import logging
-import pkgutil
 import sys
-import threading
-import time
 import types
 import unittest
-
+import time
+from mutpy import views, utils
 
 logger = logging.getLogger('mutpy_logger')
 logger.setLevel(logging.INFO)
@@ -22,15 +16,6 @@ class TestsFailAtOriginal(Exception):
 
     def __init__(self, result=None):
         self.result = result
-
-
-class ModulesLoaderException(Exception):
-
-    def __init__(self, name):
-        self.name = name
-
-    def __str__(self):
-        return "cant't load {}".format(self.name)
 
 
 class MutationScore:
@@ -69,7 +54,7 @@ class MutationController(views.ViewNotifier):
         self.test_loader = test_loader
         self.mutant_generator = mutant_generator
         self.timeout_factor = timeout_factor
-        self.stdout_manager = StdoutManager(disable_stdout)
+        self.stdout_manager = utils.StdoutManager(disable_stdout)
         logger.disabled = not debug
 
     def run(self):
@@ -80,11 +65,11 @@ class MutationController(views.ViewNotifier):
             self.notify_end(score, time_reg)
         except TestsFailAtOriginal as error:
             self.notify_failed(error.result)
-        except ModulesLoaderException as error:
+        except utils.ModulesLoaderException as error:
             self.notify_cant_load(error.name)
 
     def count_score(self):
-        time_reg = TimeRegister()
+        time_reg = utils.TimeRegister()
         try:
             test_modules = self.initialize_mutation()
             score = MutationScore()
@@ -106,12 +91,12 @@ class MutationController(views.ViewNotifier):
         return test_modules
 
     def mutate_module(self, target_module, to_mutate, test_modules, score):
-        time_reg = TimeRegister()
+        time_reg = utils.TimeRegister()
         time_reg.start('generate_ast')
         target_ast = self.create_target_ast(target_module)
         time_reg.stop_last()
         filename = path.basename(target_module.__file__)
-        inside_time_reg = TimeRegister('mutate_ast_loop')
+        inside_time_reg = utils.TimeRegister('mutate_ast_loop')
         for op, lineno, mutant_ast, mutate_time_reg in self.mutant_generator.mutate(target_ast, to_mutate):
             inside_time_reg.add_child(mutate_time_reg)
             self.mutation_number += 1
@@ -128,7 +113,7 @@ class MutationController(views.ViewNotifier):
                 score.inc_incompetent()
                 self.notify_error()
             time_reg.add_child(inside_time_reg)
-            inside_time_reg = TimeRegister('mutate_ast_loop')
+            inside_time_reg = utils.TimeRegister('mutate_ast_loop')
 
         return time_reg
 
@@ -201,7 +186,7 @@ class MutationController(views.ViewNotifier):
 
     def run_tests_with_mutant(self, tests_modules, mutant_module, score):
         suite, total_duration = self.create_test_suite(tests_modules, mutant_module)
-        result = CustomTestResult()
+        result = utils.CustomTestResult()
         result.failfast = True
         start = time.time()
         runner_thread = self.run_mutation_thread(suite, total_duration, result)
@@ -209,7 +194,7 @@ class MutationController(views.ViewNotifier):
         self.append_score_and_notify_views(score, result, runner_thread, mutant_duration)
 
     def run_mutation_thread(self, suite, total_duration, result):
-        runner_thread = KillableThread(target=lambda:suite.run(result))
+        runner_thread = utils.KillableThread(target=lambda:suite.run(result))
         self.stdout_manager.disable_stdout()
         live_time = self.timeout_factor * total_duration if total_duration > 1 else 1
         runner_thread.start()
@@ -239,83 +224,6 @@ class MutationController(views.ViewNotifier):
             score.inc_killed()
 
 
-class KillableThread(threading.Thread):
-
-    def kill(self):
-        if self.isAlive():
-            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ctypes.py_object(SystemExit))
-            if res == 0:
-                raise ValueError("Invalid thread id.")
-            elif res != 1:
-                raise SystemError("Thread killing failed.")
-
-
-class ModulesLoader:
-
-    def __init__(self, names, path):
-        self.names = names
-        sys.path.insert(0, path or '.')
-
-    def load(self):
-        results = []
-        for name in self.names:
-            results += self.load_single(name)
-        return results
-
-    def load_single(self, name):
-        if self.is_file(name):
-            return self.load_file(name)
-        elif self.is_package(name):
-            return self.load_package(name)
-        else:
-            return self.load_module(name)
-
-    def is_file(self, name):
-        return name.endswith('.py')
-
-    def is_package(self, name):
-        try:
-            module = importlib.import_module(name)
-            return module.__file__.endswith('__init__.py')
-        except ImportError:
-            return False
-        finally:
-            sys.path_importer_cache.clear()
-
-    def load_file(self, name):
-        raise NotImplementedError('File loading is not supported!')
-
-    def load_package(self, name):
-        package = importlib.import_module(name)
-        result = []
-        for _, module_name, ispkg in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
-            if not ispkg:
-                module = importlib.import_module(module_name)
-                result.append((module, None))
-        return result
-
-    def load_module(self, name):
-        parts = name.split('.')
-        to_mutate = []
-        while True:
-            if not parts:
-                raise ModulesLoaderException(name)
-            try:
-                module = importlib.import_module('.'.join(parts))
-                break
-            except ImportError:
-                to_mutate = [parts.pop()] + to_mutate
-
-        attr = module
-        for part in to_mutate:
-            if hasattr(attr, part):
-                attr = getattr(attr, part)
-            else:
-                raise ModulesLoaderException(name)
-
-        return [(module, '.'.join(to_mutate) if to_mutate else None)]
-
-
 class Mutator:
 
     def __init__(self, operators):
@@ -328,98 +236,4 @@ class Mutator:
         for op in self.operators:
             for mutant, lineno, time_reg in op().mutate(target_ast, to_mutate):
                 yield op, lineno, mutant, time_reg
-
-
-class StdoutManager:
-
-    def __init__(self, disable=True):
-        self.disable = disable
-
-    def disable_stdout(self):
-        if self.disable:
-            sys.stdout = StringIO()
-
-    def enable_stdout(self):
-        sys.stdout = sys.__stdout__
-
-
-class CustomTestResult(unittest.TestResult):
-
-    def __init__(self, *args, **kwargs):
-        self.type_error = None
-        super(CustomTestResult, self).__init__(*args, **kwargs)
-
-    def addError(self, test, err):
-        if err[0] == TypeError:
-            self.type_error = err
-        else:
-            super(CustomTestResult, self).addError(test, err)
-
-
-class TimeRegister:
-    timer = time.time
-
-    def __init__(self, name='', start=True):
-        self.name = name
-        self.tasks = {}
-        self.tasks_starts = {}
-        self.children = {}
-        self.last_task = None
-        self.main_task = None 
-        if start:
-            self.start()
-
-    def start(self, task=None):
-        if task:
-            self.last_task = task
-            self.tasks_starts[task] = self.timer()
-        else:
-            self.last_task = None
-            self.main_task_start = self.timer()
-
-    def stop(self, task=None):
-        if task:
-            if task not in self.tasks:
-                self.tasks[task] = 0
-            self.tasks[task] += self.timer() - self.tasks_starts[task]
-        else:
-            self.main_task = self.timer() - self.main_task_start
-
-    def stop_last(self):
-        self.stop(self.last_task)
-
-    def add(self, other_time_reg):
-        for task in other_time_reg.tasks:
-            if task in self.tasks:
-                self.tasks[task] += other_time_reg.tasks[task]
-            else:
-                self.tasks[task] = other_time_reg.tasks[task]
-
-        for child in other_time_reg.children.values():
-            self.add_child(child)
-
-    def add_child(self, child_time_reg):
-        other_name = child_time_reg.name
-        if not child_time_reg.main_task:
-            child_time_reg.stop()
-
-        if other_name in self.children:
-            self.children[other_name].main_task += child_time_reg.main_task
-            self.children[other_name].add(child_time_reg) 
-        else:
-           self.children[other_name] = child_time_reg
-
-    @property
-    def other(self):
-        return self.main_task - (sum(self.tasks.values()) + sum(child.main_task for child in self.children.values()))
-
-    def stats(self):
-        stats = self.tasks.copy()
-        stats['total'] = self.main_task
-        stats['other'] = self.other
-        for child_name in self.children:
-            child_stat = self.children[child_name].stats()
-            stats[child_name] = child_stat
-
-        return stats
 

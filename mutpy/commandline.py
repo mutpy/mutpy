@@ -1,6 +1,6 @@
 import argparse
 import sys
-from mutpy import controller, views, operators, experiments
+from mutpy import controller, views, operators, experiments, utils
 
 VERSION = 0.2
 
@@ -50,8 +50,8 @@ def run_mutpy(parser):
 def build_controller(cfg):
     built_views = build_views(cfg)
     mutant_generator = build_mutator(cfg)
-    target_loader = controller.ModulesLoader(cfg.target, cfg.path)
-    test_loader = controller.ModulesLoader(cfg.unit_test, cfg.path)
+    target_loader = utils.ModulesLoader(cfg.target, cfg.path)
+    test_loader = utils.ModulesLoader(cfg.unit_test, cfg.path)
     return controller.MutationController(target_loader=target_loader, 
                                          test_loader=test_loader, 
                                          views=built_views, 
