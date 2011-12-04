@@ -1,6 +1,5 @@
 import time
 import yaml
-
 from mutpy import codegen, termcolor
 
 
@@ -178,7 +177,7 @@ class YAMLRaportView:
 
     def end(self, score, time_reg):
         self.dump({'mutations': self.mutation_info, 
-                   'time_stats': ttime_reg.stats()})
+                   'time_stats': time_reg.stats()})
 
     def dump(self, to_dump):
         yaml.dump(to_dump, self.stream, default_flow_style=False)

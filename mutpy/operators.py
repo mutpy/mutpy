@@ -1,7 +1,7 @@
 import ast
 import copy
 import re
-from mutpy.controller import TimeRegister
+from mutpy.utils import TimeRegister
 
 
 def notmutate(sth):
