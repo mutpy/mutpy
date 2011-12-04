@@ -177,11 +177,8 @@ class YAMLRaportView:
         self.end_mutation('timeout', None)
 
     def end(self, score, time_reg):
-        time_stats = {'total': time_reg.main_task,
-                      'tasks': time_reg.tasks,
-                      'other': time_reg.other}
         self.dump({'mutations': self.mutation_info, 
-                   'time_stats': time_stats})
+                   'time_stats': ttime_reg.stats()})
 
     def dump(self, to_dump):
         yaml.dump(to_dump, self.stream, default_flow_style=False)
