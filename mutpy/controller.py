@@ -3,7 +3,6 @@ import ast
 import logging
 import types
 import unittest
-import time
 from mutpy import views, utils
 
 logger = logging.getLogger('mutpy_logger')
@@ -127,11 +126,12 @@ class MutationController(views.ViewNotifier):
             else:
                 suite = unittest.TestLoader().loadTestsFromModule(test_module)
             result = unittest.TestResult()
-            start = time.time()
+            time_reg = utils.TimeRegister() 
             self.stdout_manager.disable_stdout()
             suite.run(result)
             self.stdout_manager.enable_stdout()
-            duration = time.time() - start
+            time_reg.stop()
+            duration = time_reg.main_task 
             if result.wasSuccessful():
                 test_modules.append((test_module, target_test, duration))
             else:
@@ -170,10 +170,10 @@ class MutationController(views.ViewNotifier):
         suite, total_duration = self.create_test_suite(tests_modules, mutant_module)
         result = utils.CustomTestResult()
         result.failfast = True
-        start = time.time()
+        time_reg = utils.TimeRegister() 
         runner_thread = self.run_mutation_thread(suite, total_duration, result)
-        mutant_duration = time.time() - start
-        self.append_score_and_notify_views(score, result, runner_thread, mutant_duration)
+        time_reg.stop()
+        self.append_score_and_notify_views(score, result, runner_thread, time_reg.main_task)
 
     def run_mutation_thread(self, suite, total_duration, result):
         runner_thread = utils.KillableThread(target=lambda:suite.run(result))
