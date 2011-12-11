@@ -11,17 +11,16 @@ def main(argv):
 
 def build_parser():
     DEF_TIMEOUT_FACTOR = 5
-    parser = argparse.ArgumentParser(description='Mutation testing tool for Python 3.x source code. ' +
-                                     'You can save arguments in file and run mutpy with @FILE.',
+    parser = argparse.ArgumentParser(description='Mutation testing tool for Python 3.x source code. ',
                                      fromfile_prefix_chars='@')
     parser.add_argument('--version', '-v', action='version', version='%(prog)s {}'.format(VERSION))
-    parser.add_argument('--target', '-t', type=str, nargs='+', help='target module to mutate')
+    parser.add_argument('--target', '-t', type=str, nargs='+', help='target module or package to mutate')
     parser.add_argument('--unit-test', '-u', type=str, nargs='+', 
-                        help='target module, test class, test method with unit test')
+                        help='test class, test method, module or package with unit tests')
     parser.add_argument('--report', '-r', type=str, help='generate YAML report', metavar='REPORT_FILE')
     parser.add_argument('--timeout-factor', '-f', type=float, default=DEF_TIMEOUT_FACTOR,
-                        help='test for mutants max timeout factor (default {})'.format(DEF_TIMEOUT_FACTOR))
-    parser.add_argument('--show-mutants', '-m', action='store_true', help='show mutants')
+                        help='max timeout factor (default {})'.format(DEF_TIMEOUT_FACTOR))
+    parser.add_argument('--show-mutants', '-m', action='store_true', help='show mutants source code')
     parser.add_argument('--quiet', '-q', action='store_true', help='quiet mode')
     parser.add_argument('--debug', action='store_true', help='dubug mode')
     parser.add_argument('--colored-output', '-c', action='store_true', help='try print colored output')
@@ -30,7 +29,7 @@ def build_parser():
                         '(this option can damage your tests if you interact with sys.stdout)')
     parser.add_argument('--experimental-operators', '-e', action='store_true', help='use experimental operators')
     parser.add_argument('--operator', '-o', type=str, nargs='+', 
-                        help='use only selected operators (use -l to show all operators)', metavar='OPERATOR')
+                        help='use only selected operators', metavar='OPERATOR')
     parser.add_argument('--list-operators', '-l', action='store_true', help='list available operators')
     parser.add_argument('--path', '-p', type=str, metavar='DIR', help='extend Python path')
     return parser
