@@ -3,6 +3,7 @@ import os
 import shutil
 import types
 import tempfile
+import sys
 from mutpy import utils
 
 
@@ -68,4 +69,148 @@ class ModulesLoaderTest(unittest.TestCase):
         target, test = self.loader.load_single('a')
         self.assert_module(target[0], 'a.b.c.sample', 'a/b/c/sample.py', [])
         self.assert_module(test[0], 'a.b.c.sample_test', 'a/b/c/sample_test.py', [])
+
+
+class ModuleInjectorTest(unittest.TestCase):
+
+    def test_inject_module_with_simple_import(self):
+        target_module_content = 'import source'
+        target_module = types.ModuleType('target')
+        source_module_before = types.ModuleType('source')
+        source_module_before.__file__ = 'source.py'
+        source_module_after = types.ModuleType('source')
+        sys.modules['source'] = source_module_before
+
+        eval(compile(target_module_content, 'target.py', 'exec'), target_module.__dict__)
+
+        injector = utils.ModuleInjector(source_module_after)
+        injector.inject_to(target_module)
+
+        self.assertEqual(target_module.source, source_module_after)
+
+        del sys.modules['source']
+
+    def test_inject_module_with_import_from(self):
+        target_module_content = 'from package import source'
+        target_module = types.ModuleType('target')
+        source_module_before = types.ModuleType('source')
+        source_module_before.__file__ = 'source.py'
+        source_module_after = types.ModuleType('source')
+        package = types.ModuleType('package')
+        package.source = source_module_before
+        sys.modules['package'] = package 
+
+        eval(compile(target_module_content, 'target.py', 'exec'), target_module.__dict__)
+
+        injector = utils.ModuleInjector(source_module_after)
+        injector.inject_to(target_module)
+
+        self.assertEqual(target_module.source, source_module_after)
+
+        del sys.modules['package']
+
+    def test_inject_class_with_import_from(self):
+        class_before = type('SourceClass', tuple(), {})
+        class_after = type('SourceClass', tuple(), {})
+        target_module_content = 'from source import SourceClass'
+        target_module = types.ModuleType('target')
+        source_module_before = types.ModuleType('source')
+        source_module_before.__file__ = 'source.py'
+        source_module_before.SourceClass = class_before
+        source_module_after = types.ModuleType('source')
+        source_module_after.SourceClass = class_after 
+        sys.modules['source'] = source_module_before 
+
+        eval(compile(target_module_content, 'target.py', 'exec'), target_module.__dict__)
+
+        injector = utils.ModuleInjector(source_module_after)
+        injector.inject_to(target_module)
+
+        self.assertEqual(target_module.SourceClass, class_after)
+
+        del sys.modules['source']
+       
+    def test_inject_module_with_import_from_as(self):
+        target_module_content = 'from package import source as other'
+        target_module = types.ModuleType('target')
+        source_module_before = types.ModuleType('source')
+        source_module_before.__file__ = 'source.py'
+        source_module_after = types.ModuleType('source')
+        package = types.ModuleType('package')
+        package.source = source_module_before
+        sys.modules['package'] = package 
+
+        eval(compile(target_module_content, 'target.py', 'exec'), target_module.__dict__)
+
+        injector = utils.ModuleInjector(source_module_after)
+        injector.inject_to(target_module)
+
+        self.assertEqual(target_module.other, source_module_after)
+
+        del sys.modules['package']
+
+    def test_inject_class_with_import_from_as(self):
+        class_before = type('SourceClass', tuple(), {})
+        class_after = type('SourceClass', tuple(), {})
+        target_module_content = 'from source import SourceClass as OtherClass'
+        target_module = types.ModuleType('target')
+        source_module_before = types.ModuleType('source')
+        source_module_before.__file__ = 'source.py'
+        source_module_before.SourceClass = class_before
+        source_module_after = types.ModuleType('source')
+        source_module_after.SourceClass = class_after 
+        sys.modules['source'] = source_module_before 
+
+        eval(compile(target_module_content, 'target.py', 'exec'), target_module.__dict__)
+
+        injector = utils.ModuleInjector(source_module_after)
+        injector.inject_to(target_module)
+
+        self.assertEqual(target_module.OtherClass, class_after)
+
+        del sys.modules['source']
+
+    def test_inject_function_with_import_from(self):
+        function_before = lambda: 0
+        function_before.__name__ = 'foo' 
+        function_after = lambda: 0
+        function_after.__name__ = 'foo' 
+        target_module_content = 'from source import foo'
+        target_module = types.ModuleType('target')
+        source_module_before = types.ModuleType('source')
+        source_module_before.__file__ = 'source.py'
+        source_module_before.foo = function_before
+        source_module_after = types.ModuleType('source')
+        source_module_after.foo = function_after 
+        sys.modules['source'] = source_module_before 
+
+        eval(compile(target_module_content, 'target.py', 'exec'), target_module.__dict__)
+
+        injector = utils.ModuleInjector(source_module_after)
+        injector.inject_to(target_module)
+
+        self.assertEqual(target_module.foo, function_after)
+
+        del sys.modules['source']
+
+    def test_inject_const_with_import_from(self):
+        const_before = 'const before'
+        const_after = 'const after'
+        target_module_content = 'from source import X'
+        target_module = types.ModuleType('target')
+        source_module_before = types.ModuleType('source')
+        source_module_before.__file__ = 'source.py'
+        source_module_before.X = const_before 
+        source_module_after = types.ModuleType('source')
+        source_module_after.X = const_after 
+        sys.modules['source'] = source_module_before 
+
+        eval(compile(target_module_content, 'target.py', 'exec'), target_module.__dict__)
+
+        injector = utils.ModuleInjector(source_module_after)
+        injector.inject_to(target_module)
+
+        self.assertEqual(target_module.X, const_after)
+
+        del sys.modules['source']
 

@@ -1,8 +1,6 @@
 from os import path
 import ast
-import imp
 import logging
-import sys
 import types
 import unittest
 import time
@@ -157,8 +155,9 @@ class MutationController(views.ViewNotifier):
     def create_test_suite(self, tests_modules, mutant_module):
         suite = unittest.TestSuite()
         total_duration = 0
+        injector = utils.ModuleInjector(mutant_module)
         for test_module, target_test, duration in tests_modules:
-            self.inject_mutant(mutant_module, test_module)
+            injector.inject_to(test_module)
             if target_test:
                 suite.addTests(unittest.TestLoader().loadTestsFromName(target_test, test_module))
             else:
@@ -166,23 +165,6 @@ class MutationController(views.ViewNotifier):
             total_duration += duration
 
         return suite, total_duration
-
-    def inject_mutant(self, mutant_module, test_module):
-        if mutant_module.__name__ in test_module.__dict__:
-            old_module = test_module.__dict__[mutant_module.__name__]
-            mutant_module.__file__ = old_module.__file__
-            test_module.__dict__[mutant_module.__name__] = mutant_module
-            logger.info('Inject to {0}: {1}'.format(test_module.__name__, mutant_module.__name__))
-
-        mutant_set = set(mutant_module.__dict__)
-        test_set = set(test_module.__dict__)
-        intersection = (mutant_set & test_set) - {'__builtins__', '__name__', '__doc__', '__file__'}
-        intersection = {artefact for artefact in intersection if not imp.is_builtin(artefact)}
-        if intersection:
-            logger.info('Inject to {0}: {1}'.format(test_module.__name__, intersection))
-        for to_inject in intersection:
-            test_module.__dict__[to_inject] = mutant_module.__dict__[to_inject]
-
 
     def run_tests_with_mutant(self, tests_modules, mutant_module, score):
         suite, total_duration = self.create_test_suite(tests_modules, mutant_module)
