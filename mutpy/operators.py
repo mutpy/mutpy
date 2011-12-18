@@ -217,12 +217,17 @@ class UnaryOperatorReplacement(MutationOperator):
 
 
 class ConstantReplacement(MutationOperator):
+    FIRST_CONST_STRING = 'mutpy'
+    SEOCND_CONST_STRING = 'python'
 
     def mutate_Num(self, node):
         return ast.Num(n=node.n + 1)
 
     def mutate_Str(self, node):
-        return ast.Str(s='mutpy')
+        if node.s != self.FIRST_CONST_STRING:
+            return ast.Str(s=self.FIRST_CONST_STRING)
+        else:
+            return ast.Str(s=self.SEOCND_CONST_STRING)
 
     def mutate_Str_empty(self, node):
         if not node.s:

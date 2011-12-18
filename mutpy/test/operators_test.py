@@ -41,29 +41,41 @@ class OperatorTestCase(unittest.TestCase):
 				
 
 class ConstantReplacementTest(OperatorTestCase):
-	
-	@classmethod
-	def setUpClass(cls):
-		cls.op = operators.ConstantReplacement()
-		
-	def test_numbers_increment(self):
-		self.assert_mutation('2 + 3 - 99', ['3 + 3 - 99', '2 + 4 - 99', '2 + 3 - 100'])
-		
-	def test_string_replacement(self):
-		self.assert_mutation("x = 'ham' + 'egs'",
-							["x = 'mutpy' + 'egs'", "x = 'ham' + 'mutpy'", "x = '' + 'egs'", "x = 'ham' + ''"])
-		
-	def test_resign_if_empty(self):
-		self.assert_mutation("'ham' + ''", ["'mutpy' + ''", "'' + ''", "'ham' + 'mutpy'" ])
 
-	def test_resign_first(self):
-		self.assert_mutation("'' + 'ham'", ["'' + 'mutpy'", "'' + ''", "'mutpy' + 'ham'" ])
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.ConstantReplacement()
 		
-	def test_not_mutate_function(self):
-		self.assert_mutation("@notmutate" + EOL + "def x():" + EOL + INDENT + "'ham'", [])
+    def test_numbers_increment(self):
+        self.assert_mutation('2 + 3 - 99', ['3 + 3 - 99', '2 + 4 - 99', '2 + 3 - 100'])
 		
-	def test_not_mutate_class(self):
-		self.assert_mutation("@notmutate" + EOL + "class X:" + EOL + INDENT + "'ham'", [])
+    def test_string_replacement(self):
+        self.assert_mutation("x = 'ham' + 'egs'",
+							["x = '{}' + 'egs'".format(self.op.FIRST_CONST_STRING), 
+                             "x = 'ham' + '{}'".format(self.op.FIRST_CONST_STRING), 
+                             "x = '' + 'egs'", 
+                             "x = 'ham' + ''"])
+		
+    def test_resign_if_empty(self):
+        self.assert_mutation("'ham' + ''", 
+                            ["'{}' + ''".format(self.op.FIRST_CONST_STRING), 
+                             "'' + ''", "'ham' + '{}'".format(self.op.FIRST_CONST_STRING)])
+
+    def test_resign_first(self):
+        self.assert_mutation("'' + 'ham'", 
+                            ["'' + '{}'".format(self.op.FIRST_CONST_STRING), 
+                             "'' + ''", 
+                             "'{}' + 'ham'".format(self.op.FIRST_CONST_STRING)])
+		
+    def test_not_mutate_function(self):
+        self.assert_mutation("@notmutate" + EOL + "def x():" + EOL + INDENT + "'ham'", [])
+		
+    def test_not_mutate_class(self):
+        self.assert_mutation("@notmutate" + EOL + "class X:" + EOL + INDENT + "'ham'", [])
+
+    def test_replace_first_const_string(self):
+        self.assert_mutation("'{}'".format(self.op.FIRST_CONST_STRING),
+                            ["'{}'".format(self.op.SEOCND_CONST_STRING), "''"])
 		
 
 class ArithmeticOperatorReplacementTest(OperatorTestCase):
