@@ -7,15 +7,39 @@ from mutpy import controller, operators
 
 class MutationScoreTest(unittest.TestCase):
 
-    def test_score(self):
-        score = controller.MutationScore(all_mutants=11, killed_mutants=5, incompetent_mutants=1)
-        self.assertEqual(score.count(), 50)
-        score.inc_killed()
-        self.assertEqual(score.count(), 60)
+    def setUp(self):
+        self.score = controller.MutationScore()
 
-    def test_zero_score(self):
-        score = controller.MutationScore(all_mutants=0)
-        self.assertEqual(score.count(), 0)
+    def test_count_if_zero_score(self):
+        self.assertEqual(self.score.count(), 0)
+
+    def test_count(self):
+        self.score.survived_mutants = 5
+        self.score.killed_mutants = 5
+
+        self.assertEqual(self.score.count(), 50)
+
+    def test_count_after_inc(self):
+        self.score.survived_mutants = 5
+        self.score.killed_mutants = 4
+
+        self.score.inc_killed()
+
+        self.assertEqual(self.score.count(), 50)
+
+    def test_count_if_incompetent(self):
+        self.score.survived_mutants = 5
+        self.score.killed_mutants = 5
+        self.score.incompetent_mutants = 1
+
+        self.assertEqual(self.score.count(), 50)
+
+    def test_count_if_timeout(self):
+        self.score.survived_mutants = 5
+        self.score.killed_mutants = 4
+        self.score.timeout_mutants = 1
+
+        self.assertEqual(self.score.count(), 50)
 
 
 class MockModulesLoader:
@@ -41,13 +65,10 @@ class MockMutationController(controller.MutationController):
         return ast.parse(self.target_loader.get_source())
 
 
-class CountingView:
+class MutationScoreStoreView:
 
-    def __init__(self):
-        self.total_mutation = 0
-    
-    def mutation(self, number, op, filename, lineno, mutant):
-        self.total_mutation += 1
+    def end(self, score, *args):
+        self.score = score
 
 
 class MutationControllerTest(unittest.TestCase):
@@ -63,15 +84,18 @@ class MulTest(TestCase):
     def setUp(self):
         target_loader = MockModulesLoader('target', self.TARGET_SRC)
         test_loader = MockModulesLoader('test', self.TEST_SRC)
-        self.counting_view = CountingView()
+        self.score_view = MutationScoreStoreView()
         mutator = controller.Mutator([operators.ArithmeticOperatorReplacement])
         self.mutation_controller = MockMutationController(target_loader=target_loader,
                                                             test_loader=test_loader,
-                                                            views=[self.counting_view],
+                                                            views=[self.score_view],
                                                             mutant_generator=mutator)
 
     def test_sth(self):
         self.mutation_controller.run()
 
-        self.assertEqual(self.counting_view.total_mutation, 3)
+        score = self.score_view.score
+        self.assertEqual(score.all_mutants, 3)
+        self.assertEqual(score.killed_mutants, 2)
+        self.assertEqual(score.survived_mutants, 1)
 

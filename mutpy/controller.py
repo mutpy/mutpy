@@ -13,20 +13,15 @@ class TestsFailAtOriginal(Exception):
 
 class MutationScore:
 
-    def __init__(self, all_mutants=0, killed_mutants=0, timeout_mutants=0, incompetent_mutants=0):
-        self.all_mutants = all_mutants
-        self.killed_mutants = killed_mutants
-        self.timeout_mutants = timeout_mutants
-        self.incompetent_mutants = incompetent_mutants
+    def __init__(self):
+        self.killed_mutants = 0 
+        self.timeout_mutants = 0 
+        self.incompetent_mutants = 0 
         self.survived_mutants = 0
 
     def count(self):
-        self.survived_mutants = self.all_mutants - self.killed_mutants - self.timeout_mutants - self.incompetent_mutants
         bottom = self.all_mutants - self.incompetent_mutants
         return (((self.killed_mutants + self.timeout_mutants) / bottom) * 100) if bottom else 0
-
-    def inc_all(self):
-        self.all_mutants += 1
 
     def inc_killed(self):
         self.killed_mutants += 1
@@ -36,6 +31,13 @@ class MutationScore:
 
     def inc_incompetent(self):
         self.incompetent_mutants += 1
+
+    def inc_survived(self):
+        self.survived_mutants += 1
+
+    @property
+    def all_mutants(self):
+        return self.killed_mutants + self.timeout_mutants + self.incompetent_mutants + self.survived_mutants
 
 
 class MutationController(views.ViewNotifier):
@@ -93,7 +95,6 @@ class MutationController(views.ViewNotifier):
             inside_time_reg.add_child(mutate_time_reg)
             self.mutation_number += 1
             self.notify_mutation(self.mutation_number, op, filename, lineno, mutant_ast)
-            score.inc_all()
             inside_time_reg.start('build_mutant_module')
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
             inside_time_reg.stop_last()
@@ -188,6 +189,7 @@ class MutationController(views.ViewNotifier):
             self.notify_error(result.type_error[1])
             score.inc_incompetent()
         elif result.wasSuccessful():
+            score.inc_survived()
             self.notify_survived(mutant_duration)
         else:
             if result.failures:
