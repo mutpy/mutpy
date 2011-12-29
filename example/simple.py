@@ -1,4 +1,4 @@
-from mutpy.operators import notmutate
+from mutpy.utils import notmutate
 
 
 class Simple:

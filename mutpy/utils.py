@@ -9,6 +9,10 @@ import inspect
 from _pyio import StringIO
 
 
+def notmutate(sth):
+    return sth
+
+
 class KillableThread(threading.Thread):
 
     def kill(self):
@@ -117,7 +121,7 @@ class ModuleInjector:
 
     def try_incject_class_or_function(self, imported_as, class_or_function, target):
         if class_or_function.__name__ in self.source.__dict__:
-                target.__dict__[imported_as] = self.source.__dict__[class_or_function.__name__]
+            target.__dict__[imported_as] = self.source.__dict__[class_or_function.__name__]
 
     def try_inject_other(self, imported_as, target):
         if imported_as in self.source.__dict__ and not self.is_restricted(imported_as):

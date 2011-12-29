@@ -1,11 +1,7 @@
 import ast
 import copy
 import re
-from mutpy.utils import TimeRegister
-
-
-def notmutate(sth):
-    return sth
+from mutpy.utils import notmutate, TimeRegister
 
 
 class MutationResign(Exception): pass
