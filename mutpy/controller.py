@@ -3,10 +3,14 @@ import ast
 import logging
 import types
 import unittest
+import traceback
 from mutpy import views, utils
 
 logger = logging.getLogger('mutpy_logger')
 logger.setLevel(logging.INFO)
+
+def log_exception(exception):
+    logger.warn("\n" + "".join(traceback.format_exception(None, exception, None)))
 
 
 class TestsFailAtOriginal(Exception):
@@ -147,7 +151,7 @@ class MutationController(views.ViewNotifier):
             exec(mutant_code, mutant_module.__dict__)
             self.stdout_manager.enable_stdout()
         except Exception as e:
-            logger.warn(e)
+            log_exception(e)
             return None
 
         return mutant_module
@@ -190,7 +194,7 @@ class MutationController(views.ViewNotifier):
             self.notify_timeout()
             score.inc_timeout()
         elif result.type_error:
-            logger.info(result.type_error)
+            log_exception(result.type_error[1])
             self.notify_error()
             score.inc_incompetent()
         elif result.wasSuccessful():
