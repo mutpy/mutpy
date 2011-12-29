@@ -1,16 +1,8 @@
 from os import path
 import ast
-import logging
 import types
 import unittest
-import traceback
 from mutpy import views, utils
-
-logger = logging.getLogger('mutpy_logger')
-logger.setLevel(logging.INFO)
-
-def log_exception(exception):
-    logger.warn("\n" + "".join(traceback.format_exception(None, exception, None)))
 
 
 class TestsFailAtOriginal(Exception):
@@ -49,14 +41,13 @@ class MutationScore:
 class MutationController(views.ViewNotifier):
 
     def __init__(self, target_loader, test_loader, views, mutant_generator, 
-                    timeout_factor, disable_stdout=False, debug=False):
+                    timeout_factor=5, disable_stdout=False):
         super().__init__(views)
         self.target_loader = target_loader
         self.test_loader = test_loader
         self.mutant_generator = mutant_generator
         self.timeout_factor = timeout_factor
         self.stdout_manager = utils.StdoutManager(disable_stdout)
-        logger.disabled = not debug
 
     def run(self):
         self.mutation_number = 0
@@ -150,8 +141,8 @@ class MutationController(views.ViewNotifier):
             self.stdout_manager.disable_stdout()
             exec(mutant_code, mutant_module.__dict__)
             self.stdout_manager.enable_stdout()
-        except Exception as e:
-            log_exception(e)
+        except Exception as exception:
+            self.notify_build_module_fail(exception)
             return None
 
         return mutant_module
@@ -194,19 +185,18 @@ class MutationController(views.ViewNotifier):
             self.notify_timeout()
             score.inc_timeout()
         elif result.type_error:
-            log_exception(result.type_error[1])
-            self.notify_error()
+            self.notify_error(result.type_error[1])
             score.inc_incompetent()
         elif result.wasSuccessful():
             self.notify_survived(mutant_duration)
         else:
             if result.failures:
                 killer = result.failures[0][0]
-                logger.info(result.failures[0][1])
+                exception_traceback = result.failures[0][1]
             elif result.errors:
                 killer = result.errors[0][0]
-                logger.info(result.errors[0][1])
-            self.notify_killed(mutant_duration, killer)
+                exception_traceback = result.errors[0][1]
+            self.notify_killed(mutant_duration, killer, exception_traceback)
             score.inc_killed()
 
 

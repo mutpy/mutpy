@@ -68,8 +68,7 @@ class MulTest(TestCase):
         self.mutation_controller = MockMutationController(target_loader=target_loader,
                                                             test_loader=test_loader,
                                                             views=[self.counting_view],
-                                                            mutant_generator=mutator,
-                                                            timeout_factor=5)
+                                                            mutant_generator=mutator)
 
     def test_sth(self):
         self.mutation_controller.run()
