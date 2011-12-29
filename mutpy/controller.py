@@ -52,21 +52,23 @@ class MutationController(views.ViewNotifier):
         self.stdout_manager = utils.StdoutManager(disable_stdout)
 
     def run(self):
-        self.mutation_number = 0
         self.notify_initialize(self.target_loader.names, self.test_loader.names)
         try:
-            score, time_reg = self.count_score()
+            score, time_reg = self.run_mutation()
             self.notify_end(score, time_reg)
         except TestsFailAtOriginal as error:
-            self.notify_failed(error.result)
+            self.notify_original_tests_fail(error.result)
         except utils.ModulesLoaderException as error:
             self.notify_cant_load(error.name)
 
-    def count_score(self):
-        time_reg = utils.TimeRegister()
+    def run_mutation(self):
         try:
-            test_modules = self.initialize_mutation()
+            time_reg = utils.TimeRegister()
+            test_modules = self.load_and_check_tests()
             score = MutationScore()
+
+            self.notify_passed(test_modules)
+            self.notify_start()
 
             for target_module, to_mutate in self.target_loader.load():
                 mutate_time_reg = self.mutate_module(target_module, to_mutate, test_modules, score)
@@ -78,11 +80,30 @@ class MutationController(views.ViewNotifier):
         time_reg.stop()
         return score, time_reg
 
-    def initialize_mutation(self):
-        test_modules = self.load_and_check_tests()
-        self.notify_passed(test_modules)
-        self.notify_start()
+    def load_and_check_tests(self):
+        test_modules = []
+        for test_module, target_test in self.test_loader.load():
+            result, duration = self.run_test(test_module, target_test)
+            if result.wasSuccessful():
+                test_modules.append((test_module, target_test, duration))
+            else:
+                raise TestsFailAtOriginal(result)
+
         return test_modules
+
+    def run_test(self, test_module, target_test):
+        if target_test:
+            suite = unittest.TestLoader().loadTestsFromName(target_test, test_module)
+        else:
+            suite = unittest.TestLoader().loadTestsFromModule(test_module)
+        result = unittest.TestResult()
+        time_reg = utils.TimeRegister() 
+        self.stdout_manager.disable_stdout()
+        suite.run(result)
+        self.stdout_manager.enable_stdout()
+        time_reg.stop()
+        duration = time_reg.main_task
+        return result, duration
 
     def mutate_module(self, target_module, to_mutate, test_modules, score):
         time_reg = utils.TimeRegister()
@@ -93,8 +114,8 @@ class MutationController(views.ViewNotifier):
         inside_time_reg = utils.TimeRegister('mutate_ast_loop')
         for op, lineno, mutant_ast, mutate_time_reg in self.mutant_generator.mutate(target_ast, to_mutate):
             inside_time_reg.add_child(mutate_time_reg)
-            self.mutation_number += 1
-            self.notify_mutation(self.mutation_number, op, filename, lineno, mutant_ast)
+            mutation_number = score.all_mutants + 1
+            self.notify_mutation(mutation_number, op, filename, lineno, mutant_ast)
             inside_time_reg.start('build_mutant_module')
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
             inside_time_reg.stop_last()
@@ -113,27 +134,6 @@ class MutationController(views.ViewNotifier):
     def create_target_ast(self, target_module):
         with open(target_module.__file__) as target_file:
             return ast.parse(target_file.read())
-
-    def load_and_check_tests(self):
-        test_modules = []
-        for test_module, target_test in self.test_loader.load():
-            if target_test:
-                suite = unittest.TestLoader().loadTestsFromName(target_test, test_module)
-            else:
-                suite = unittest.TestLoader().loadTestsFromModule(test_module)
-            result = unittest.TestResult()
-            time_reg = utils.TimeRegister() 
-            self.stdout_manager.disable_stdout()
-            suite.run(result)
-            self.stdout_manager.enable_stdout()
-            time_reg.stop()
-            duration = time_reg.main_task 
-            if result.wasSuccessful():
-                test_modules.append((test_module, target_test, duration))
-            else:
-                raise TestsFailAtOriginal(result)
-
-        return test_modules
 
     def create_mutant_module(self, target_module, mutant_ast):
         try:

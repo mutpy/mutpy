@@ -102,7 +102,7 @@ class TextView(QuietTextView):
             test_name = test.__name__ + ('.' + target if target else '')
             self.level_print('{} {}'.format(test_name, self.time_format(time)), 2)
 
-    def failed(self, result):
+    def original_tests_fail(self, result):
         self.level_print(self.decorate('Tests failed:', 'red', attrs=['bold']))
         for error in result.errors:
                 self.level_print('error in {} - {} '.format(error[0], error[1].split("\n")[-2]), 2)
