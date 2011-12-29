@@ -1,5 +1,6 @@
 import time
 import yaml
+import traceback
 from mutpy import codegen, termcolor
 
 
@@ -126,7 +127,7 @@ class TextView(QuietTextView):
         snippet = src_lines[max(0, lineno - 5):min(len(src_lines), lineno + 5)]
         print("\n{}\n".format('-'*80) + "\n".join(snippet) + "\n{}".format('-'*80))
 
-    def killed(self, time, killer):
+    def killed(self, time, killer, *args):
         self.level_print(self.time_format(time) + ' ' + self.decorate('killed', 'green') + ' by ' + str(killer),
                          continuation=True)
 
@@ -136,8 +137,23 @@ class TextView(QuietTextView):
     def timeout(self):
         self.level_print(self.time_format() + ' ' + self.decorate('timeout', 'yellow'), continuation=True)
 
-    def error(self):
+    def error(self, *args):
         self.level_print(self.time_format() + ' ' + self.decorate('incompetent', 'cyan'), continuation=True)
+
+
+class DebugView:
+    
+    def print_exception(self, exception):
+        print("\n" + "".join(traceback.format_exception(None, exception, None)))
+
+    def build_module_fail(self, exception):
+        self.print_exception(exception)
+
+    def error(self, exception):
+        self.print_exception(exception)
+        
+    def killed(self, time, killer, exception_traceback):
+        print('\n' + exception_traceback)
 
 
 class YAMLRaportView:
@@ -163,13 +179,13 @@ class YAMLRaportView:
                                  'operator': op.__name__,
                                  'line': lineno}
 
-    def killed(self, time, killer):
+    def killed(self, time, killer, *args):
         self.end_mutation('killed', time, str(killer))
 
     def survived(self, time):
         self.end_mutation('survived', time)
 
-    def error(self):
+    def error(self, *args):
         self.end_mutation('incompetent', None)
 
     def timeout(self):

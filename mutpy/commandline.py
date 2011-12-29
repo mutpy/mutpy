@@ -56,8 +56,7 @@ def build_controller(cfg):
                                          views=built_views, 
                                          mutant_generator=mutant_generator, 
                                          timeout_factor=cfg.timeout_factor, 
-                                         disable_stdout=cfg.disable_stdout, 
-                                         debug=cfg.debug)
+                                         disable_stdout=cfg.disable_stdout)
 
 
 def build_mutator(cfg):
@@ -100,6 +99,9 @@ def build_views(cfg):
 
     if cfg.report:
         views_list.append(views.YAMLRaportView(cfg.report))
+
+    if cfg.debug:
+        views_list.append(views.DebugView())
 
     return views_list
 
