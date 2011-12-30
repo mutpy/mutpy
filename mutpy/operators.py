@@ -10,9 +10,7 @@ class MutationResign(Exception): pass
 class MutationOperator(ast.NodeTransformer):
 
     def mutate(self, node, to_mutate):
-        self.muteted_node_number = 0
-        self.mutate_method_number = 0
-        self.mutation_flag = False
+        self.initialize_mutation()
         while True:
             self.visited_node_number = 0
             node_copy = self.get_node_copy(node)
@@ -27,6 +25,11 @@ class MutationOperator(ast.NodeTransformer):
             self.mutation_flag = False
             self.repair_node(new_node)
             yield new_node, self.mutate_lineno
+
+    def initialize_mutation(self):
+        self.muteted_node_number = 0
+        self.mutate_method_number = 0
+        self.mutation_flag = False
 
     @utils.TimeRegister
     def get_node_copy(self, node):

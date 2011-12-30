@@ -91,7 +91,7 @@ class MulTest(TestCase):
                                                             views=[self.score_view],
                                                             mutant_generator=mutator)
 
-    def test_sth(self):
+    def test_run(self):
         self.mutation_controller.run()
 
         score = self.score_view.score
