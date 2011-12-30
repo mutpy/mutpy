@@ -21,9 +21,9 @@ class KillableThread(threading.Thread):
         if self.isAlive():
             res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ctypes.py_object(SystemExit))
             if res == 0:
-                raise ValueError("Invalid thread id.")
+                raise ValueError('Invalid thread id.')
             elif res != 1:
-                raise SystemError("Thread killing failed.")
+                raise SystemError('Thread killing failed.')
 
 
 class ModulesLoaderException(Exception):
@@ -146,17 +146,39 @@ class StdoutManager:
         sys.stdout = sys.__stdout__
 
 
-class CustomTestResult(unittest.TestResult):
+class MutationTestResult(unittest.TestResult):
 
     def __init__(self, *args, **kwargs):
         self.type_error = None
-        super(CustomTestResult, self).__init__(*args, **kwargs)
+        self.failfast = True
+        super(MutationTestResult, self).__init__(*args, **kwargs)
 
     def addError(self, test, err):
         if err[0] == TypeError:
             self.type_error = err
         else:
-            super(CustomTestResult, self).addError(test, err)
+            super(MutationTestResult, self).addError(test, err)
+
+    def is_incompetent(self):
+        return bool(self.type_error)
+
+    def is_survieved(self):
+        return self.wasSuccessful()
+
+    def get_killer(self):
+        if self.failures:
+            return self.failures[0][0]
+        elif self.errors:
+            return self.errors[0][0]
+
+    def get_exception_traceback(self):
+        if self.failures:
+            return self.failures[0][1]
+        elif self.errors:
+            return self.errors[0][1]
+
+    def get_exception(self):
+        return self.type_error[1]
 
 
 class Timer:

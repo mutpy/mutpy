@@ -55,28 +55,26 @@ class MutationController(views.ViewNotifier):
         self.notify_initialize(self.target_loader.names, self.test_loader.names)
         try:
             timer = utils.Timer()
-            score = self.run_mutation()
-            self.notify_end(score, timer.stop())
+            self.run_mutation_process()
+            self.notify_end(self.score, timer.stop())
         except TestsFailAtOriginal as error:
             self.notify_original_tests_fail(error.result)
         except utils.ModulesLoaderException as error:
             self.notify_cant_load(error.name)
 
-    def run_mutation(self):
+    def run_mutation_process(self):
         try:
             test_modules = self.load_and_check_tests()
-            score = MutationScore()
 
             self.notify_passed(test_modules)
             self.notify_start()
 
-            for target_module, to_mutate in self.target_loader.load():
-                self.mutate_module(target_module, to_mutate, test_modules, score)
+            self.score = MutationScore()
 
+            for target_module, to_mutate in self.target_loader.load():
+                self.mutate_module(target_module, to_mutate, test_modules)
         except KeyboardInterrupt:
             pass
-            
-        return score
 
     def load_and_check_tests(self):
         test_modules = []
@@ -90,10 +88,7 @@ class MutationController(views.ViewNotifier):
         return test_modules
 
     def run_test(self, test_module, target_test):
-        if target_test:
-            suite = unittest.TestLoader().loadTestsFromName(target_test, test_module)
-        else:
-            suite = unittest.TestLoader().loadTestsFromModule(test_module)
+        suite = self.get_test_suite(test_module, target_test)
         result = unittest.TestResult()
         timer = utils.Timer() 
         self.stdout_manager.disable_stdout()
@@ -101,17 +96,26 @@ class MutationController(views.ViewNotifier):
         self.stdout_manager.enable_stdout()
         return result, timer.stop()
 
-    def mutate_module(self, target_module, to_mutate, test_modules, score):
+    def get_test_suite(self, test_module, target_test):
+        if target_test:
+            return unittest.TestLoader().loadTestsFromName(target_test, test_module)
+        else:
+            return unittest.TestLoader().loadTestsFromModule(test_module)
+
+    def mutate_module(self, target_module, to_mutate, test_modules):
         target_ast = self.create_target_ast(target_module)
-        filename = path.basename(target_module.__file__)
+        filename = self.get_module_base_filename(target_module) 
         for op, lineno, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate):
-            mutation_number = score.all_mutants + 1
+            mutation_number = self.score.all_mutants + 1
             self.notify_mutation(mutation_number, op, filename, lineno, mutant_ast)
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
             if mutant_module:
-                self.run_tests_with_mutant(test_modules, mutant_module, score)
+                self.run_tests_with_mutant(test_modules, mutant_module)
             else:
-                score.inc_incompetent()
+                self.score.inc_incompetent()
+    
+    def get_module_base_filename(self, module):
+        return path.basename(module.__file__)
 
     @utils.TimeRegister
     def create_target_ast(self, target_module):
@@ -138,23 +142,19 @@ class MutationController(views.ViewNotifier):
         injector = utils.ModuleInjector(mutant_module)
         for test_module, target_test, duration in tests_modules:
             injector.inject_to(test_module)
-            if target_test:
-                suite.addTests(unittest.TestLoader().loadTestsFromName(target_test, test_module))
-            else:
-                suite.addTests(unittest.TestLoader().loadTestsFromModule(test_module))
+            suite.addTests(self.get_test_suite(test_module, target_test))
             total_duration += duration
 
         return suite, total_duration
 
     @utils.TimeRegister
-    def run_tests_with_mutant(self, tests_modules, mutant_module, score):
+    def run_tests_with_mutant(self, tests_modules, mutant_module):
         suite, total_duration = self.create_test_suite(tests_modules, mutant_module)
-        result = utils.CustomTestResult()
-        result.failfast = True
+        result = utils.MutationTestResult()
         timer = utils.Timer() 
         runner_thread = self.run_mutation_thread(suite, total_duration, result)
         timer.stop()
-        self.append_score_and_notify_views(score, result, runner_thread, timer.duration)
+        self.update_score_and_notify_views(result, runner_thread, timer.duration)
 
     def run_mutation_thread(self, suite, total_duration, result):
         runner_thread = utils.KillableThread(target=lambda:suite.run(result))
@@ -165,26 +165,35 @@ class MutationController(views.ViewNotifier):
         self.stdout_manager.enable_stdout()
         return runner_thread
 
-    def append_score_and_notify_views(self, score, result, runner_thread, mutant_duration):
+    def update_score_and_notify_views(self, result, runner_thread, mutant_duration):
         if runner_thread.is_alive():
             runner_thread.kill()
-            self.notify_timeout()
-            score.inc_timeout()
-        elif result.type_error:
-            self.notify_incompetent(result.type_error[1])
-            score.inc_incompetent()
-        elif result.wasSuccessful():
-            self.notify_survived(mutant_duration)
-            score.inc_survived()
+            self.update_timeout_mutant()
+        elif result.is_incompetent():
+            exception = result.get_exception()
+            self.update_incompetent_mutant(exception)
+        elif result.is_survieved():
+            self.update_survived_mutant(mutant_duration)
         else:
-            if result.failures:
-                killer = result.failures[0][0]
-                exception_traceback = result.failures[0][1]
-            elif result.errors:
-                killer = result.errors[0][0]
-                exception_traceback = result.errors[0][1]
-            self.notify_killed(mutant_duration, killer, exception_traceback)
-            score.inc_killed()
+            killer = result.get_killer() 
+            exception_traceback = result.get_exception_traceback() 
+            self.update_killed_mutant(mutant_duration, killer, exception_traceback)
+    
+    def update_timeout_mutant(self):
+        self.notify_timeout()
+        self.score.inc_timeout()
+
+    def update_incompetent_mutant(self, exception):
+        self.notify_incompetent(exception)
+        self.score.inc_incompetent()
+
+    def update_survived_mutant(self, duration):
+        self.notify_survived(duration)
+        self.score.inc_survived()
+
+    def update_killed_mutant(self, duration, killer, exception_traceback):
+        self.notify_killed(duration, killer, exception_traceback)
+        self.score.inc_killed()
 
 
 class Mutator:
