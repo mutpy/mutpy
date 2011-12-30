@@ -214,3 +214,48 @@ class ModuleInjectorTest(unittest.TestCase):
 
         del sys.modules['source']
 
+
+class MockTimer():
+    
+    def stop(self):
+        return 1
+
+
+class MockTimeRegister(utils.TimeRegister):
+    timer_class = MockTimer
+
+
+class TimeRegisterTest(unittest.TestCase):
+    
+    def setUp(self):
+        MockTimeRegister.clean()
+
+    def test_normal_function(self):
+        @MockTimeRegister
+        def foo():
+            pass
+
+        foo()
+
+        self.assertEqual(MockTimeRegister.executions['foo'], 1)
+
+    def test_recursion(self):
+        @MockTimeRegister
+        def foo(x):
+            if x != 0:
+                foo(x-1)
+
+        foo(10)
+
+        self.assertEqual(MockTimeRegister.executions['foo'], 1)
+
+    def test_function_with_yield(self):
+        @MockTimeRegister
+        def foo():
+            for i in [1,2,3]:
+                yield i
+
+        for _ in foo(): pass
+
+        self.assertEqual(MockTimeRegister.executions['foo'], 1)
+

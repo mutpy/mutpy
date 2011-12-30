@@ -1,7 +1,7 @@
 import time
 import yaml
 import traceback
-from mutpy import codegen, termcolor
+from mutpy import codegen, termcolor, utils
 
 
 class ViewNotifier:
@@ -190,7 +190,8 @@ class YAMLRaportView:
 
     def end(self, score, duration):
         self.dump({'mutations': self.mutation_info, 
-                   'time_stats': duration})
+                   'total_time': duration,
+                   'time_stats': dict(utils.TimeRegister.executions)})
 
     def dump(self, to_dump):
         yaml.dump(to_dump, self.stream, default_flow_style=False)
