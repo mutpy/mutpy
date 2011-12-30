@@ -54,9 +54,9 @@ class MutationController(views.ViewNotifier):
     def run(self):
         self.notify_initialize(self.target_loader.names, self.test_loader.names)
         try:
-            time_reg = utils.TimeRegister()
+            timer = utils.Timer()
             score = self.run_mutation()
-            self.notify_end(score, time_reg.stop())
+            self.notify_end(score, timer.stop())
         except TestsFailAtOriginal as error:
             self.notify_original_tests_fail(error.result)
         except utils.ModulesLoaderException as error:
@@ -95,11 +95,11 @@ class MutationController(views.ViewNotifier):
         else:
             suite = unittest.TestLoader().loadTestsFromModule(test_module)
         result = unittest.TestResult()
-        time_reg = utils.TimeRegister() 
+        timer = utils.Timer() 
         self.stdout_manager.disable_stdout()
         suite.run(result)
         self.stdout_manager.enable_stdout()
-        return result, time_reg.stop()
+        return result, timer.stop()
 
     def mutate_module(self, target_module, to_mutate, test_modules, score):
         target_ast = self.create_target_ast(target_module)
@@ -113,12 +113,12 @@ class MutationController(views.ViewNotifier):
             else:
                 score.inc_incompetent()
 
-    @utils.timer
+    @utils.TimeRegister
     def create_target_ast(self, target_module):
         with open(target_module.__file__) as target_file:
             return ast.parse(target_file.read())
 
-    @utils.timer
+    @utils.TimeRegister
     def create_mutant_module(self, target_module, mutant_ast):
         try:
             mutant_code = compile(mutant_ast, 'mutant', 'exec')
@@ -146,15 +146,15 @@ class MutationController(views.ViewNotifier):
 
         return suite, total_duration
 
-    @utils.timer
+    @utils.TimeRegister
     def run_tests_with_mutant(self, tests_modules, mutant_module, score):
         suite, total_duration = self.create_test_suite(tests_modules, mutant_module)
         result = utils.CustomTestResult()
         result.failfast = True
-        time_reg = utils.TimeRegister() 
+        timer = utils.Timer() 
         runner_thread = self.run_mutation_thread(suite, total_duration, result)
-        time_reg.stop()
-        self.append_score_and_notify_views(score, result, runner_thread, time_reg.duration)
+        timer.stop()
+        self.append_score_and_notify_views(score, result, runner_thread, timer.duration)
 
     def run_mutation_thread(self, suite, total_duration, result):
         runner_thread = utils.KillableThread(target=lambda:suite.run(result))
@@ -195,7 +195,6 @@ class Mutator:
     def add_operator(self, operator):
         self.operators.append(operator)
     
-    @utils.timer
     def mutate(self, target_ast, to_mutate):
         for op in self.operators:
             for mutant, lineno in op().mutate(target_ast, to_mutate):

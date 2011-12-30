@@ -6,14 +6,12 @@ import threading
 import pkgutil
 import ctypes
 import inspect
+import types
 from _pyio import StringIO
+from collections import defaultdict
 
 
 def notmutate(sth):
-    return sth
-
-    
-def timer(sth):
     return sth
 
 
@@ -161,14 +159,43 @@ class CustomTestResult(unittest.TestResult):
             super(CustomTestResult, self).addError(test, err)
 
 
-class TimeRegister:
-    timer = time.time
+class Timer:
+    time_provider = time.time
 
     def __init__(self):
         self.duration = 0
-        self.start = self.timer()
+        self.start = self.time_provider()
 
     def stop(self):
-        self.duration = self.timer() - self.start
+        self.duration = self.time_provider() - self.start
         return self.duration
+
+
+class TimeRegister:
+    executions = defaultdict(float)
+    timer_class = Timer 
+    stack = []
+
+    def __init__(self, method):
+        self.method = method
+
+    def __get__(self, obj, ownerClass=None):
+        return types.MethodType(self, obj)
+
+    def __call__(self, *args, **kwargs):
+        if self.stack and self.stack[-1] == self.method:
+            return self.method(*args, **kwargs)
+
+        self.stack.append(self.method)
+        time_reg = self.timer_class()
+        result = self.method(*args, **kwargs)
+
+        self.executions[self.method.__name__] += time_reg.stop()
+        self.stack.pop()
+        return result
+
+    @classmethod
+    def clean(cls):
+        cls.executions.clear()
+        cls.stack = []
 

@@ -1,7 +1,7 @@
 import ast
 import copy
 import re
-from mutpy.utils import notmutate, timer
+from mutpy import utils
 
 
 class MutationResign(Exception): pass
@@ -25,18 +25,18 @@ class MutationOperator(ast.NodeTransformer):
                 break
 
             self.mutation_flag = False
-            self.repair_lines(new_node)
+            self.repair_node(new_node)
             yield new_node, self.mutate_lineno
 
-    @timer
+    @utils.TimeRegister
     def get_node_copy(self, node):
         return copy.deepcopy(node)
 
-    @timer
-    def repair_lines(self, node):
+    @utils.TimeRegister
+    def repair_node(self, node):
         ast.fix_missing_locations(node)
 
-    @timer
+    @utils.TimeRegister
     def visit(self, node):
         if hasattr(node, 'lineno'):
             self.curr_line = node.lineno
@@ -46,7 +46,7 @@ class MutationOperator(ast.NodeTransformer):
 
         try:
             for decorator in node.decorator_list:
-                if decorator.id == notmutate.__name__:
+                if decorator.id == utils.notmutate.__name__:
                     return node
         except AttributeError:
             pass
