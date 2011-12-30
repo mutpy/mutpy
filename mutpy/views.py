@@ -35,8 +35,8 @@ class QuietTextView:
     def __init__(self, colored_output=False):
         self.colored_output = colored_output
 
-    def end(self, score, time_reg):
-        self.level_print('Mutation score {}: {}'.format(self.time_format(time_reg.main_task),
+    def end(self, score, duration):
+        self.level_print('Mutation score {}: {}'.format(self.time_format(duration),
                                                          self.decorate('{:.1f}%'.format(score.count()),
                                                                        'blue', attrs=['bold'])))
 
@@ -81,8 +81,8 @@ class TextView(QuietTextView):
     def start(self):
         self.level_print('Start mutants generation and execution:')
 
-    def end(self, score, time_reg):
-        super().end(score, time_reg)
+    def end(self, score, duration):
+        super().end(score, duration)
         self.level_print('all: {}'.format(score.all_mutants), 2)
 
         if score.all_mutants:
@@ -137,7 +137,7 @@ class TextView(QuietTextView):
     def timeout(self):
         self.level_print(self.time_format() + ' ' + self.decorate('timeout', 'yellow'), continuation=True)
 
-    def error(self, *args):
+    def incompetent(self, *args):
         self.level_print(self.time_format() + ' ' + self.decorate('incompetent', 'cyan'), continuation=True)
 
 
@@ -146,10 +146,7 @@ class DebugView:
     def print_exception(self, exception):
         print("\n" + "".join(traceback.format_exception(None, exception, None)))
 
-    def build_module_fail(self, exception):
-        self.print_exception(exception)
-
-    def error(self, exception):
+    def incompetent(self, exception):
         self.print_exception(exception)
         
     def killed(self, time, killer, exception_traceback):
@@ -185,15 +182,15 @@ class YAMLRaportView:
     def survived(self, time):
         self.end_mutation('survived', time)
 
-    def error(self, *args):
+    def incompetent(self, *args):
         self.end_mutation('incompetent', None)
 
     def timeout(self):
         self.end_mutation('timeout', None)
 
-    def end(self, score, time_reg):
+    def end(self, score, duration):
         self.dump({'mutations': self.mutation_info, 
-                   'time_stats': time_reg.stats()})
+                   'time_stats': duration})
 
     def dump(self, to_dump):
         yaml.dump(to_dump, self.stream, default_flow_style=False)

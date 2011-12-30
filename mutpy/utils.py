@@ -12,6 +12,10 @@ from _pyio import StringIO
 def notmutate(sth):
     return sth
 
+    
+def timer(sth):
+    return sth
+
 
 class KillableThread(threading.Thread):
 
@@ -160,67 +164,11 @@ class CustomTestResult(unittest.TestResult):
 class TimeRegister:
     timer = time.time
 
-    def __init__(self, name='', start=True):
-        self.name = name
-        self.tasks = {}
-        self.tasks_starts = {}
-        self.children = {}
-        self.last_task = None
-        self.main_task = None 
-        if start:
-            self.start()
+    def __init__(self):
+        self.duration = 0
+        self.start = self.timer()
 
-    def start(self, task=None):
-        if task:
-            self.last_task = task
-            self.tasks_starts[task] = self.timer()
-        else:
-            self.last_task = None
-            self.main_task_start = self.timer()
-
-    def stop(self, task=None):
-        if task:
-            if task not in self.tasks:
-                self.tasks[task] = 0
-            self.tasks[task] += self.timer() - self.tasks_starts[task]
-        else:
-            self.main_task = self.timer() - self.main_task_start
-
-    def stop_last(self):
-        self.stop(self.last_task)
-
-    def add(self, other_time_reg):
-        for task in other_time_reg.tasks:
-            if task in self.tasks:
-                self.tasks[task] += other_time_reg.tasks[task]
-            else:
-                self.tasks[task] = other_time_reg.tasks[task]
-
-        for child in other_time_reg.children.values():
-            self.add_child(child)
-
-    def add_child(self, child_time_reg):
-        other_name = child_time_reg.name
-        if not child_time_reg.main_task:
-            child_time_reg.stop()
-
-        if other_name in self.children:
-            self.children[other_name].main_task += child_time_reg.main_task
-            self.children[other_name].add(child_time_reg) 
-        else:
-           self.children[other_name] = child_time_reg
-
-    @property
-    def other(self):
-        return self.main_task - (sum(self.tasks.values()) + sum(child.main_task for child in self.children.values()))
-
-    def stats(self):
-        stats = self.tasks.copy()
-        stats['total'] = self.main_task
-        stats['other'] = self.other
-        for child_name in self.children:
-            child_stat = self.children[child_name].stats()
-            stats[child_name] = child_stat
-
-        return stats
+    def stop(self):
+        self.duration = self.timer() - self.start
+        return self.duration
 
