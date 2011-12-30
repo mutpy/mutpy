@@ -32,7 +32,7 @@ class OperatorTestCase(unittest.TestCase):
         mutants = list(map(codegen.remove_extra_lines, mutants))
         original = codegen.remove_extra_lines(original)
         
-        for mutant, _, _ in self.__class__.op.mutate(original_ast, None):
+        for mutant, _ in self.__class__.op.mutate(original_ast, None):
             mutant_code = codegen.remove_extra_lines(codegen.to_source(mutant))
             self.assertIn(mutant_code, mutants)
             mutants.remove(mutant_code)
