@@ -1,5 +1,4 @@
 import ast
-import copy
 import re
 from mutpy import utils
 
@@ -7,94 +6,67 @@ from mutpy import utils
 class MutationResign(Exception): pass
 
 
-class MutationOperator(ast.NodeTransformer):
+class MutationOperator:
 
     def mutate(self, node, to_mutate):
-        self.initialize_mutation()
-        while True:
-            self.visited_node_number = 0
-            node_copy = self.get_node_copy(node)
-            new_node = self.visit(node_copy)
+        self.to_mutate = to_mutate
+        for new_node in self.visit(node):
+            yield new_node, 1
 
-            if not self.mutate_method_number:
-                self.muteted_node_number += 1
-
-            if not self.mutation_flag:
-                break
-
-            self.mutation_flag = False
-            self.repair_node(new_node)
-            yield new_node, self.mutate_lineno
-
-    def initialize_mutation(self):
-        self.muteted_node_number = 0
-        self.mutate_method_number = 0
-        self.mutation_flag = False
-
-    @utils.TimeRegister
-    def get_node_copy(self, node):
-        return copy.deepcopy(node)
-
-    @utils.TimeRegister
-    def repair_node(self, node):
-        ast.fix_missing_locations(node)
-
-    @utils.TimeRegister
     def visit(self, node):
-        if hasattr(node, 'lineno'):
-            self.curr_line = node.lineno
-
-        if self.mutation_flag:
-            return node
-
         try:
             for decorator in node.decorator_list:
                 if decorator.id == utils.notmutate.__name__:
-                    return node
+                    return 
         except AttributeError:
             pass
 
-        visitors = self.find_visitors(node)
-
-        if not visitors:
-            new_node = self.generic_visit(node)
+        visitors = self.find_visitors(node) 
+        
+        if visitors:
+            for visitor in visitors: 
+                try:
+                    new_node = visitor(node)
+                    yield new_node
+                except MutationResign:
+                    for new_node in self.generic_visit(node):
+                        yield new_node
         else:
-            if self.visited_node_number < self.muteted_node_number:
-                self.visited_node_number += 1
-                new_node = self.generic_visit(node)
-            else:
-                new_node = self.mutate_with_visitors(node, visitors)
+            for new_node in self.generic_visit(node):
+                yield new_node
 
-        return new_node
+    def generic_visit(self, node):
+        for field, old_value in ast.iter_fields(node):
+            if isinstance(old_value, list):
+                old_values_copy = old_value[:]
+                for position, value in enumerate(old_values_copy):
+                    if isinstance(value, ast.AST):
+                        for new_value in self.visit(value):
+                            if not isinstance(new_value, ast.AST):
+                                old_value[position:position+1] = new_value
+                            elif value is None:
+                                del old_value[position]
+                            else:
+                                old_value[position] = new_value
 
-    def mutate_with_visitors(self, node, visitors):
-        while self.mutate_method_number < len(visitors):
-            visitor = visitors[self.mutate_method_number]
-            try:
-                new_node = visitor(node)
-                self.mutate_lineno = node.lineno if hasattr(node, 'lineno') else self.curr_line
-                self.mutation_flag = True
-                if new_node:
-                    ast.copy_location(new_node, node)
-                if visitor is visitors[-1]:
-                    self.mutate_method_number = 0
-                    self.visited_node_number += 1
-                else:
-                    self.mutate_method_number += 1
+                            yield node 
+                            old_value[:] = old_values_copy
 
-                break
-            except MutationResign:
-                self.mutate_method_number += 1
-                self.muteted_node_number += 1
-        else:
-            self.mutate_method_number = 0
-            self.visited_node_number += 1
-            new_node = self.generic_visit(node)
+            elif isinstance(old_value, ast.AST):
+                for new_node in self.visit(old_value):
+                    if new_node is None:
+                        delattr(node, field)
+                    else:
+                        setattr(node, field, new_node)
+                    yield node
+                    setattr(node, field, old_value)
 
-        return new_node
+    def find_visitors(self, node):
+        method_prefix = 'mutate_' + node.__class__.__name__
+        visitors = self.getattrs_like(method_prefix)
+        return visitors
 
-    @staticmethod
-    def getattr_like(ob, attr_like):
+    def getattrs_like(ob, attr_like):
         pattern = re.compile(attr_like + "_\w+")
         return [getattr(ob, attr) for attr in dir(ob) if attr == attr_like or pattern.match(attr)]
 
@@ -105,11 +77,6 @@ class MutationOperator(ast.NodeTransformer):
     @classmethod
     def long_name(cls):
         return cls.__name__
-
-    def find_visitors(self, node):
-        method_prefix = 'mutate_' + node.__class__.__name__
-        visitors = MutationOperator.getattr_like(self, method_prefix)
-        return visitors
 
 
 class ArithmeticOperatorReplacement(MutationOperator):
@@ -275,24 +242,21 @@ class SliceIndexRemove(MutationOperator):
 
     def mutate_Slice_remove_lower(self, node):
         if not node.lower:
-            raise MutationResign
+            raise MutationResign()
 
-        node.lower = None
-        return node
+        return ast.Slice(lower=None, upper=node.upper, step=node.step)
 
     def mutate_Slice_remove_upper(self, node):
         if not node.upper:
-            raise MutationResign
+            raise MutationResign()
 
-        node.upper = None
-        return node
+        return ast.Slice(lower=node.lower, upper=None, step=node.step)
 
     def mutate_Slice_remove_step(self, node):
         if not node.step:
-            raise MutationResign
+            raise MutationResign()
 
-        node.step = None
-        return node
+        return ast.Slice(lower=node.lower, upper=node.upper, step=None)
 
 
 class MembershipTestReplacement(MutationOperator):
@@ -307,8 +271,7 @@ class MembershipTestReplacement(MutationOperator):
 class ExceptionHandleDeletion(MutationOperator):
 
     def mutate_ExceptHandler(self, node):
-        node.body = [ast.Raise()]
-        return node
+        return ast.ExceptHandler(type=node.type, name=node.name, body=[ast.Raise()])
 
 
 class ZeroIterationLoop(MutationOperator):

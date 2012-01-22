@@ -8,9 +8,9 @@ PASS = 'pass'
 
 class MutationOperatorTest(unittest.TestCase):
     
-    def test_getattr_like(self):
+    def test_getattrs_like(self):
         
-        class X:
+        class TestOperator(operators.MutationOperator):
             def mutate_A(self): pass
             def mutate_A_1(self): pass
             def mutate_A_2(self): pass
@@ -18,10 +18,9 @@ class MutationOperatorTest(unittest.TestCase):
             def mutateA(self): pass
             def mutate_B(self): pass
         
-        x = X()
+        operator = TestOperator()
         visits_method = ['mutate_A', 'mutate_A_1', 'mutate_A_2']
-        
-        for attr in operators.MutationOperator.getattr_like(x, 'mutate_A'):
+        for attr in operator.getattrs_like('mutate_A'):
             self.assertIn(attr.__name__, visits_method)
             visits_method.remove(attr.__name__)
 
@@ -31,7 +30,6 @@ class OperatorTestCase(unittest.TestCase):
         original_ast = ast.parse(original)
         mutants = list(map(codegen.remove_extra_lines, mutants))
         original = codegen.remove_extra_lines(original)
-        
         for mutant, _ in self.__class__.op.mutate(original_ast, None):
             mutant_code = codegen.remove_extra_lines(codegen.to_source(mutant))
             self.assertIn(mutant_code, mutants)
