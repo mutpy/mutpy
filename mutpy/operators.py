@@ -1,17 +1,17 @@
 import ast
 import re
+import copy
 from mutpy import utils
 
-
 class MutationResign(Exception): pass
-
 
 class MutationOperator:
 
     def mutate(self, node, to_mutate):
         self.to_mutate = to_mutate
+        self.lineno = 1
         for new_node in self.visit(node):
-            yield new_node, 1
+            yield new_node, self.lineno 
 
     def visit(self, node):
         try:
@@ -22,11 +22,14 @@ class MutationOperator:
             pass
 
         visitors = self.find_visitors(node) 
-        
+
+        self.set_mutation_lineno(node)
+
         if visitors:
             for visitor in visitors: 
                 try:
-                    new_node = visitor(node)
+                    new_node = visitor(copy.deepcopy(node))
+                    ast.fix_missing_locations(new_node)
                     yield new_node
                 except MutationResign:
                     for new_node in self.generic_visit(node):
@@ -60,6 +63,10 @@ class MutationOperator:
                         setattr(node, field, new_node)
                     yield node
                     setattr(node, field, old_value)
+
+    def set_mutation_lineno(self, node):
+        if hasattr(node, 'lineno'):
+            self.lineno = node.lineno
 
     def find_visitors(self, node):
         method_prefix = 'mutate_' + node.__class__.__name__

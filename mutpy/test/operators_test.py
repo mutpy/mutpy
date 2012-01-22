@@ -26,17 +26,31 @@ class MutationOperatorTest(unittest.TestCase):
 
 class OperatorTestCase(unittest.TestCase):
     
-    def assert_mutation(self, original, mutants):
+    def assert_mutation(self, original, mutants, lines=None):
         original_ast = ast.parse(original)
         mutants = list(map(codegen.remove_extra_lines, mutants))
         original = codegen.remove_extra_lines(original)
-        for mutant, _ in self.__class__.op.mutate(original_ast, None):
+        for mutant, lineno in self.__class__.op.mutate(original_ast, None):
             mutant_code = codegen.remove_extra_lines(codegen.to_source(mutant))
             self.assertIn(mutant_code, mutants)
             mutants.remove(mutant_code)
+            self.assert_location(mutant)
+            if not lines is None:
+                self.assert_mutation_lineo(lineno, lines)
             
         self.assertListEqual(mutants, [], 'did not generate all mutants')
-                
+    
+    def assert_location(self, mutant):    
+        for node in ast.walk(mutant):
+            if 'lineno' in node._attributes and not hasattr(node, 'lineno'):
+                self.fail('Missing lineno in ' + str(node))
+            if 'col_offset' in node._attributes and not hasattr(node, 'col_offset'):
+                self.fail('Missing col_offset in ' + str(node))
+
+    def assert_mutation_lineo(self, lineno, lines):
+        mutation_line = lines.pop(0)
+        self.assertEqual(mutation_line, lineno, 'Bad mutation lineno!')
+
 
 class ConstantReplacementTest(OperatorTestCase):
 
@@ -102,6 +116,11 @@ class ArithmeticOperatorReplacementTest(OperatorTestCase):
         
     def test_pow_to_mult(self):
         self.assert_mutation('x ** y', ['x * y'])
+
+    def test_mutation_lineno(self):
+        self.assert_mutation('pass' + EOL + 'x + y' + EOL + 'x - y', 
+                            ['pass' + EOL + 'x - y' + EOL + 'x - y', 'pass' + EOL + 'x + y' + EOL + 'x + y'], 
+                            [2, 3])
         
 
 class BitwiseOperatorReplacement(OperatorTestCase):
@@ -310,7 +329,14 @@ class ClassmethodDecoratorDeletionTest(OperatorTestCase):
     def test_classmethod_deletion_with_other_and_arguments(self):
         self.assert_mutation('@wraps(func)' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' , 
                          ['@wraps(func)' + EOL + 'def f():' + EOL + INDENT + 'pass'])
-        
+
+    def test_double_classmethod_deletion(self):
+        self.assert_mutation('@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' + EOL + 
+                                '@classmethod' + EOL + 'def g():' + EOL + INDENT + 'pass', 
+                         ['def f():' + EOL + INDENT + 'pass' + EOL + 
+                            '@classmethod' + EOL + 'def g():' + EOL + INDENT + 'pass', 
+                         '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' + EOL +
+                             'def g():' + EOL + INDENT + 'pass'])
 
 class ClassmethodDecoratorInsertionTest(OperatorTestCase):
 
@@ -328,4 +354,11 @@ class ClassmethodDecoratorInsertionTest(OperatorTestCase):
     def test_classmethod_add_with_other_and_arguments(self):
         self.assert_mutation('@wraps(func)' + EOL + 'def f():' + EOL + INDENT + 'pass',
                             ['@wraps(func)' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' ])        
+
+    def test_add_classmethod_in_two_function(self):
+        self.assert_mutation('def f():' + EOL + INDENT + 'pass' + EOL + 'def g():' + EOL + INDENT + 'pass', 
+                             ['@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' + EOL + 
+                                'def g():' + EOL + INDENT + 'pass',
+                              'def f():' + EOL + INDENT + 'pass' + EOL + '@classmethod' + EOL + 
+                                'def g():' + EOL + INDENT + 'pass'])
 
