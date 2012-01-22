@@ -14,16 +14,11 @@ class MutationOperator:
             yield new_node, self.lineno 
 
     def visit(self, node):
-        try:
-            for decorator in node.decorator_list:
-                if decorator.id == utils.notmutate.__name__:
-                    return 
-        except AttributeError:
-            pass
-
-        visitors = self.find_visitors(node) 
+        if self.has_notmutate(node):
+            return
 
         self.set_mutation_lineno(node)
+        visitors = self.find_visitors(node) 
 
         if visitors:
             for visitor in visitors: 
@@ -32,6 +27,8 @@ class MutationOperator:
                     ast.fix_missing_locations(new_node)
                     yield new_node
                 except MutationResign:
+                    pass
+                finally:
                     for new_node in self.generic_visit(node):
                         yield new_node
         else:
@@ -41,28 +38,47 @@ class MutationOperator:
     def generic_visit(self, node):
         for field, old_value in ast.iter_fields(node):
             if isinstance(old_value, list):
-                old_values_copy = old_value[:]
-                for position, value in enumerate(old_values_copy):
-                    if isinstance(value, ast.AST):
-                        for new_value in self.visit(value):
-                            if not isinstance(new_value, ast.AST):
-                                old_value[position:position+1] = new_value
-                            elif value is None:
-                                del old_value[position]
-                            else:
-                                old_value[position] = new_value
-
-                            yield node 
-                            old_value[:] = old_values_copy
-
+                generator = self.generic_visit_list(old_value)
             elif isinstance(old_value, ast.AST):
-                for new_node in self.visit(old_value):
-                    if new_node is None:
-                        delattr(node, field)
+                generator = self.generic_visit_real_node(node, field, old_value)
+            else:
+                generator = []
+
+            for _ in generator: 
+                yield node
+
+    def generic_visit_list(self, old_value):
+        old_values_copy = old_value[:]
+        for position, value in enumerate(old_values_copy):
+            if isinstance(value, ast.AST):
+                for new_value in self.visit(value):
+                    if not isinstance(new_value, ast.AST):
+                        old_value[position:position+1] = new_value
+                    elif value is None:
+                        del old_value[position]
                     else:
-                        setattr(node, field, new_node)
-                    yield node
-                    setattr(node, field, old_value)
+                        old_value[position] = new_value
+
+                    yield
+                    old_value[:] = old_values_copy
+
+    def generic_visit_real_node(self, node, field, old_value):
+        for new_node in self.visit(old_value):
+            if new_node is None:
+                delattr(node, field)
+            else:
+                setattr(node, field, new_node)
+            yield
+            setattr(node, field, old_value)
+
+    def has_notmutate(self, node):
+        try:
+            for decorator in node.decorator_list:
+                if decorator.id == utils.notmutate.__name__:
+                    return True
+            return False
+        except AttributeError:
+            return False 
 
     def set_mutation_lineno(self, node):
         if hasattr(node, 'lineno'):
@@ -313,6 +329,7 @@ class ReverseIterationLoop(MutationOperator):
         node.iter = ast.Call(func=ast.Name(id=reversed.__name__, ctx=ast.Load()),
                              args=[old_iter], keywords=[], starargs=None, kwargs=None)
         return node
+
 
 class DecoratorDeletionMutationOperator(MutationOperator):
 
