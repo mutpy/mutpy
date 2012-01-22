@@ -205,7 +205,7 @@ class SliceIndexRemoveTest(OperatorTestCase):
     def test_slice_indexes_remove(self):
         self.assert_mutation('x[1:2:3]', ['x[:2:3]', 'x[1::3]', 'x[1:2]'])
         
-class ConditionNegationTest(OperatorTestCase):
+class ConditionalOperatorInsertionTest(OperatorTestCase):
     
     @classmethod
     def setUpClass(cls):
@@ -216,6 +216,12 @@ class ConditionNegationTest(OperatorTestCase):
         
     def test_negate_if_condition(self):
         self.assert_mutation('if x:\n    pass', ['if (not x):\n    pass'])
+
+    def test_negate_if_and_elif_condition(self):
+        self.assert_mutation('if x:' + EOL + INDENT + 'pass' + EOL + 'elif y:' + EOL + INDENT + 'pass',
+                            ['if (not x):' + EOL + INDENT + 'pass' + EOL + 'elif y:' + EOL + INDENT + 'pass',
+                            'if x:' + EOL + INDENT + 'pass' + EOL + 'elif (not y):' + EOL + INDENT + 'pass'],
+                            lines=[1, 3])
 
 
 class MembershipTestReplacementTest(OperatorTestCase):
