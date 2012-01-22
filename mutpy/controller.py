@@ -102,6 +102,7 @@ class MutationController(views.ViewNotifier):
         else:
             return unittest.TestLoader().loadTestsFromModule(test_module)
 
+    @utils.TimeRegister
     def mutate_module(self, target_module, to_mutate, test_modules):
         target_ast = self.create_target_ast(target_module)
         filename = self.get_module_base_filename(target_module) 
