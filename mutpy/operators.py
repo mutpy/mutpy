@@ -63,12 +63,11 @@ class MutationOperator:
 
     def find_visitors(self, node):
         method_prefix = 'mutate_' + node.__class__.__name__
-        visitors = self.getattrs_like(method_prefix)
-        return visitors
+        return self.getattrs_like(method_prefix)
 
     def getattrs_like(ob, attr_like):
-        pattern = re.compile(attr_like + "_\w+")
-        return [getattr(ob, attr) for attr in dir(ob) if attr == attr_like or pattern.match(attr)]
+        pattern = re.compile(attr_like + "($|(_\w+)+$)")
+        return [getattr(ob, attr) for attr in dir(ob) if pattern.match(attr)]
 
     @classmethod
     def name(cls):
