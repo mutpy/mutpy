@@ -23,17 +23,19 @@ if sys.hexversion < 0x3020000:
     sys.exit()
 
 setup(name='MutPy',
-      version='0.2',
+      version='0.3.0',
       description='Mutation testing tool for Python 3.x source code.',
       author='Konrad Hałas',
       author_email='hakonrad@gmail.com',
       url='http://mutpy.org',
+      download_url='https://bitbucket.org/khalas/mutpy',
       packages=['mutpy'],
       scripts=['bin/mut.py'],
-      requires=['yaml'],
+      requires=['PyYAML'],
       cmdclass={'test': TestCommand},
       classifiers=['Programming Language :: Python :: 3.2',
                    'Environment :: Console',
                    'Intended Audience :: Developers',
-                   'Topic :: Software Development :: Testing']
-     )
+                   'Topic :: Software Development :: Testing',
+                   'License :: OSI Approved :: Apache Software License'])
+
