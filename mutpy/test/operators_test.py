@@ -7,22 +7,39 @@ INDENT = ' ' * 4
 PASS = 'pass'
 
 class MutationOperatorTest(unittest.TestCase):
-    
-    def test_getattrs_like(self):
+
+    class PassIdOperator(operators.MutationOperator):
+
+        def mutate_Pass(self, node):
+            return node
+
+    def setUp(self):
+        self.operator = self.PassIdOperator()
+        self.target_ast = ast.parse(PASS)
+
+    def test_generate_all_mutations_if_always_sampler(self):
+
+        class AlwaysSampler:
+            
+            def is_mutation_time(self):
+                return True
+
+        mutations = list(self.operator.mutate(self.target_ast, sampler=AlwaysSampler()))
+
+        self.assertEqual(len(mutations), 1)
+
+
+    def test_no_mutations_if_never_sampler(self):
         
-        class TestOperator(operators.MutationOperator):
-            def mutate_A(self): pass
-            def mutate_A_1(self): pass
-            def mutate_A_2(self): pass
-            def mutate_AB(self): pass
-            def mutateA(self): pass
-            def mutate_B(self): pass
+        class NeverSampler:
+            
+            def is_mutation_time(self):
+                return False
         
-        operator = TestOperator()
-        visits_method = ['mutate_A', 'mutate_A_1', 'mutate_A_2']
-        for attr in operator.getattrs_like('mutate_A'):
-            self.assertIn(attr.__name__, visits_method)
-            visits_method.remove(attr.__name__)
+        mutations = list(self.operator.mutate(self.target_ast, sampler=NeverSampler()))
+
+        self.assertEqual(len(mutations), 0)
+
 
 class OperatorTestCase(unittest.TestCase):
     
