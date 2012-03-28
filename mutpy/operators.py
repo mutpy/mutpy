@@ -7,8 +7,9 @@ class MutationResign(Exception): pass
 
 class MutationOperator:
 
-    def mutate(self, node, to_mutate):
+    def mutate(self, node, to_mutate=None, sampler=None):
         self.to_mutate = to_mutate
+        self.sampler = sampler
         self.lineno = 1
         for new_node in self.visit(node):
             yield new_node, self.lineno 
@@ -23,6 +24,8 @@ class MutationOperator:
         if visitors:
             for visitor in visitors: 
                 try:
+                    if self.sampler and not self.sampler.is_mutation_time():
+                        raise MutationResign
                     new_node = visitor(copy.deepcopy(node))
                     ast.fix_missing_locations(new_node)
                     yield new_node

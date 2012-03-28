@@ -199,14 +199,15 @@ class MutationController(views.ViewNotifier):
 
 class Mutator:
 
-    def __init__(self, operators):
+    def __init__(self, operators, percentage):
         self.operators = operators
+        self.sampler = utils.RandomSampler(percentage)
 
     def add_operator(self, operator):
         self.operators.append(operator)
     
     def mutate(self, target_ast, to_mutate):
         for op in self.operators:
-            for mutant, lineno in op().mutate(target_ast, to_mutate):
+            for mutant, lineno in op().mutate(target_ast, to_mutate, self.sampler):
                 yield op, lineno, mutant
 
