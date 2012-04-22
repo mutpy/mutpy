@@ -1,22 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import unittest
-from distutils.core import setup, Command
-
-class TestCommand(Command):
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        tests = unittest.TestLoader().discover('mutpy/test', '*_test.py', '.')
-        text_runner = unittest.TextTestRunner()
-        text_runner.run(tests)
+from setuptools import setup
 
 if sys.hexversion < 0x3020000:
     print('MutPy requires Python 3.2 or newer!')
@@ -31,8 +16,8 @@ setup(name='MutPy',
       download_url='https://bitbucket.org/khalas/mutpy',
       packages=['mutpy'],
       scripts=['bin/mut.py'],
-      requires=['PyYAML'],
-      cmdclass={'test': TestCommand},
+      install_requires=['PyYAML>=3.1'],
+      test_suite='mutpy.test',
       classifiers=['Programming Language :: Python :: 3.2',
                    'Environment :: Console',
                    'Intended Audience :: Developers',
