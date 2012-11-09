@@ -377,6 +377,8 @@ class DecoratorInsertionMutationOperator(MutationOperator):
         for decorator in node.decorator_list:
             if isinstance(decorator, ast.Call):
                 decorator_name = decorator.func.id
+            elif isinstance(decorator, ast.Attribute):
+                decorator_name = decorator.value.id
             else:
                 decorator_name = decorator.id
             if decorator_name == self.get_decorator_name():
