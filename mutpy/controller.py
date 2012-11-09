@@ -1,4 +1,5 @@
 from os import path
+import sys
 import ast
 import types
 import unittest
@@ -14,9 +15,9 @@ class TestsFailAtOriginal(Exception):
 class MutationScore:
 
     def __init__(self):
-        self.killed_mutants = 0 
-        self.timeout_mutants = 0 
-        self.incompetent_mutants = 0 
+        self.killed_mutants = 0
+        self.timeout_mutants = 0
+        self.incompetent_mutants = 0
         self.survived_mutants = 0
 
     def count(self):
@@ -42,7 +43,7 @@ class MutationScore:
 
 class MutationController(views.ViewNotifier):
 
-    def __init__(self, target_loader, test_loader, views, mutant_generator, 
+    def __init__(self, target_loader, test_loader, views, mutant_generator,
                     timeout_factor=5, disable_stdout=False):
         super().__init__(views)
         self.target_loader = target_loader
@@ -59,8 +60,10 @@ class MutationController(views.ViewNotifier):
             self.notify_end(self.score, timer.stop())
         except TestsFailAtOriginal as error:
             self.notify_original_tests_fail(error.result)
+            sys.exit(-1)
         except utils.ModulesLoaderException as error:
             self.notify_cant_load(error.name)
+            sys.exit(-2)
 
     def run_mutation_process(self):
         try:
@@ -90,7 +93,7 @@ class MutationController(views.ViewNotifier):
     def run_test(self, test_module, target_test):
         suite = self.get_test_suite(test_module, target_test)
         result = unittest.TestResult()
-        timer = utils.Timer() 
+        timer = utils.Timer()
         self.stdout_manager.disable_stdout()
         suite.run(result)
         self.stdout_manager.enable_stdout()
@@ -105,7 +108,7 @@ class MutationController(views.ViewNotifier):
     @utils.TimeRegister
     def mutate_module(self, target_module, to_mutate, test_modules):
         target_ast = self.create_target_ast(target_module)
-        filename = self.get_module_base_filename(target_module) 
+        filename = self.get_module_base_filename(target_module)
         for op, lineno, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate):
             mutation_number = self.score.all_mutants + 1
             self.notify_mutation(mutation_number, op, filename, lineno, mutant_ast)
@@ -114,7 +117,7 @@ class MutationController(views.ViewNotifier):
                 self.run_tests_with_mutant(test_modules, mutant_module)
             else:
                 self.score.inc_incompetent()
-    
+
     def get_module_base_filename(self, module):
         return path.basename(module.__file__)
 
@@ -127,7 +130,7 @@ class MutationController(views.ViewNotifier):
     def create_mutant_module(self, target_module, mutant_ast):
         try:
             mutant_code = compile(mutant_ast, 'mutant', 'exec')
-            mutant_module = types.ModuleType(target_module.__name__.split('.')[-1])
+            mutant_module = types.ModuleType(target_module.__name__)
             self.stdout_manager.disable_stdout()
             exec(mutant_code, mutant_module.__dict__)
             self.stdout_manager.enable_stdout()
@@ -152,7 +155,7 @@ class MutationController(views.ViewNotifier):
     def run_tests_with_mutant(self, tests_modules, mutant_module):
         suite, total_duration = self.create_test_suite(tests_modules, mutant_module)
         result = utils.MutationTestResult()
-        timer = utils.Timer() 
+        timer = utils.Timer()
         runner_thread = self.run_mutation_thread(suite, total_duration, result)
         timer.stop()
         self.update_score_and_notify_views(result, runner_thread, timer.duration)
@@ -176,10 +179,10 @@ class MutationController(views.ViewNotifier):
         elif result.is_survieved():
             self.update_survived_mutant(mutant_duration)
         else:
-            killer = result.get_killer() 
-            exception_traceback = result.get_exception_traceback() 
+            killer = result.get_killer()
+            exception_traceback = result.get_exception_traceback()
             self.update_killed_mutant(mutant_duration, killer, exception_traceback)
-    
+
     def update_timeout_mutant(self):
         self.notify_timeout()
         self.score.inc_timeout()
@@ -205,7 +208,7 @@ class Mutator:
 
     def add_operator(self, operator):
         self.operators.append(operator)
-    
+
     def mutate(self, target_ast, to_mutate):
         for op in self.operators:
             for mutant, lineno in op().mutate(target_ast, to_mutate, self.sampler):
