@@ -8,36 +8,65 @@ PASS = 'pass'
 
 class MutationOperatorTest(unittest.TestCase):
 
-    def test_getattr_like(self):
+    class PassIdOperator(operators.MutationOperator):
 
-        class X:
-            def mutate_A(self): pass
-            def mutate_A_1(self): pass
-            def mutate_A_2(self): pass
-            def mutate_AB(self): pass
-            def mutateA(self): pass
-            def mutate_B(self): pass
+        def mutate_Pass(self, node):
+            return node
 
-        x = X()
-        visits_method = ['mutate_A', 'mutate_A_1', 'mutate_A_2']
+    def setUp(self):
+        self.operator = self.PassIdOperator()
+        self.target_ast = ast.parse(PASS)
 
-        for attr in operators.MutationOperator.getattr_like(x, 'mutate_A'):
-            self.assertIn(attr.__name__, visits_method)
-            visits_method.remove(attr.__name__)
+    def test_generate_all_mutations_if_always_sampler(self):
+
+        class AlwaysSampler:
+            
+            def is_mutation_time(self):
+                return True
+
+        mutations = list(self.operator.mutate(self.target_ast, sampler=AlwaysSampler()))
+
+        self.assertEqual(len(mutations), 1)
+
+
+    def test_no_mutations_if_never_sampler(self):
+        
+        class NeverSampler:
+            
+            def is_mutation_time(self):
+                return False
+        
+        mutations = list(self.operator.mutate(self.target_ast, sampler=NeverSampler()))
+
+        self.assertEqual(len(mutations), 0)
+
 
 class OperatorTestCase(unittest.TestCase):
 
-    def assert_mutation(self, original, mutants):
+    def assert_mutation(self, original, mutants, lines=None):
         original_ast = ast.parse(original)
         mutants = list(map(codegen.remove_extra_lines, mutants))
         original = codegen.remove_extra_lines(original)
-
-        for mutant, _ in self.__class__.op.mutate(original_ast, None):
+        for mutant, lineno in self.__class__.op.mutate(original_ast, None):
             mutant_code = codegen.remove_extra_lines(codegen.to_source(mutant))
             self.assertIn(mutant_code, mutants)
             mutants.remove(mutant_code)
+            self.assert_location(mutant)
+            if not lines is None:
+                self.assert_mutation_lineo(lineno, lines)
 
         self.assertListEqual(mutants, [], 'did not generate all mutants')
+    
+    def assert_location(self, mutant):    
+        for node in ast.walk(mutant):
+            if 'lineno' in node._attributes and not hasattr(node, 'lineno'):
+                self.fail('Missing lineno in ' + str(node))
+            if 'col_offset' in node._attributes and not hasattr(node, 'col_offset'):
+                self.fail('Missing col_offset in ' + str(node))
+
+    def assert_mutation_lineo(self, lineno, lines):
+        mutation_line = lines.pop(0)
+        self.assertEqual(mutation_line, lineno, 'Bad mutation lineno!')
 
 
 class ConstantReplacementTest(OperatorTestCase):
@@ -105,6 +134,11 @@ class ArithmeticOperatorReplacementTest(OperatorTestCase):
     def test_pow_to_mult(self):
         self.assert_mutation('x ** y', ['x * y'])
 
+    def test_mutation_lineno(self):
+        self.assert_mutation('pass' + EOL + 'x + y' + EOL + 'x - y', 
+                            ['pass' + EOL + 'x - y' + EOL + 'x - y', 'pass' + EOL + 'x + y' + EOL + 'x + y'], 
+                            [2, 3])
+        
 
 class BitwiseOperatorReplacement(OperatorTestCase):
 
@@ -188,7 +222,7 @@ class SliceIndexRemoveTest(OperatorTestCase):
     def test_slice_indexes_remove(self):
         self.assert_mutation('x[1:2:3]', ['x[:2:3]', 'x[1::3]', 'x[1:2]'])
 
-class ConditionNegationTest(OperatorTestCase):
+class ConditionalOperatorInsertionTest(OperatorTestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -199,6 +233,12 @@ class ConditionNegationTest(OperatorTestCase):
 
     def test_negate_if_condition(self):
         self.assert_mutation('if x:\n    pass', ['if (not x):\n    pass'])
+
+    def test_negate_if_and_elif_condition(self):
+        self.assert_mutation('if x:' + EOL + INDENT + 'pass' + EOL + 'elif y:' + EOL + INDENT + 'pass',
+                            ['if (not x):' + EOL + INDENT + 'pass' + EOL + 'elif y:' + EOL + INDENT + 'pass',
+                            'if x:' + EOL + INDENT + 'pass' + EOL + 'elif (not y):' + EOL + INDENT + 'pass'],
+                            lines=[1, 3])
 
 
 class MembershipTestReplacementTest(OperatorTestCase):
@@ -317,6 +357,13 @@ class ClassmethodDecoratorDeletionTest(OperatorTestCase):
         self.assert_mutation('@itertools.wraps' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' ,
                          ['@itertools.wraps' + EOL + 'def f():' + EOL + INDENT + 'pass'])
 
+    def test_double_classmethod_deletion(self):
+        self.assert_mutation('@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' + EOL + 
+                                '@classmethod' + EOL + 'def g():' + EOL + INDENT + 'pass', 
+                         ['def f():' + EOL + INDENT + 'pass' + EOL + 
+                            '@classmethod' + EOL + 'def g():' + EOL + INDENT + 'pass', 
+                         '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' + EOL +
+                             'def g():' + EOL + INDENT + 'pass'])
 
 class ClassmethodDecoratorInsertionTest(OperatorTestCase):
 
@@ -334,4 +381,11 @@ class ClassmethodDecoratorInsertionTest(OperatorTestCase):
     def test_classmethod_add_with_other_and_arguments(self):
         self.assert_mutation('@wraps(func)' + EOL + 'def f():' + EOL + INDENT + 'pass',
                             ['@wraps(func)' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' ])
+
+    def test_add_classmethod_in_two_function(self):
+        self.assert_mutation('def f():' + EOL + INDENT + 'pass' + EOL + 'def g():' + EOL + INDENT + 'pass', 
+                             ['@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' + EOL + 
+                                'def g():' + EOL + INDENT + 'pass',
+                              'def f():' + EOL + INDENT + 'pass' + EOL + '@classmethod' + EOL + 
+                                'def g():' + EOL + INDENT + 'pass'])
 

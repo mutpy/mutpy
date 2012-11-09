@@ -29,3 +29,4 @@ class StaticmethodDecoratorInsertion(operators.DecoratorInsertionMutationOperato
 all_operators = [SelfWordDeletion,
                  StaticmethodDecoratorDeletion,
                  StaticmethodDecoratorInsertion]
+
