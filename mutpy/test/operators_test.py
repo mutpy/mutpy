@@ -389,3 +389,7 @@ class ClassmethodDecoratorInsertionTest(OperatorTestCase):
                               'def f():' + EOL + INDENT + 'pass' + EOL + '@classmethod' + EOL + 
                                 'def g():' + EOL + INDENT + 'pass'])
 
+    def test_classmethod_add_with_other_from_module(self):
+        self.assert_mutation('@itertools.wraps' + EOL + 'def f():' + EOL + INDENT + 'pass' ,
+                         ['@itertools.wraps' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass'])
+
