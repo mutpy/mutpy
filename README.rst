@@ -6,7 +6,7 @@ MutPy is a mutation testing tool for Python 3.x source code.
 MutPy supports standard unittest module, generates YAML reports 
 and has colorful output.
 
-Author: Konrad Hałas <hakonrad(at)gmail.com>
+Author: Konrad Hałas <halas.konrad(at)gmail.com>
 
 Installation
 ~~~~~~~~~~~~

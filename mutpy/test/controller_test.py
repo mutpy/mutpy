@@ -85,7 +85,7 @@ class MulTest(TestCase):
         target_loader = MockModulesLoader('target', self.TARGET_SRC)
         test_loader = MockModulesLoader('test', self.TEST_SRC)
         self.score_view = MutationScoreStoreView()
-        mutator = controller.Mutator([operators.ArithmeticOperatorReplacement])
+        mutator = controller.Mutator([operators.ArithmeticOperatorReplacement], percentage=100)
         self.mutation_controller = MockMutationController(target_loader=target_loader,
                                                             test_loader=test_loader,
                                                             views=[self.score_view],
