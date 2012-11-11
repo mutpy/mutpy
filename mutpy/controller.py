@@ -163,7 +163,7 @@ class MutationController(views.ViewNotifier):
     def run_mutation_thread(self, suite, total_duration, result):
         runner_thread = utils.KillableThread(target=lambda:suite.run(result))
         self.stdout_manager.disable_stdout()
-        live_time = self.timeout_factor * total_duration if total_duration > 1 else 1
+        live_time = self.timeout_factor * (total_duration if total_duration > 1 else 1)
         runner_thread.start()
         runner_thread.join(live_time)
         self.stdout_manager.enable_stdout()
