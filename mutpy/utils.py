@@ -2,29 +2,17 @@ import sys
 import importlib
 import unittest
 import time
-import threading
 import pkgutil
-import ctypes
 import inspect
 import types
 from _pyio import StringIO
 from collections import defaultdict
+from multiprocessing import Process, Queue
+from queue import Empty
 
 
 def notmutate(sth):
     return sth
-
-
-class KillableThread(threading.Thread):
-    daemon = True
-
-    def kill(self):
-        if self.isAlive():
-            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ctypes.py_object(SystemExit))
-            if res == 0:
-                raise ValueError('Invalid thread id.')
-            elif res != 1:
-                raise SystemError('Thread killing failed.')
 
 
 class ModulesLoaderException(Exception):
@@ -179,7 +167,17 @@ class MutationTestResult(unittest.TestResult):
             return self.errors[0][1]
 
     def get_exception(self):
-        return self.type_error[1]
+        if self.type_error:
+            return self.type_error[1]
+
+    def serialize(self):
+        return {
+            'is_incompetent': self.is_incompetent(),
+            'is_survieved': self.is_survieved(),
+            'killer': str(self.get_killer()),
+            'exception_traceback': str(self.get_exception_traceback()),
+            'exception': self.get_exception()
+        }
 
 
 class Timer:
@@ -221,4 +219,24 @@ class TimeRegister:
     def clean(cls):
         cls.executions.clear()
         cls.stack = []
+
+
+
+class MutationSubprocess(Process):
+
+    def __init__(self, suite):
+        super().__init__()
+        self.suite = suite
+        self.queue = Queue()
+
+    def run(self):
+        result = MutationTestResult()
+        self.suite.run(result)
+        self.queue.put_nowait(result.serialize())
+
+    def get_result(self, live_time):
+        try:
+            return self.queue.get(timeout=live_time)
+        except Empty:
+            return None
 

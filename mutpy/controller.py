@@ -156,32 +156,30 @@ class MutationController(views.ViewNotifier):
         suite, total_duration = self.create_test_suite(tests_modules, mutant_module)
         result = utils.MutationTestResult()
         timer = utils.Timer()
-        runner_thread = self.run_mutation_thread(suite, total_duration, result)
+        result = self.run_mutation_subprocess(suite, total_duration, result)
         timer.stop()
-        self.update_score_and_notify_views(result, runner_thread, timer.duration)
+        self.update_score_and_notify_views(result, timer.duration)
 
-    def run_mutation_thread(self, suite, total_duration, result):
-        runner_thread = utils.KillableThread(target=lambda:suite.run(result))
-        self.stdout_manager.disable_stdout()
+    def run_mutation_subprocess(self, suite, total_duration, result):
         live_time = self.timeout_factor * (total_duration if total_duration > 1 else 1)
-        runner_thread.start()
-        runner_thread.join(live_time)
+        process = utils.MutationSubprocess(suite=suite)
+        self.stdout_manager.disable_stdout()
+        process.start()
+        result = process.get_result(live_time)
+        process.terminate()
         self.stdout_manager.enable_stdout()
-        return runner_thread
+        return result
 
-    def update_score_and_notify_views(self, result, runner_thread, mutant_duration):
-        if runner_thread.is_alive():
-            runner_thread.kill()
+    def update_score_and_notify_views(self, result, mutant_duration):
+        if not result:
             self.update_timeout_mutant()
-        elif result.is_incompetent():
-            exception = result.get_exception()
+        elif result['is_incompetent']:
+            exception = result['exception']
             self.update_incompetent_mutant(exception)
-        elif result.is_survieved():
+        elif result['is_survieved']:
             self.update_survived_mutant(mutant_duration)
         else:
-            killer = result.get_killer()
-            exception_traceback = result.get_exception_traceback()
-            self.update_killed_mutant(mutant_duration, killer, exception_traceback)
+            self.update_killed_mutant(mutant_duration, result['killer'], result['exception_traceback'])
 
     def update_timeout_mutant(self):
         self.notify_timeout()
