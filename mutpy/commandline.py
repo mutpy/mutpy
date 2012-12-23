@@ -32,6 +32,8 @@ def build_parser():
                         help='use only selected operators', metavar='OPERATOR')
     parser.add_argument('--list-operators', '-l', action='store_true', help='list available operators')
     parser.add_argument('--path', '-p', type=str, metavar='DIR', help='extend Python path')
+    parser.add_argument('--percentage', type=int, metavar='PERCENTAGE', default=100, 
+                        help='percentage of the generated mutants (mutation sampling)')
     return parser
 
 
@@ -78,7 +80,7 @@ def build_mutator(cfg):
     else:
         operators_set.extend(operators.all_operators)
 
-    return controller.Mutator(operators_set)
+    return controller.Mutator(operators_set, cfg.percentage)
 
 
 def build_name_to_operator_map():

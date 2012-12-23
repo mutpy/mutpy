@@ -5,6 +5,7 @@ import time
 import pkgutil
 import inspect
 import types
+import random
 from _pyio import StringIO
 from collections import defaultdict
 from multiprocessing import Process, Queue
@@ -220,6 +221,14 @@ class TimeRegister:
         cls.executions.clear()
         cls.stack = []
 
+
+class RandomSampler:
+
+    def __init__(self, percentage):
+        self.percentage = percentage if 0 < percentage < 100 else 100
+
+    def is_mutation_time(self):
+        return random.randrange(100) < self.percentage
 
 
 class MutationSubprocess(Process):
