@@ -12,6 +12,14 @@ from multiprocessing import Process, Queue
 from queue import Empty
 
 
+def create_module(ast_node, module_name='mutant', module_dict=None):
+    code = compile(ast_node, module_name, 'exec')
+    module = types.ModuleType(module_name)
+    module.__dict__.update(module_dict or {})
+    exec(code, module.__dict__)
+    return module
+
+
 def notmutate(sth):
     return sth
 
@@ -128,11 +136,11 @@ class StdoutManager:
     def __init__(self, disable=True):
         self.disable = disable
 
-    def disable_stdout(self):
+    def __enter__(self):
         if self.disable:
             sys.stdout = StringIO()
 
-    def enable_stdout(self):
+    def __exit__(self, type , value , traceback):
         sys.stdout = sys.__stdout__
 
 

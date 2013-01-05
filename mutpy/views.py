@@ -94,6 +94,9 @@ class TextView(QuietTextView):
                                                             100 * score.incompetent_mutants / score.all_mutants), 2)
             self.level_print('timeout: {} ({:.1f}%)'.format(score.timeout_mutants,
                                                         100 * score.timeout_mutants / score.all_mutants), 2)
+            if score.all_nodes:
+                self.level_print('Coverage: {} of {} AST nodes ({:.1f}%)'.format(score.covered_nodes, score.all_nodes,
+                                                        100 * score.covered_nodes / score.all_nodes))
 
     def passed(self, tests):
         self.level_print('All tests passed:')
@@ -142,13 +145,13 @@ class TextView(QuietTextView):
 
 
 class DebugView:
-    
+
     def print_exception(self, exception):
         print("\n" + "".join(traceback.format_exception(None, exception, None)))
 
     def incompetent(self, exception):
         self.print_exception(exception)
-        
+
     def killed(self, time, killer, exception_traceback):
         print('\n' + exception_traceback)
 
@@ -189,9 +192,15 @@ class YAMLRaportView:
         self.end_mutation('timeout', None)
 
     def end(self, score, duration):
-        self.dump({'mutations': self.mutation_info, 
-                   'total_time': duration,
-                   'time_stats': dict(utils.TimeRegister.executions)})
+        self.dump({
+            'mutations': self.mutation_info,
+            'total_time': duration,
+            'time_stats': dict(utils.TimeRegister.executions),
+            'coverage': {
+                'covered_nodes': score.covered_nodes,
+                'all_nodes': score.all_nodes
+            }
+        })
 
     def dump(self, to_dump):
         yaml.dump(to_dump, self.stream, default_flow_style=False)

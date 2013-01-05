@@ -7,22 +7,23 @@ class MutationResign(Exception): pass
 
 class MutationOperator:
 
-    def mutate(self, node, to_mutate=None, sampler=None):
+    def mutate(self, node, to_mutate=None, sampler=None, coverage_injector=None):
         self.to_mutate = to_mutate
         self.sampler = sampler
         self.lineno = 1
+        self.coverage_injector = coverage_injector
         for new_node in self.visit(node):
-            yield new_node, self.lineno 
+            yield new_node, self.lineno
 
     def visit(self, node):
-        if self.has_notmutate(node):
+        if self.has_notmutate(node) or (self.coverage_injector and not self.coverage_injector.is_covered(node)):
             return
 
         self.set_mutation_lineno(node)
-        visitors = self.find_visitors(node) 
+        visitors = self.find_visitors(node)
 
         if visitors:
-            for visitor in visitors: 
+            for visitor in visitors:
                 try:
                     if self.sampler and not self.sampler.is_mutation_time():
                         raise MutationResign
@@ -47,7 +48,7 @@ class MutationOperator:
             else:
                 generator = []
 
-            for _ in generator: 
+            for _ in generator:
                 yield node
 
     def generic_visit_list(self, old_value):
@@ -81,7 +82,7 @@ class MutationOperator:
                     return True
             return False
         except AttributeError:
-            return False 
+            return False
 
     def set_mutation_lineno(self, node):
         if hasattr(node, 'lineno'):
