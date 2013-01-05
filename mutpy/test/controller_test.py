@@ -41,6 +41,12 @@ class MutationScoreTest(unittest.TestCase):
 
         self.assertEqual(self.score.count(), 50)
 
+    def test_update_coverage(self):
+        self.score.update_coverage(1, 1)
+
+        self.assertEqual(self.score.covered_nodes, 1)
+        self.assertEqual(self.score.all_nodes, 1)
+
 
 class MockModulesLoader:
 
@@ -89,7 +95,8 @@ class MulTest(TestCase):
         self.mutation_controller = MockMutationController(target_loader=target_loader,
                                                             test_loader=test_loader,
                                                             views=[self.score_view],
-                                                            mutant_generator=mutator)
+                                                            mutant_generator=mutator,
+                                                            mutate_covered=True)
 
     def test_run(self):
         self.mutation_controller.run()

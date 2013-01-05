@@ -15,7 +15,7 @@ def build_parser():
                                      fromfile_prefix_chars='@')
     parser.add_argument('--version', '-v', action='version', version='%(prog)s {}'.format(VERSION))
     parser.add_argument('--target', '-t', type=str, nargs='+', help='target module or package to mutate')
-    parser.add_argument('--unit-test', '-u', type=str, nargs='+', 
+    parser.add_argument('--unit-test', '-u', type=str, nargs='+',
                         help='test class, test method, module or package with unit tests')
     parser.add_argument('--report', '-r', type=str, help='generate YAML report', metavar='REPORT_FILE')
     parser.add_argument('--timeout-factor', '-f', type=float, default=DEF_TIMEOUT_FACTOR,
@@ -24,16 +24,18 @@ def build_parser():
     parser.add_argument('--quiet', '-q', action='store_true', help='quiet mode')
     parser.add_argument('--debug', action='store_true', help='dubug mode')
     parser.add_argument('--colored-output', '-c', action='store_true', help='try print colored output')
-    parser.add_argument('--disable-stdout', '-d', action='store_true', 
+    parser.add_argument('--disable-stdout', '-d', action='store_true',
                         help='try disable stdout during mutation '
                         '(this option can damage your tests if you interact with sys.stdout)')
     parser.add_argument('--experimental-operators', '-e', action='store_true', help='use experimental operators')
-    parser.add_argument('--operator', '-o', type=str, nargs='+', 
+    parser.add_argument('--operator', '-o', type=str, nargs='+',
                         help='use only selected operators', metavar='OPERATOR')
     parser.add_argument('--list-operators', '-l', action='store_true', help='list available operators')
     parser.add_argument('--path', '-p', type=str, metavar='DIR', help='extend Python path')
-    parser.add_argument('--percentage', type=int, metavar='PERCENTAGE', default=100, 
+    parser.add_argument('--percentage', type=int, metavar='PERCENTAGE', default=100,
                         help='percentage of the generated mutants (mutation sampling)')
+    parser.add_argument('--coverage', action='store_true',
+                        help='mutate only covered code')
     return parser
 
 
@@ -53,16 +55,17 @@ def build_controller(cfg):
     mutant_generator = build_mutator(cfg)
     target_loader = utils.ModulesLoader(cfg.target, cfg.path)
     test_loader = utils.ModulesLoader(cfg.unit_test, cfg.path)
-    return controller.MutationController(target_loader=target_loader, 
-                                         test_loader=test_loader, 
-                                         views=built_views, 
-                                         mutant_generator=mutant_generator, 
-                                         timeout_factor=cfg.timeout_factor, 
-                                         disable_stdout=cfg.disable_stdout)
+    return controller.MutationController(target_loader=target_loader,
+                                         test_loader=test_loader,
+                                         views=built_views,
+                                         mutant_generator=mutant_generator,
+                                         timeout_factor=cfg.timeout_factor,
+                                         disable_stdout=cfg.disable_stdout,
+                                         mutate_covered=cfg.coverage)
 
 
 def build_mutator(cfg):
-    operators_set = [] 
+    operators_set = []
 
     if cfg.experimental_operators:
         operators_set.extend(experiments.all_operators)
