@@ -38,3 +38,9 @@ class SimpleGoodTest(unittest.TestCase):
     def test_get_magic(self):
         self.assertEqual(self.simple.get_magic(), 1337)
 
+    def test_is_odd(self):
+        self.assertTrue(self.simple.is_odd(1))
+
+    def test_is_not_odd(self):
+        self.assertFalse(self.simple.is_odd(2))
+
