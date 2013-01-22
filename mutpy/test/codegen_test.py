@@ -1,5 +1,6 @@
 import unittest
 import ast
+import sys
 from mutpy import codegen
 
 
@@ -116,6 +117,9 @@ class CodegenTest(unittest.TestCase):
     def test_try_with_as(self):
         self.assert_code_equal("try:" + EOL + INDENT + PASS + EOL + "except Y as y:" + EOL + INDENT + PASS)
 
+    def test_try_with_finally(self):
+        self.assert_code_equal("try:" + EOL + INDENT + PASS + EOL + "finally:" + EOL + INDENT + PASS)
+
     def test_for_break(self):
         self.assert_code_equal("for x in y:" + EOL + INDENT + "break")
 
@@ -129,4 +133,14 @@ class CodegenTest(unittest.TestCase):
 
     def test_empty_yield(self):
         self.assert_code_equal("def f():" + EOL + INDENT + 'yield')
+
+    def test_with(self):
+        self.assert_code_equal("with x:" + EOL + INDENT + 'pass')
+
+    def test_with_as(self):
+        self.assert_code_equal("with x as y:" + EOL + INDENT + 'pass')
+
+    @unittest.skipIf(sys.version_info < (3, 3), 'not supported Python version')
+    def test_with_two_vars(self):
+        self.assert_code_equal("with x, y:" + EOL + INDENT + 'pass')
 
