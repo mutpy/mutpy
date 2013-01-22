@@ -98,7 +98,7 @@ class ModuleInjectorTest(unittest.TestCase):
         source_module_after = types.ModuleType('source')
         package = types.ModuleType('package')
         package.source = source_module_before
-        sys.modules['package'] = package 
+        sys.modules['package'] = package
 
         eval(compile(target_module_content, 'target.py', 'exec'), target_module.__dict__)
 
@@ -118,8 +118,8 @@ class ModuleInjectorTest(unittest.TestCase):
         source_module_before.__file__ = 'source.py'
         source_module_before.SourceClass = class_before
         source_module_after = types.ModuleType('source')
-        source_module_after.SourceClass = class_after 
-        sys.modules['source'] = source_module_before 
+        source_module_after.SourceClass = class_after
+        sys.modules['source'] = source_module_before
 
         eval(compile(target_module_content, 'target.py', 'exec'), target_module.__dict__)
 
@@ -129,7 +129,7 @@ class ModuleInjectorTest(unittest.TestCase):
         self.assertEqual(target_module.SourceClass, class_after)
 
         del sys.modules['source']
-       
+
     def test_inject_module_with_import_from_as(self):
         target_module_content = 'from package import source as other'
         target_module = types.ModuleType('target')
@@ -138,7 +138,7 @@ class ModuleInjectorTest(unittest.TestCase):
         source_module_after = types.ModuleType('source')
         package = types.ModuleType('package')
         package.source = source_module_before
-        sys.modules['package'] = package 
+        sys.modules['package'] = package
 
         eval(compile(target_module_content, 'target.py', 'exec'), target_module.__dict__)
 
@@ -158,8 +158,8 @@ class ModuleInjectorTest(unittest.TestCase):
         source_module_before.__file__ = 'source.py'
         source_module_before.SourceClass = class_before
         source_module_after = types.ModuleType('source')
-        source_module_after.SourceClass = class_after 
-        sys.modules['source'] = source_module_before 
+        source_module_after.SourceClass = class_after
+        sys.modules['source'] = source_module_before
 
         eval(compile(target_module_content, 'target.py', 'exec'), target_module.__dict__)
 
@@ -172,17 +172,17 @@ class ModuleInjectorTest(unittest.TestCase):
 
     def test_inject_function_with_import_from(self):
         function_before = lambda: 0
-        function_before.__name__ = 'foo' 
+        function_before.__name__ = 'foo'
         function_after = lambda: 0
-        function_after.__name__ = 'foo' 
+        function_after.__name__ = 'foo'
         target_module_content = 'from source import foo'
         target_module = types.ModuleType('target')
         source_module_before = types.ModuleType('source')
         source_module_before.__file__ = 'source.py'
         source_module_before.foo = function_before
         source_module_after = types.ModuleType('source')
-        source_module_after.foo = function_after 
-        sys.modules['source'] = source_module_before 
+        source_module_after.foo = function_after
+        sys.modules['source'] = source_module_before
 
         eval(compile(target_module_content, 'target.py', 'exec'), target_module.__dict__)
 
@@ -200,10 +200,10 @@ class ModuleInjectorTest(unittest.TestCase):
         target_module = types.ModuleType('target')
         source_module_before = types.ModuleType('source')
         source_module_before.__file__ = 'source.py'
-        source_module_before.X = const_before 
+        source_module_before.X = const_before
         source_module_after = types.ModuleType('source')
-        source_module_after.X = const_after 
-        sys.modules['source'] = source_module_before 
+        source_module_after.X = const_after
+        sys.modules['source'] = source_module_before
 
         eval(compile(target_module_content, 'target.py', 'exec'), target_module.__dict__)
 
@@ -216,7 +216,7 @@ class ModuleInjectorTest(unittest.TestCase):
 
 
 class MockTimer():
-    
+
     def stop(self):
         return 1
 
@@ -226,7 +226,7 @@ class MockTimeRegister(utils.TimeRegister):
 
 
 class TimeRegisterTest(unittest.TestCase):
-    
+
     def setUp(self):
         MockTimeRegister.clean()
 
