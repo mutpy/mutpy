@@ -11,53 +11,35 @@ class MarkerNodeTransformer(ast.NodeTransformer):
         self.last_marker = 0
 
     def visit(self, node):
-        if not hasattr(node, 'marker') and node.__class__ in CoverageNodeTransformer.coverable_nodes:
+        if not hasattr(node, 'marker') and node.__class__ in CoverageNodeTransformer.get_coverable_nodes():
             node.marker = self.last_marker
             self.last_marker += 1
         return super().visit(node)
 
 
-class CoverageNodeTransformer(ast.NodeTransformer):
+class AbstractCoverageNodeTransformer(ast.NodeTransformer):
 
-    inject_inside = [
-        ast.ExceptHandler,
-        ast.FunctionDef,
-        ast.ClassDef
-    ]
+    @classmethod
+    def get_coverable_nodes(cls):
+        return cls.get_statements_nodes() | cls.get_definitions_nodes()
 
-    inject_before = [
-        ast.Assign,
-        ast.If,
-        ast.While,
-        ast.For,
-        ast.Expr,
-        ast.Return,
-        ast.TryExcept,
-        ast.TryFinally,
-        ast.Delete,
-        ast.AugAssign,
-        ast.Raise,
-        ast.Assert,
-        ast.Import,
-        ast.ImportFrom,
-        ast.Global,
-        ast.Nonlocal,
-        ast.Break,
-        ast.Continue,
-        ast.Pass
-    ]
+    @classmethod
+    def get_statements_nodes(cls):
+        raise NotImplementedError()
 
-    coverable_nodes = inject_before + inject_inside
+    @classmethod
+    def get_definitions_nodes(cls):
+        raise NotImplementedError()
 
     def __init__(self):
         super().__init__()
-        for node_class in self.coverable_nodes:
+        for node_class in self.get_coverable_nodes():
             visit_method_name = 'visit_' + node_class.__name__
             if not hasattr(self, visit_method_name):
-                if node_class in self.inject_before:
-                    setattr(self, visit_method_name, self.inject_before_visit)
-                else:
+                if node_class in self.get_definitions_nodes():
                     setattr(self, visit_method_name, self.inject_inside_visit)
+                else:
+                    setattr(self, visit_method_name, self.inject_before_visit)
 
     def inject_before_visit(self, node):
         node = self.generic_visit(node)
@@ -75,6 +57,85 @@ class CoverageNodeTransformer(ast.NodeTransformer):
         coverage_node.lineno = node.lineno
         coverage_node.col_offset = node.col_offset
         return coverage_node
+
+
+class CoverageNodeTransformerPython32(AbstractCoverageNodeTransformer):
+
+    __python_version__ = (3, 2)
+
+    @classmethod
+    def get_statements_nodes(cls):
+        return set([
+            ast.Assert,
+            ast.Assign,
+            ast.AugAssign,
+            ast.Break,
+            ast.Continue,
+            ast.Delete,
+            ast.Expr,
+            ast.For,
+            ast.Global,
+            ast.If,
+            ast.Import,
+            ast.ImportFrom,
+            ast.Nonlocal,
+            ast.Pass,
+            ast.Raise,
+            ast.Return,
+            ast.TryExcept,
+            ast.TryFinally,
+            ast.While
+        ])
+
+    @classmethod
+    def get_definitions_nodes(cls):
+        return set([
+            ast.ClassDef,
+            ast.ExceptHandler,
+            ast.FunctionDef
+        ])
+
+
+class CoverageNodeTransformerPython33(AbstractCoverageNodeTransformer):
+
+    __python_version__ = (3, 3)
+
+    @classmethod
+    def get_statements_nodes(cls):
+        return set([
+            ast.Assert,
+            ast.Assign,
+            ast.AugAssign,
+            ast.Break,
+            ast.Continue,
+            ast.Delete,
+            ast.Expr,
+            ast.For,
+            ast.Global,
+            ast.If,
+            ast.Import,
+            ast.ImportFrom,
+            ast.Nonlocal,
+            ast.Pass,
+            ast.Raise,
+            ast.Return,
+            ast.Try,
+            ast.While
+        ])
+
+    @classmethod
+    def get_definitions_nodes(cls):
+        return set([
+            ast.ClassDef,
+            ast.ExceptHandler,
+            ast.FunctionDef
+        ])
+
+
+CoverageNodeTransformer = utils.get_by_python_version([
+    CoverageNodeTransformerPython32,
+    CoverageNodeTransformerPython33
+])
 
 
 class CoverageInjector:
@@ -95,7 +156,7 @@ class CoverageInjector:
             )
 
     def is_covered(self, child_node):
-        if not child_node.__class__ in CoverageNodeTransformer.coverable_nodes:
+        if not child_node.__class__ in CoverageNodeTransformer.get_coverable_nodes():
             return True
         return child_node.marker in self.covered_nodes
 

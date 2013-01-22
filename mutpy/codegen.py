@@ -9,6 +9,7 @@
     :license: BSD.
 """
 import ast
+from mutpy import utils
 
 BOOLOP_SYMBOLS = {
     ast.And:        'and',
@@ -92,7 +93,7 @@ def remove_extra_lines(source):
         return '\n'.join(result)
 
 
-class SourceGenerator(ast.NodeVisitor):
+class AbstractSourceGenerator(ast.NodeVisitor):
     """This visitor is able to transform a well formed syntax tree into python
     sourcecode.  For more details have a look at the docstring of the
     `node_to_source` function.
@@ -285,16 +286,6 @@ class SourceGenerator(ast.NodeVisitor):
         self.write(':')
         self.body_or_else(node)
 
-    def visit_With(self, node):
-        self.newline(node)
-        self.write('with ')
-        self.visit(node.context_expr)
-        if node.optional_vars is not None:
-            self.write(' as ')
-            self.visit(node.optional_vars)
-        self.write(':')
-        self.body(node.body)
-
     def visit_Pass(self, node):
         self.newline(node)
         self.write('pass', node)
@@ -324,21 +315,6 @@ class SourceGenerator(ast.NodeVisitor):
             self.visit(target)
             if target is not node.targets[-1]:
                 self.write(', ')
-
-    def visit_TryExcept(self, node):
-        self.newline(node)
-        self.write('try:')
-        self.body(node.body)
-        for handler in node.handlers:
-            self.visit(handler)
-
-    def visit_TryFinally(self, node):
-        self.newline(node)
-        self.write('try:')
-        self.body(node.body)
-        self.newline(node)
-        self.write('finally:')
-        self.body(node.finalbody)
 
     def visit_Global(self, node):
         self.newline(node)
@@ -600,3 +576,70 @@ class SourceGenerator(ast.NodeVisitor):
 
     def visit_arg(self, node):
         self.write(node.arg)
+
+
+class SourceGeneratorPython32(AbstractSourceGenerator):
+
+    __python_version__ = (3, 2)
+
+    def visit_TryExcept(self, node):
+        self.newline(node)
+        self.write('try:')
+        self.body(node.body)
+        for handler in node.handlers:
+            self.visit(handler)
+
+    def visit_TryFinally(self, node):
+        self.newline(node)
+        self.write('try:')
+        self.body(node.body)
+        self.newline(node)
+        self.write('finally:')
+        self.body(node.finalbody)
+
+    def visit_With(self, node):
+        self.newline(node)
+        self.write('with ')
+        self.visit(node.context_expr)
+        if node.optional_vars is not None:
+            self.write(' as ')
+            self.visit(node.optional_vars)
+        self.write(':')
+        self.body(node.body)
+
+
+class SourceGeneratorPython33(AbstractSourceGenerator):
+
+    __python_version__ = (3, 3)
+
+    def visit_Try(self, node):
+        self.newline(node)
+        self.write('try:')
+        self.body(node.body)
+        for handler in node.handlers:
+            self.visit(handler)
+        if node.finalbody:
+            self.newline(node)
+            self.write('finally:')
+            self.body(node.finalbody)
+
+
+    def visit_With(self, node):
+        self.newline(node)
+        self.write('with ')
+        for with_item in node.items:
+            self.visit(with_item.context_expr)
+            if with_item.optional_vars is not None:
+                self.write(' as ')
+                self.visit(with_item.optional_vars)
+            if with_item != node.items[-1]:
+                self.write(', ')
+        self.write(':')
+        self.body(node.body)
+
+
+SourceGenerator = utils.get_by_python_version([
+    SourceGeneratorPython32,
+    SourceGeneratorPython33
+])
+

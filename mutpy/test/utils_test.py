@@ -259,3 +259,27 @@ class TimeRegisterTest(unittest.TestCase):
 
         self.assertEqual(MockTimeRegister.executions['foo'], 1)
 
+
+class GetByPythonVersionTest(unittest.TestCase):
+
+    def test_empty_classes(self):
+        with self.assertRaises(NotImplementedError):
+            utils.get_by_python_version(classes=[])
+
+    def test_no_proper_class(self):
+
+        class A:
+            __python_version__ = (3, 3)
+
+        with self.assertRaises(NotImplementedError):
+            utils.get_by_python_version(classes=[A], python_version=(3, 2))
+
+    def test_get_proper_class(self):
+
+        class A:
+            __python_version__ = (3, 3)
+
+        cls = utils.get_by_python_version(classes=[A], python_version=(3, 3))
+
+        self.assertEqual(cls, A)
+
