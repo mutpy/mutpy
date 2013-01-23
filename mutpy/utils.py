@@ -259,11 +259,12 @@ class MutationSubprocess(Process):
 
 
 def get_by_python_version(classes, python_version=sys.version_info):
+    result = None
     for cls in classes:
-        for index, number in enumerate(cls.__python_version__):
-            if number != python_version[index]:
-                break
-        else:
-            return cls
-    raise NotImplementedError('MutPy does not support Python {}.'.format(sys.version))
+        if cls.__python_version__ <= python_version:
+            if not result or cls.__python_version__ > result.__python_version__:
+                result = cls
+    if not result:
+        raise NotImplementedError('MutPy does not support Python {}.'.format(sys.version))
+    return result
 

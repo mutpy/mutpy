@@ -262,24 +262,27 @@ class TimeRegisterTest(unittest.TestCase):
 
 class GetByPythonVersionTest(unittest.TestCase):
 
+    class A:
+        __python_version__ = (3, 1)
+
+    class B:
+        __python_version__ = (3, 2)
+
     def test_empty_classes(self):
         with self.assertRaises(NotImplementedError):
             utils.get_by_python_version(classes=[])
 
     def test_no_proper_class(self):
-
-        class A:
-            __python_version__ = (3, 3)
-
         with self.assertRaises(NotImplementedError):
-            utils.get_by_python_version(classes=[A], python_version=(3, 2))
+            utils.get_by_python_version(classes=[self.A, self.B], python_version=(3, 0))
 
     def test_get_proper_class(self):
+        cls = utils.get_by_python_version(classes=[self.A, self.B], python_version=(3, 1))
 
-        class A:
-            __python_version__ = (3, 3)
+        self.assertEqual(cls, self.A)
 
-        cls = utils.get_by_python_version(classes=[A], python_version=(3, 3))
+    def test_get_lower_class(self):
+        cls = utils.get_by_python_version(classes=[self.A, self.B], python_version=(3, 3))
 
-        self.assertEqual(cls, A)
+        self.assertEqual(cls, self.B)
 
