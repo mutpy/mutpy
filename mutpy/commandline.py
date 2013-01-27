@@ -30,7 +30,7 @@ def build_parser():
     parser.add_argument('--experimental-operators', '-e', action='store_true', help='use experimental operators')
     parser.add_argument('--operator', '-o', type=str, nargs='+',
                         help='use only selected operators', metavar='OPERATOR')
-    parser.add_argument('--disable-operator', type=str, nargs='+',
+    parser.add_argument('--disable-operator', type=str, nargs='+', default=[],
                         help='disable selected operators', metavar='OPERATOR')
     parser.add_argument('--list-operators', '-l', action='store_true', help='list available operators')
     parser.add_argument('--path', '-p', type=str, metavar='DIR', help='extend Python path')
@@ -75,7 +75,7 @@ def build_mutator(cfg):
     name_to_operator = build_name_to_operator_map()
 
     if cfg.operator:
-        operators_set += {get_operator(name, name_to_operator)
+        operators_set |= {get_operator(name, name_to_operator)
                           for name in cfg.operator}
     else:
         operators_set |= set(operators.all_operators)

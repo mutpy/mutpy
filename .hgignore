@@ -3,6 +3,7 @@ syntax:glob
 # Python
 *.pyc
 build/*
+MutPy.egg-info
 
 # PyDev
 .project
