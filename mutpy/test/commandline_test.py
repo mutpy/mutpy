@@ -13,7 +13,7 @@ class ComandLineTest(unittest.TestCase):
         self.assertEqual(len(default_mutator.operators) - 1,
                          len(mutator.operators))
 
-    def test_build_mutator_operator(self):
+    def test_build_mutator_with_operator(self):
         parser = commandline.build_parser()
         mutator = commandline.build_mutator(
             parser.parse_args(['--operator', 'RIL']))
