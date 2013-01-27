@@ -12,5 +12,8 @@ build/*
 # vim
 .*.swp
 
-#docs
+# docs
 docs/_build/*
+
+# setup.py
+MutPy.egg-info/*
