@@ -22,6 +22,9 @@ class MutationOperator:
         self.set_mutation_lineno(node)
         visitors = self.find_visitors(node)
 
+        node.parent = getattr(self, 'parent', None)
+        self.parent = node
+
         if visitors:
             for visitor in visitors:
                 try:
@@ -38,6 +41,8 @@ class MutationOperator:
         else:
             for new_node in self.generic_visit(node):
                 yield new_node
+
+        self.parent = node.parent
 
     def generic_visit(self, node):
         for field, old_value in ast.iter_fields(node):
@@ -218,16 +223,24 @@ class ConstantReplacement(MutationOperator):
         return ast.Num(n=node.n + 1)
 
     def mutate_Str(self, node):
+        if self.is_docstring(node):
+            raise MutationResign()
+
         if node.s != self.FIRST_CONST_STRING:
             return ast.Str(s=self.FIRST_CONST_STRING)
         else:
             return ast.Str(s=self.SEOCND_CONST_STRING)
 
     def mutate_Str_empty(self, node):
-        if not node.s:
+        if not node.s or self.is_docstring(node):
             raise MutationResign()
 
         return ast.Str(s='')
+
+    def is_docstring(self, node):
+        def_node = node.parent.parent
+        return (isinstance(def_node, (ast.FunctionDef, ast.ClassDef, ast.Module)) and
+            def_node.body and isinstance(def_node.body[0], ast.Expr) and def_node.body[0].value == node)
 
     @classmethod
     def name(cls):
