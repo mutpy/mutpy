@@ -109,6 +109,12 @@ class MutationOperator:
     def long_name(cls):
         return cls.__name__
 
+    def is_docstring(self, node, def_node=None):
+        def_node = def_node or node.parent.parent
+        return (isinstance(def_node, (ast.FunctionDef, ast.ClassDef, ast.Module)) and def_node.body and
+            isinstance(def_node.body[0], ast.Expr) and isinstance(def_node.body[0].value, ast.Str) and
+            def_node.body[0].value == node)
+
 
 class ArithmeticOperatorReplacement(MutationOperator):
 
@@ -237,11 +243,6 @@ class ConstantReplacement(MutationOperator):
 
         return ast.Str(s='')
 
-    def is_docstring(self, node):
-        def_node = node.parent.parent
-        return (isinstance(def_node, (ast.FunctionDef, ast.ClassDef, ast.Module)) and
-            def_node.body and isinstance(def_node.body[0], ast.Expr) and def_node.body[0].value == node)
-
     @classmethod
     def name(cls):
         return 'CRP'
@@ -256,6 +257,8 @@ class StatementDeletion(MutationOperator):
         return ast.Pass()
 
     def mutate_Expr(self, node):
+        if self.is_docstring(node.value, node.parent):
+            raise MutationResign()
         return ast.Pass()
 
     @classmethod
