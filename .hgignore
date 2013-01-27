@@ -1,0 +1,16 @@
+syntax:glob
+
+# Python
+*.pyc
+build/*
+
+# PyDev
+.project
+.pydevproject
+.settings/*
+
+# vim
+.*.swp
+
+#docs
+docs/_build/*
