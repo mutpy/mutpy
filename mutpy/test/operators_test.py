@@ -111,8 +111,11 @@ class ConstantReplacementTest(OperatorTestCase):
         self.assert_mutation("@notmutate" + EOL + "class X:" + EOL + INDENT + "'ham'", [])
 
     def test_replace_first_const_string(self):
-        self.assert_mutation("'{}'".format(self.op.FIRST_CONST_STRING),
-                            ["'{}'".format(self.op.SEOCND_CONST_STRING), "''"])
+        self.assert_mutation("x = '{}'".format(self.op.FIRST_CONST_STRING),
+                            ["x = '{}'".format(self.op.SEOCND_CONST_STRING), "x = ''"])
+
+    def test_not_mutate_docstring(self):
+        self.assert_mutation("def x():" + EOL + INDENT + '""""doc"""', [])
 
 
 class ArithmeticOperatorReplacementTest(OperatorTestCase):

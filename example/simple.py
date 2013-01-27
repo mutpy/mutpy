@@ -2,6 +2,7 @@ from mutpy.utils import notmutate
 
 
 class Simple:
+    """Simple class."""
 
     def __init__(self, z):
         self.z = z
