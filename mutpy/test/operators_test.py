@@ -345,6 +345,9 @@ class StatementDeletionTest(OperatorTestCase):
     def test_assign_with_call_deletion(self):
         self.assert_mutation('x = f()', ['pass'])
 
+    def test_not_mutate_docstring(self):
+        self.assert_mutation('""""doc"""', [])
+
 
 class ClassmethodDecoratorDeletionTest(OperatorTestCase):
 
