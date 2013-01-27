@@ -70,13 +70,16 @@ class ModulesLoader:
         raise NotImplementedError('File loading is not supported!')
 
     def load_package(self, name):
-        package = importlib.import_module(name)
-        result = []
-        for _, module_name, ispkg in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
-            if not ispkg:
-                module = importlib.import_module(module_name)
-                result.append((module, None))
-        return result
+        try:
+            package = importlib.import_module(name)
+            result = []
+            for _, module_name, ispkg in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
+                if not ispkg:
+                    module = importlib.import_module(module_name)
+                    result.append((module, None))
+            return result
+        except ImportError as error:
+            raise ModulesLoaderException(name, error)
 
     def load_module(self, name):
         parts = name.split('.')
