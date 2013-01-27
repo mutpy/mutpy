@@ -26,8 +26,9 @@ def notmutate(sth):
 
 class ModulesLoaderException(Exception):
 
-    def __init__(self, name):
+    def __init__(self, name, exception):
         self.name = name
+        self.exception = exception
 
     def __str__(self):
         return "cant't load {}".format(self.name)
@@ -80,21 +81,23 @@ class ModulesLoader:
     def load_module(self, name):
         parts = name.split('.')
         to_mutate = []
+        last_exception = None
         while True:
             if not parts:
-                raise ModulesLoaderException(name)
+                raise ModulesLoaderException(name, last_exception)
             try:
                 module = importlib.import_module('.'.join(parts))
                 break
-            except ImportError:
+            except ImportError as error:
                 to_mutate = [parts.pop()] + to_mutate
+                last_exception = error
 
         attr = module
         for part in to_mutate:
             if hasattr(attr, part):
                 attr = getattr(attr, part)
             else:
-                raise ModulesLoaderException(name)
+                raise ModulesLoaderException(name, last_exception)
 
         return [(module, '.'.join(to_mutate) if to_mutate else None)]
 
