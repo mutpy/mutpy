@@ -30,6 +30,8 @@ def build_parser():
     parser.add_argument('--experimental-operators', '-e', action='store_true', help='use experimental operators')
     parser.add_argument('--operator', '-o', type=str, nargs='+',
                         help='use only selected operators', metavar='OPERATOR')
+    parser.add_argument('--disable-operator', type=str, nargs='+',
+                        help='disable selected operators', metavar='OPERATOR')
     parser.add_argument('--list-operators', '-l', action='store_true', help='list available operators')
     parser.add_argument('--path', '-p', type=str, metavar='DIR', help='extend Python path')
     parser.add_argument('--percentage', type=int, metavar='PERCENTAGE', default=100,
@@ -65,25 +67,31 @@ def build_controller(cfg):
 
 
 def build_mutator(cfg):
-    operators_set = []
+    operators_set = set()
 
     if cfg.experimental_operators:
-        operators_set.extend(experiments.all_operators)
+        operators_set |= set(experiments.all_operators)
+
+    name_to_operator = build_name_to_operator_map()
 
     if cfg.operator:
-        name_to_operator = build_name_to_operator_map()
-        for operator in cfg.operator:
-            try:
-                operator_class = name_to_operator[operator]
-                if operator_class not in operators_set:
-                    operators_set.append(operator_class)
-            except KeyError:
-                print('Unsupported operator {}! Use -l to show all operators.'.format(operator))
-                sys.exit(-1)
+        operators_set += {get_operator(name, name_to_operator)
+                          for name in cfg.operator}
     else:
-        operators_set.extend(operators.all_operators)
+        operators_set |= set(operators.all_operators)
+
+    operators_set -= {get_operator(name, name_to_operator)
+                      for name in cfg.disable_operator}
 
     return controller.Mutator(operators_set, cfg.percentage)
+
+
+def get_operator(name, name_to_operator):
+    try:
+        return name_to_operator[name]
+    except KeyError:
+        print('Unsupported operator {}! Use -l to show all operators.'.format(name))
+        sys.exit(-1)
 
 
 def build_name_to_operator_map():
