@@ -68,7 +68,7 @@ class MutationController(views.ViewNotifier):
             self.notify_original_tests_fail(error.result)
             sys.exit(-1)
         except utils.ModulesLoaderException as error:
-            self.notify_cant_load(error.name)
+            self.notify_cant_load(error.name, error.exception)
             sys.exit(-2)
 
     def run_mutation_process(self):
