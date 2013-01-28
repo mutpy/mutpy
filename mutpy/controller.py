@@ -227,7 +227,7 @@ class Mutator:
         self.operators.append(operator)
 
     def mutate(self, target_ast, to_mutate, coverage_injector):
-        for op in self.operators:
+        for op in utils.sort_operators(self.operators):
             for mutant, lineno in op().mutate(target_ast, to_mutate, self.sampler, coverage_injector):
                 yield op, lineno, mutant
 

@@ -404,20 +404,22 @@ class ClassmethodDecoratorInsertion(DecoratorInsertionMutationOperator):
         return 'classmethod'
 
 
-all_operators = [ArithmeticOperatorReplacement,
-                 UnaryOperatorReplacement,
-                 BitwiseOperatorReplacement,
-                 LogicalOperatorReplacement,
-                 ConditionalOperatorReplacement,
-                 ConditionalOperatorInsertion,
-                 ConstantReplacement,
-                 StatementDeletion,
-                 SliceIndexRemove,
-                 ExceptionHandleDeletion,
-                 MembershipTestReplacement,
-                 OneIterationLoop,
-                 ZeroIterationLoop,
-                 ReverseIterationLoop,
-                 ClassmethodDecoratorDeletion,
-                 ClassmethodDecoratorInsertion]
+all_operators = set([
+    ArithmeticOperatorReplacement,
+    BitwiseOperatorReplacement,
+    ClassmethodDecoratorDeletion,
+    ClassmethodDecoratorInsertion,
+    ConditionalOperatorInsertion,
+    ConditionalOperatorReplacement,
+    ConstantReplacement,
+    ExceptionHandleDeletion,
+    LogicalOperatorReplacement,
+    MembershipTestReplacement,
+    OneIterationLoop,
+    ReverseIterationLoop,
+    SliceIndexRemove,
+    StatementDeletion,
+    UnaryOperatorReplacement,
+    ZeroIterationLoop
+])
 
