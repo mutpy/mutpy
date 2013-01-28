@@ -274,3 +274,7 @@ def get_by_python_version(classes, python_version=sys.version_info):
         raise NotImplementedError('MutPy does not support Python {}.'.format(sys.version))
     return result
 
+
+def sort_operators(operators):
+    return sorted(operators, key=lambda cls: cls.name())
+

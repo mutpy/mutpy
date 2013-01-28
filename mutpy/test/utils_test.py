@@ -4,7 +4,7 @@ import shutil
 import types
 import tempfile
 import sys
-from mutpy import utils
+from mutpy import utils, operators
 
 
 class ModulesLoaderTest(unittest.TestCase):
@@ -285,4 +285,20 @@ class GetByPythonVersionTest(unittest.TestCase):
         cls = utils.get_by_python_version(classes=[self.A, self.B], python_version=(3, 3))
 
         self.assertEqual(cls, self.B)
+
+
+class SortOperatorsTest(unittest.TestCase):
+
+    def test_sort_operators(self):
+
+        class A(operators.MutationOperator):
+            pass
+
+        class Z(operators.MutationOperator):
+            pass
+
+        sorted_operators = utils.sort_operators([Z, A])
+
+        self.assertEqual(sorted_operators[0], A)
+        self.assertEqual(sorted_operators[1], Z)
 

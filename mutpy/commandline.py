@@ -70,7 +70,7 @@ def build_mutator(cfg):
     operators_set = set()
 
     if cfg.experimental_operators:
-        operators_set |= set(experiments.all_operators)
+        operators_set |= experiments.all_operators
 
     name_to_operator = build_name_to_operator_map()
 
@@ -78,7 +78,7 @@ def build_mutator(cfg):
         operators_set |= {get_operator(name, name_to_operator)
                           for name in cfg.operator}
     else:
-        operators_set |= set(operators.all_operators)
+        operators_set |= operators.all_operators
 
     operators_set -= {get_operator(name, name_to_operator)
                       for name in cfg.disable_operator}
@@ -96,7 +96,7 @@ def get_operator(name, name_to_operator):
 
 def build_name_to_operator_map():
     result = {}
-    for operator in operators.all_operators + experiments.all_operators:
+    for operator in operators.all_operators | experiments.all_operators:
         result[operator.name()] = operator
         result[operator.long_name()] = operator
     return result
@@ -121,9 +121,9 @@ def build_views(cfg):
 
 def list_operators():
     print('Standard mutation operators:')
-    for operator in operators.all_operators:
+    for operator in utils.sort_operators(operators.all_operators):
         print(' - {:3} - {}'.format(operator.name(), operator.long_name()))
     print('Experimental mutation operators:')
-    for operator in experiments.all_operators:
+    for operator in utils.sort_operators(experiments.all_operators):
         print(' - {:3} - {}'.format(operator.name(), operator.long_name()))
 
