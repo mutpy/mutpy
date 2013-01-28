@@ -118,8 +118,9 @@ class TextView(QuietTextView):
         if self.show_mutants:
             self.print_code(mutant, lineno)
 
-    def cant_load(self, name):
-        self.level_print(self.decorate('Bad path: ', 'red', attrs=['bold']) + name)
+    def cant_load(self, name, exception):
+        self.level_print(self.decorate('Can\'t load module: ', 'red', attrs=['bold']) + '{} ({}: {})'.format(name,
+                         exception.__class__.__name__, exception))
 
     def print_code(self, mutant, lineno):
         mutant_src = codegen.to_source(mutant)
