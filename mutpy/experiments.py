@@ -26,9 +26,9 @@ class StaticmethodDecoratorInsertion(operators.DecoratorInsertionMutationOperato
         return 'staticmethod'
 
 
-all_operators = set([
+all_operators = {
     SelfWordDeletion,
     StaticmethodDecoratorDeletion,
     StaticmethodDecoratorInsertion
-])
+}
 
