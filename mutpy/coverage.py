@@ -65,7 +65,7 @@ class CoverageNodeTransformerPython32(AbstractCoverageNodeTransformer):
 
     @classmethod
     def get_statements_nodes(cls):
-        return set([
+        return {
             ast.Assert,
             ast.Assign,
             ast.AugAssign,
@@ -85,15 +85,15 @@ class CoverageNodeTransformerPython32(AbstractCoverageNodeTransformer):
             ast.TryExcept,
             ast.TryFinally,
             ast.While
-        ])
+        }
 
     @classmethod
     def get_definitions_nodes(cls):
-        return set([
+        return {
             ast.ClassDef,
             ast.ExceptHandler,
             ast.FunctionDef
-        ])
+        }
 
 
 class CoverageNodeTransformerPython33(AbstractCoverageNodeTransformer):
@@ -102,7 +102,7 @@ class CoverageNodeTransformerPython33(AbstractCoverageNodeTransformer):
 
     @classmethod
     def get_statements_nodes(cls):
-        return set([
+        return {
             ast.Assert,
             ast.Assign,
             ast.AugAssign,
@@ -121,15 +121,15 @@ class CoverageNodeTransformerPython33(AbstractCoverageNodeTransformer):
             ast.Return,
             ast.Try,
             ast.While
-        ])
+        }
 
     @classmethod
     def get_definitions_nodes(cls):
-        return set([
+        return {
             ast.ClassDef,
             ast.ExceptHandler,
             ast.FunctionDef
-        ])
+        }
 
 
 CoverageNodeTransformer = utils.get_by_python_version([

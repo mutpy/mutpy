@@ -404,7 +404,7 @@ class ClassmethodDecoratorInsertion(DecoratorInsertionMutationOperator):
         return 'classmethod'
 
 
-all_operators = set([
+all_operators = {
     ArithmeticOperatorReplacement,
     BitwiseOperatorReplacement,
     ClassmethodDecoratorDeletion,
@@ -421,5 +421,5 @@ all_operators = set([
     StatementDeletion,
     UnaryOperatorReplacement,
     ZeroIterationLoop
-])
+}
 
