@@ -156,7 +156,7 @@ class MutationController(views.ViewNotifier):
                     ast_node=mutant_ast,
                     module_name=target_module.__name__
                 )
-        except Exception as exception:
+        except BaseException as exception:
             self.notify_incompetent(exception)
             return None
 
