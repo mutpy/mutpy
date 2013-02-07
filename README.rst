@@ -164,7 +164,7 @@ List of all arguments with which you can run MutPy:
 - ``--disable-operator OPERATOR [OPERATOR ...]`` - disable selected operators,
 - ``-l``. ``--list-operators`` - list available operators,
 - ``-p DIR``. ``--path DIR`` - extend Python path,
-``--percentage PERCENTAGE`` - percentage of the generated mutants (mutation sampling),
+- ``--percentage PERCENTAGE`` - percentage of the generated mutants (mutation sampling),
 - ``--coverage`` - mutate only covered code,
 - ``-h``, ``--help`` - show this help message and exit,
 - ``-v``, ``--version`` - show program's version number and exit,
