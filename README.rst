@@ -47,7 +47,8 @@ Main code (``calculator.py``) - we will mutate it:
 
 ::
 
-    def mul(x, y): return x * y
+    def mul(x, y):
+        return x * y
 
 Test (``test_calculator.py``) - we will check its quality:
 
