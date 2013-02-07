@@ -153,24 +153,18 @@ Command-line arguments
 
 List of all arguments with which you can run MutPy:
 
-- ``-t TARGET [TARGET ...]``, ``--target TARGET [TARGET ...]`` - target module
-or package to mutate,
-- ``-u UNIT_TEST [UNIT_TEST ...]``, ``--unit-test UNIT_TEST [UNIT_TEST ...]`` -
-test class, test method, module or package with unit tests,
+- ``-t TARGET [TARGET ...]``, ``--target TARGET [TARGET ...]`` - target module or package to mutate,
+- ``-u UNIT_TEST [UNIT_TEST ...]``, ``--unit-test UNIT_TEST [UNIT_TEST ...]`` - test class, test method, module or package with unit tests,
 - ``-m``, ``--show-mutants`` - show mutants source code,
 - ``-r REPORT_FILE``, ``--report REPORT_FILE`` - generate YAML report,
-- ``-f TIMEOUT_FACTOR``. ``--timeout-factor TIMEOUT_FACTOR`` - max timeout factor
-(default 5),
-- ``-d``, ``--disable-stdout`` - try disable stdout during mutation
-(this option can damage your tests if you interact with ``sys.stdout``),
+- ``-f TIMEOUT_FACTOR``. ``--timeout-factor TIMEOUT_FACTOR`` - max timeout factor (default 5),
+- ``-d``, ``--disable-stdout`` - try disable stdout during mutation (this option can damage your tests if you interact with ``sys.stdout``),
 - ``-e``. ``--experimental-operators`` - use experimental operators,
-- ``-o OPERATOR [OPERATOR ...]``, ``--operator OPERATOR [OPERATOR ...]`` - use
-only selected operators,
+- ``-o OPERATOR [OPERATOR ...]``, ``--operator OPERATOR [OPERATOR ...]`` - use only selected operators,
 - ``--disable-operator OPERATOR [OPERATOR ...]`` - disable selected operators,
 - ``-l``. ``--list-operators`` - list available operators,
 - ``-p DIR``. ``--path DIR`` - extend Python path,
-``--percentage PERCENTAGE`` - percentage of the generated mutants (mutation
-sampling),
+``--percentage PERCENTAGE`` - percentage of the generated mutants (mutation sampling),
 - ``--coverage`` - mutate only covered code,
 - ``-h``, ``--help`` - show this help message and exit,
 - ``-v``, ``--version`` - show program's version number and exit,
