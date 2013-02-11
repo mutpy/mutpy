@@ -146,7 +146,7 @@ class MutationController(views.ViewNotifier):
     @utils.TimeRegister
     def create_target_ast(self, target_module):
         with open(target_module.__file__) as target_file:
-            return ast.parse(target_file.read())
+            return utils.create_ast(target_file.read())
 
     @utils.TimeRegister
     def create_mutant_module(self, target_module, mutant_ast):

@@ -1,7 +1,6 @@
 import unittest
-import ast
 import sys
-from mutpy import codegen
+from mutpy import codegen, utils
 
 
 EOL = '\n'
@@ -17,7 +16,7 @@ EMPTY_FUNC = FUNC_DEF + EOL + INDENT + PASS
 class CodegenTest(unittest.TestCase):
 
     def assert_code_equal(self, code):
-        node = ast.parse(code)
+        node = utils.create_ast(code)
         generated = codegen.to_source(node)
         self.assertMultiLineEqual(code, generated)
 

@@ -1,6 +1,6 @@
 import unittest
 import ast
-from mutpy import operators, codegen, coverage
+from mutpy import operators, codegen, coverage, utils
 
 
 EOL = '\n'
@@ -16,7 +16,7 @@ class MutationOperatorTest(unittest.TestCase):
 
     def setUp(self):
         self.operator = self.PassIdOperator()
-        self.target_ast = ast.parse(PASS)
+        self.target_ast = utils.create_ast(PASS)
 
     def test_generate_all_mutations_if_always_sampler(self):
 
@@ -45,7 +45,7 @@ class MutationOperatorTest(unittest.TestCase):
 class OperatorTestCase(unittest.TestCase):
 
     def assert_mutation(self, original, mutants, lines=None, operator=None, with_coverage=False):
-        original_ast = ast.parse(original)
+        original_ast = utils.create_ast(original)
         if with_coverage:
             coverage_injector = coverage.CoverageInjector()
             coverage_injector.inject(original_ast)
