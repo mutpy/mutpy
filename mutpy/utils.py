@@ -6,6 +6,7 @@ import pkgutil
 import inspect
 import types
 import random
+import ast
 from _pyio import StringIO
 from collections import defaultdict
 from multiprocessing import Process, Queue
@@ -262,6 +263,27 @@ class MutationSubprocess(Process):
             return self.queue.get(timeout=live_time)
         except Empty:
             return None
+
+
+class ParentNodeTransformer(ast.NodeTransformer):
+
+    def visit(self, node):
+        node.parent = getattr(self, 'parent', None)
+        self.parent = node
+        result_node = super().visit(node)
+        self.parent = node.parent
+        return result_node
+
+
+def create_ast(code):
+    return ParentNodeTransformer().visit(ast.parse(code))
+
+
+def is_docstring(node):
+    def_node = node.parent.parent
+    return (isinstance(def_node, (ast.FunctionDef, ast.ClassDef, ast.Module)) and def_node.body and
+        isinstance(def_node.body[0], ast.Expr) and isinstance(def_node.body[0].value, ast.Str) and
+        def_node.body[0].value == node)
 
 
 def get_by_python_version(classes, python_version=sys.version_info):

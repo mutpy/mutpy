@@ -1,8 +1,7 @@
 import unittest
 import types
 import sys
-import ast
-from mutpy import controller, operators
+from mutpy import controller, operators, utils
 
 
 class MutationScoreTest(unittest.TestCase):
@@ -68,7 +67,7 @@ class MockModulesLoader:
 class MockMutationController(controller.MutationController):
 
     def create_target_ast(self, target_module):
-        return ast.parse(self.target_loader.get_source())
+        return utils.create_ast(self.target_loader.get_source())
 
 
 class MutationScoreStoreView:

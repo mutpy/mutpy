@@ -43,6 +43,8 @@ class AbstractCoverageNodeTransformer(ast.NodeTransformer):
 
     def inject_before_visit(self, node):
         node = self.generic_visit(node)
+        if self.is_future_statement(node) or (isinstance(node, ast.Expr) and utils.is_docstring(node.value)):
+            return node
         coverage_node = self.generate_coverage_node(node)
         return [coverage_node, node]
 
@@ -53,10 +55,13 @@ class AbstractCoverageNodeTransformer(ast.NodeTransformer):
         return node
 
     def generate_coverage_node(self, node):
-        coverage_node = ast.parse('{}.add({})'.format(COVERAGE_SET_NAME, node.marker)).body[0]
+        coverage_node = utils.create_ast('{}.add({})'.format(COVERAGE_SET_NAME, node.marker)).body[0]
         coverage_node.lineno = node.lineno
         coverage_node.col_offset = node.col_offset
         return coverage_node
+
+    def is_future_statement(self, node):
+        return isinstance(node, ast.ImportFrom) and node.module == '__future__'
 
 
 class CoverageNodeTransformerPython32(AbstractCoverageNodeTransformer):
