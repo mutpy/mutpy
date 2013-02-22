@@ -1,4 +1,3 @@
-import time
 import yaml
 import traceback
 from mutpy import codegen, termcolor, utils
