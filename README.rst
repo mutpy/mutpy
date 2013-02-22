@@ -29,7 +29,7 @@ You can easily install MutPy from PyPi:
 
 ::
 
-    $ pip instal mutpy
+    $ pip install mutpy
 
 ... or if you want to have latest changes you can clone this repository and
 install MutPy from sources:
