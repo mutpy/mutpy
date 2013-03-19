@@ -20,7 +20,7 @@ class StaticmethodDecoratorDeletion(operators.DecoratorDeletionMutationOperator)
         return 'staticmethod'
 
 
-class StaticmethodDecoratorInsertion(operators.DecoratorInsertionMutationOperator):
+class StaticmethodDecoratorInsertion(operators.MethodDecoratorInsertionMutationOperator):
 
     def get_decorator_name(self):
         return 'staticmethod'

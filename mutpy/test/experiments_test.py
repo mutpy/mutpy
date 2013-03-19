@@ -1,4 +1,4 @@
-from mutpy import experiments
+from mutpy import experiments, utils
 from mutpy.test.operators_test import OperatorTestCase, EOL, INDENT
 
 
@@ -43,9 +43,25 @@ class StaticmethodDecoratorInsertionTest(OperatorTestCase):
         cls.op = experiments.StaticmethodDecoratorInsertion()
 
     def test_add_staticmethod_decorator(self):
-        self.assert_mutation('def f():' + EOL + INDENT + 'pass',
-                             ['@staticmethod' + EOL + 'def f():' + EOL + INDENT + 'pass'])
+        self.assert_mutation(
+            utils.f("""
+            class X:
+                def f():
+                    pass
+            """),
+            utils.f("""
+            class X:
+                @staticmethod
+                def f():
+                    pass
+            """)
+        )
 
     def test_not_add_if_already_has_staticmethod(self):
-        self.assert_mutation('@staticmethod' + EOL + 'def f():' + EOL + INDENT + 'pass', [])
+        self.assert_no_mutation(utils.f("""
+            class X:
+                @staticmethod
+                def f():
+                    pass
+        """))
 
