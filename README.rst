@@ -54,11 +54,13 @@ Test (``test_calculator.py``) - we will check its quality:
 
 ::
 
-    from unittest import TestCase from calculator import mul
+    from unittest import TestCase
+    from calculator import mul
 
     class CalculatorTest(TestCase):
 
-        def test_mul(self): self.assertEqual(mul(2, 2), 4)
+        def test_mul(self):
+            self.assertEqual(mul(2, 2), 4)
 
 Now we can run MutPy in the same directory where we have our sources files:
 
@@ -140,11 +142,13 @@ change it, eg:
 
 ::
 
-    from unittest import TestCase from calculator import mul
+    from unittest import TestCase
+    from calculator import mul
 
     class CalculatorTest(TestCase):
 
-        def test_mul(self): self.assertEqual(mul(2, 3), 6)
+        def test_mul(self):
+            self.assertEqual(mul(2, 3), 6)
 
 We can run MutPy again and now mutation score is equal 100%.
 
