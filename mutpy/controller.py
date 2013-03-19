@@ -1,6 +1,5 @@
 from os import path
 import sys
-import ast
 import unittest
 from mutpy import views, utils, coverage
 
