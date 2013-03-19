@@ -53,6 +53,8 @@ class OperatorTestCase(unittest.TestCase):
             coverage_injector = None
         if not operator:
             operator = self.__class__.op
+        if isinstance(mutants, str):
+            mutants = [mutants]
         mutants = list(map(codegen.remove_extra_lines, mutants))
         original = codegen.remove_extra_lines(original)
         for mutant, lineno in operator.mutate(original_ast, coverage_injector=coverage_injector):
@@ -64,6 +66,9 @@ class OperatorTestCase(unittest.TestCase):
                 self.assert_mutation_lineo(lineno, lines)
 
         self.assertListEqual(mutants, [], 'did not generate all mutants')
+
+    def assert_no_mutation(self, original, **kwargs):
+        self.assert_mutation(original, mutants=[], **kwargs)
 
     def assert_location(self, mutant):
         for node in ast.walk(mutant):
@@ -387,26 +392,96 @@ class ClassmethodDecoratorInsertionTest(OperatorTestCase):
         cls.op = operators.ClassmethodDecoratorInsertion()
 
     def test_add_classmethod_decorator(self):
-        self.assert_mutation('def f():' + EOL + INDENT + 'pass',
-                             ['@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass'])
+        self.assert_mutation(
+            utils.f("""
+            class X:
+                def f():
+                    pass
+            """),
+            utils.f("""
+            class X:
+                @classmethod
+                def f():
+                    pass
+            """)
+        )
 
-    def test_not_add_if_already_has_staticmethod(self):
-        self.assert_mutation('@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass', [])
+    def test_not_add_if_already_has_classmethod(self):
+        self.assert_no_mutation(utils.f("""
+            class X:
+                @classmethod
+                def f():
+                    pass
+        """))
 
     def test_classmethod_add_with_other_and_arguments(self):
-        self.assert_mutation('@wraps(func)' + EOL + 'def f():' + EOL + INDENT + 'pass',
-                            ['@wraps(func)' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' ])
+        self.assert_mutation(
+            utils.f("""
+            class X:
+                @wraps(func)
+                def f():
+                    pass
+            """),
+            utils.f("""
+            class X:
+                @wraps(func)
+                @classmethod
+                def f():
+                    pass
+            """)
+        )
 
-    def test_add_classmethod_in_two_function(self):
-        self.assert_mutation('def f():' + EOL + INDENT + 'pass' + EOL + 'def g():' + EOL + INDENT + 'pass',
-                             ['@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' + EOL +
-                                'def g():' + EOL + INDENT + 'pass',
-                              'def f():' + EOL + INDENT + 'pass' + EOL + '@classmethod' + EOL +
-                                'def g():' + EOL + INDENT + 'pass'])
+    def test_add_classmethod_in_two_methods(self):
+        self.assert_mutation(
+            utils.f("""
+            class X:
+                def f():
+                    pass
+                def g():
+                    pass
+            """),
+            [
+                utils.f("""
+                class X:
+                    @classmethod
+                    def f():
+                        pass
+                    def g():
+                        pass
+                """),
+                utils.f("""
+                class X:
+                    def f():
+                        pass
+                    @classmethod
+                    def g():
+                        pass
+                """),
+            ]
+        )
 
     def test_classmethod_add_with_other_from_module(self):
-        self.assert_mutation('@itertools.wraps' + EOL + 'def f():' + EOL + INDENT + 'pass' ,
-                         ['@itertools.wraps' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass'])
+        self.assert_mutation(
+            utils.f("""
+            class X:
+                @itertools.wraps
+                def f():
+                    pass
+            """),
+            utils.f("""
+            class X:
+                @itertools.wraps
+                @classmethod
+                def f():
+                    pass
+            """)
+        )
+
+    def test_no_add_if_pure_function(self):
+        self.assert_no_mutation(utils.f("""
+            def f():
+                pass
+        """))
 
 
 class MutateOnlyCoveredNodesTest(OperatorTestCase):

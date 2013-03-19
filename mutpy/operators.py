@@ -366,9 +366,11 @@ class ClassmethodDecoratorDeletion(DecoratorDeletionMutationOperator):
         return 'classmethod'
 
 
-class DecoratorInsertionMutationOperator(MutationOperator):
+class MethodDecoratorInsertionMutationOperator(MutationOperator):
 
     def mutate_FunctionDef(self, node):
+        if not isinstance(node.parent, ast.ClassDef):
+            raise MutationResign()
         for decorator in node.decorator_list:
             if isinstance(decorator, ast.Call):
                 decorator_name = decorator.func.id
@@ -387,7 +389,7 @@ class DecoratorInsertionMutationOperator(MutationOperator):
         raise NotImplementedError()
 
 
-class ClassmethodDecoratorInsertion(DecoratorInsertionMutationOperator):
+class ClassmethodDecoratorInsertion(MethodDecoratorInsertionMutationOperator):
 
     def get_decorator_name(self):
         return 'classmethod'
