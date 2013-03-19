@@ -302,3 +302,12 @@ class SortOperatorsTest(unittest.TestCase):
         self.assertEqual(sorted_operators[0], A)
         self.assertEqual(sorted_operators[1], Z)
 
+
+class TestF(unittest.TestCase):
+
+    def test_f(self):
+        self.assertEqual(utils.f("""
+        def f():
+            pass
+        """), 'def f():\n    pass')
+

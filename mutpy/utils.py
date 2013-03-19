@@ -7,6 +7,7 @@ import inspect
 import types
 import random
 import ast
+import re
 from _pyio import StringIO
 from collections import defaultdict
 from multiprocessing import Process, Queue
@@ -299,4 +300,10 @@ def get_by_python_version(classes, python_version=sys.version_info):
 
 def sort_operators(operators):
     return sorted(operators, key=lambda cls: cls.name())
+
+
+def f(text):
+    lines = text.split('\n')[1:-1]
+    indention = re.search('(\s*).*', lines[0]).group(1)
+    return '\n'.join(line[len(indention):] for line in lines)
 
