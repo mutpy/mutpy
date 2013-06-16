@@ -139,6 +139,37 @@ class ModuleInjector:
         return name in ['__builtins__', '__name__', '__doc__', '__file__']
 
 
+class InjectImporter:
+
+    def __init__(self, module):
+        try:
+            del sys.modules[module.__name__]
+        except KeyError:
+            pass
+        self.module = module
+
+    def find_module(self, fullname, path=None):
+        if fullname == self.module.__name__:
+            return self
+        else:
+            return None
+
+    def load_module(self, fullname):
+        self.module.__loader__ = self
+        sys.modules[fullname] = self.module
+
+    def install(self):
+        if isinstance(sys.meta_path[0], self.__class__):
+            sys.meta_path[0] = self
+        else:
+            sys.meta_path.insert(0, self)
+
+    @classmethod
+    def uninstall(cls):
+        if isinstance(sys.meta_path[0], cls):
+            del sys.meta_path[0]
+
+
 class StdoutManager:
 
     def __init__(self, disable=True):

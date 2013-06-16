@@ -311,3 +311,29 @@ class TestF(unittest.TestCase):
             pass
         """), 'def f():\n    pass')
 
+
+class InjectImporterTest(unittest.TestCase):
+
+    def test_inject(self):
+        target_module_content = utils.f("""
+        def x():
+            import source
+            return source
+        """)
+        target_module = types.ModuleType('target')
+        source_module_before = types.ModuleType('source')
+        source_module_before.__file__ = 'source.py'
+        source_module_after = types.ModuleType('source')
+        sys.modules['source'] = source_module_before
+        importer = utils.InjectImporter(source_module_after)
+
+        eval(compile(target_module_content, 'target.py', 'exec'), target_module.__dict__)
+        importer.install()
+
+        source_module = target_module.x()
+        self.assertEqual(source_module, source_module_after)
+        self.assertEqual(source_module.__loader__, importer)
+
+        del sys.modules['source']
+        importer.uninstall()
+
