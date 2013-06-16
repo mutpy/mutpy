@@ -167,8 +167,12 @@ class MutationController(views.ViewNotifier):
             injector.inject_to(test_module)
             suite.addTests(self.get_test_suite(test_module, target_test))
             total_duration += duration
-
+        self.install_inject_importer(mutant_module)
         return suite, total_duration
+
+    def install_inject_importer(self, mutant_module):
+        importer = utils.InjectImporter(mutant_module)
+        importer.install()
 
     @utils.TimeRegister
     def run_tests_with_mutant(self, tests_modules, mutant_module):
