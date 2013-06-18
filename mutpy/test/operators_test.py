@@ -282,6 +282,16 @@ class ConditionalOperatorInsertionTest(OperatorTestCase):
                             lines=[1, 3])
 
 
+class ConditionalOperatorDeletionTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.ConditionalOperatorDeletion()
+
+    def test_not(self):
+        self.assert_mutation('not x', ['x'])
+
+
 class MembershipTestReplacementTest(OperatorTestCase):
 
     @classmethod

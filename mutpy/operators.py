@@ -313,6 +313,14 @@ class ConditionalOperatorInsertion(MutationOperator):
         return self.negate_test(node)
 
 
+class ConditionalOperatorDeletion(MutationOperator):
+
+    def mutate_UnaryOp(self, node):
+        if isinstance(node.op, ast.Not):
+            return node.operand
+        raise MutationResign()
+
+
 class SliceIndexRemove(MutationOperator):
 
     def mutate_Slice_remove_lower(self, node):
@@ -466,6 +474,7 @@ all_operators = {
     BitwiseOperatorReplacement,
     ClassmethodDecoratorDeletion,
     ClassmethodDecoratorInsertion,
+    ConditionalOperatorDeletion,
     ConditionalOperatorInsertion,
     ConditionalOperatorReplacement,
     ConstantReplacement,
