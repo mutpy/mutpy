@@ -143,3 +143,5 @@ class CodegenTest(unittest.TestCase):
     def test_with_two_vars(self):
         self.assert_code_equal("with x, y:" + EOL + INDENT + 'pass')
 
+    def test_augmented_add(self):
+        self.assert_code_equal("x += 1")
