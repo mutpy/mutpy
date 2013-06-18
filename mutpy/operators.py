@@ -186,6 +186,14 @@ class AssignmentOperatorReplacement(AbstractArithmeticOperatorReplacement):
         return 'ASR'
 
 
+class ArithmeticOperatorDeletion(MutationOperator):
+
+    def mutate_UnaryOp(self, node):
+        if isinstance(node.op, (ast.UAdd, ast.USub)):
+            return node.operand
+        raise MutationResign()
+
+
 class BitwiseOperatorReplacement(MutationOperator):
 
     def mutate_BitAnd(self, node):
@@ -452,6 +460,7 @@ class OverridingMethodDeletion(MutationOperator):
 
 
 all_operators = {
+    ArithmeticOperatorDeletion,
     ArithmeticOperatorReplacement,
     AssignmentOperatorReplacement,
     BitwiseOperatorReplacement,
