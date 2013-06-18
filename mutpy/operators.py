@@ -186,12 +186,18 @@ class AssignmentOperatorReplacement(AbstractArithmeticOperatorReplacement):
         return 'ASR'
 
 
-class ArithmeticOperatorDeletion(MutationOperator):
+class AbstractUnaryOperatorDeletion(MutationOperator):
 
     def mutate_UnaryOp(self, node):
-        if isinstance(node.op, (ast.UAdd, ast.USub)):
+        if isinstance(node.op, self.get_operator_type()):
             return node.operand
         raise MutationResign()
+
+
+class ArithmeticOperatorDeletion(AbstractUnaryOperatorDeletion):
+
+    def get_operator_type(self):
+        return ast.UAdd, ast.USub
 
 
 class LogicalOperatorReplacement(MutationOperator):
@@ -212,12 +218,10 @@ class LogicalOperatorReplacement(MutationOperator):
         return ast.LShift()
 
 
-class LogicalOperatorDeletion(MutationOperator):
+class LogicalOperatorDeletion(AbstractUnaryOperatorDeletion):
 
-    def mutate_UnaryOp(self, node):
-        if isinstance(node.op, ast.Invert):
-            return node.operand
-        raise MutationResign()
+    def get_operator_type(self):
+        return ast.Invert
 
 
 class LogicalConnectorReplacement(MutationOperator):
@@ -306,7 +310,6 @@ class StatementDeletion(MutationOperator):
     def name(cls):
         return 'SDL'
 
-
 class ConditionalOperatorInsertion(MutationOperator):
 
     def negate_test(self, node):
@@ -321,12 +324,10 @@ class ConditionalOperatorInsertion(MutationOperator):
         return self.negate_test(node)
 
 
-class ConditionalOperatorDeletion(MutationOperator):
+class ConditionalOperatorDeletion(AbstractUnaryOperatorDeletion):
 
-    def mutate_UnaryOp(self, node):
-        if isinstance(node.op, ast.Not):
-            return node.operand
-        raise MutationResign()
+    def get_operator_type(self):
+        return ast.Not
 
 
 class SliceIndexRemove(MutationOperator):
