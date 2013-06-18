@@ -109,38 +109,72 @@ class MutationOperator:
 
 class ArithmeticOperatorReplacement(MutationOperator):
 
+    def should_mutate(self, node):
+        return not isinstance(node.parent, ast.AugAssign)
+
     def mutate_Add(self, node):
-        return ast.Sub()
+        if self.should_mutate(node):
+            return ast.Sub()
+        raise MutationResign()
 
     def mutate_Sub(self, node):
-        return ast.Add()
+        if self.should_mutate(node):
+            return ast.Add()
+        raise MutationResign()
 
     def mutate_Mult_to_Div(self, node):
-        return ast.Div()
+        if self.should_mutate(node):
+            return ast.Div()
+        raise MutationResign()
 
     def mutate_Mult_to_FloorDiv(self, node):
-        return ast.FloorDiv()
+        if self.should_mutate(node):
+            return ast.FloorDiv()
+        raise MutationResign()
 
     def mutate_Mult_to_Pow(self, node):
-        return ast.Pow()
+        if self.should_mutate(node):
+            return ast.Pow()
+        raise MutationResign()
 
     def mutate_Div_to_Mult(self, node):
-        return ast.Mult()
+        if self.should_mutate(node):
+            return ast.Mult()
+        raise MutationResign()
 
     def mutate_Div_to_FloorDiv(self, node):
-        return ast.FloorDiv()
+        if self.should_mutate(node):
+            return ast.FloorDiv()
+        raise MutationResign()
 
     def mutate_FloorDiv_to_Div(self, node):
-        return ast.Div()
+        if self.should_mutate(node):
+            return ast.Div()
+        raise MutationResign()
 
     def mutate_FloorDiv_to_Mult(self, node):
-        return ast.Mult()
+        if self.should_mutate(node):
+            return ast.Mult()
+        raise MutationResign()
 
     def mutate_Mod(self, node):
-        return ast.Mult()
+        if self.should_mutate(node):
+            return ast.Mult()
 
     def mutate_Pow(self, node):
-        return ast.Mult()
+        if self.should_mutate(node):
+            return ast.Mult()
+        raise MutationResign()
+
+
+class AssignmentOperatorReplacement(ArithmeticOperatorReplacement):
+
+    def should_mutate(self, node):
+        return not super().should_mutate(node)
+
+    @classmethod
+    def name(cls):
+        return 'ASR'
 
 
 class BitwiseOperatorReplacement(MutationOperator):
@@ -419,6 +453,7 @@ class OverridingMethodDeletion(MutationOperator):
 
 all_operators = {
     ArithmeticOperatorReplacement,
+    AssignmentOperatorReplacement,
     BitwiseOperatorReplacement,
     ClassmethodDecoratorDeletion,
     ClassmethodDecoratorInsertion,
