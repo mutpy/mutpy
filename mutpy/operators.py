@@ -194,7 +194,7 @@ class ArithmeticOperatorDeletion(MutationOperator):
         raise MutationResign()
 
 
-class BitwiseOperatorReplacement(MutationOperator):
+class LogicalOperatorReplacement(MutationOperator):
 
     def mutate_BitAnd(self, node):
         return ast.BitOr()
@@ -471,7 +471,6 @@ all_operators = {
     ArithmeticOperatorDeletion,
     ArithmeticOperatorReplacement,
     AssignmentOperatorReplacement,
-    BitwiseOperatorReplacement,
     ClassmethodDecoratorDeletion,
     ClassmethodDecoratorInsertion,
     ConditionalOperatorDeletion,
@@ -480,6 +479,7 @@ all_operators = {
     ConstantReplacement,
     ExceptionHandleDeletion,
     LogicalConnectorReplacement,
+    LogicalOperatorReplacement,
     MembershipTestReplacement,
     OneIterationLoop,
     OverridingMethodDeletion,
