@@ -107,10 +107,7 @@ class MutationOperator:
         return cls.__name__
 
 
-class ArithmeticOperatorReplacement(MutationOperator):
-
-    def should_mutate(self, node):
-        return not isinstance(node.parent, ast.AugAssign)
+class AbstractArithmeticOperatorReplacement(MutationOperator):
 
     def mutate_Add(self, node):
         if self.should_mutate(node):
@@ -167,10 +164,22 @@ class ArithmeticOperatorReplacement(MutationOperator):
         raise MutationResign()
 
 
-class AssignmentOperatorReplacement(ArithmeticOperatorReplacement):
+class ArithmeticOperatorReplacement(AbstractArithmeticOperatorReplacement):
 
     def should_mutate(self, node):
-        return not super().should_mutate(node)
+        return not isinstance(node.parent, ast.AugAssign)
+
+    def mutate_USub(self, node):
+        return ast.UAdd()
+
+    def mutate_UAdd(self, node):
+        return ast.USub()
+
+
+class AssignmentOperatorReplacement(AbstractArithmeticOperatorReplacement):
+
+    def should_mutate(self, node):
+        return isinstance(node.parent, ast.AugAssign)
 
     @classmethod
     def name(cls):
@@ -235,15 +244,6 @@ class ConditionalOperatorReplacement(MutationOperator):
 
     def mutate_NotEq(self, node):
         return ast.Eq()
-
-
-class UnaryOperatorReplacement(MutationOperator):
-
-    def mutate_USub(self, node):
-        return ast.UAdd()
-
-    def mutate_UAdd(self, node):
-        return ast.USub()
 
 
 class ConstantReplacement(MutationOperator):
@@ -468,7 +468,6 @@ all_operators = {
     ReverseIterationLoop,
     SliceIndexRemove,
     StatementDeletion,
-    UnaryOperatorReplacement,
     ZeroIterationLoop,
 }
 
