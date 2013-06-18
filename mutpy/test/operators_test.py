@@ -161,6 +161,12 @@ class ArithmeticOperatorReplacementTest(OperatorTestCase):
     def test_not_mutate_augmented_assign(self):
         self.assert_mutation('x += y', [])
 
+    def test_usub(self):
+        self.assert_mutation('(-x)', ['(+x)'])
+
+    def test_uadd(self):
+        self.assert_mutation('(+x)', ['(-x)'])
+
 
 class AssignmentOperatorReplacementTest(OperatorTestCase):
 
@@ -233,19 +239,6 @@ class ConditionalOperatorReplacementTest(OperatorTestCase):
 
     def test_not_eq(self):
         self.assert_mutation('x != y', ['x == y'])
-
-
-class UnaryOperatorReplacementTest(OperatorTestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.op = operators.UnaryOperatorReplacement()
-
-    def test_usub(self):
-        self.assert_mutation('(-x)', ['(+x)'])
-
-    def test_uadd(self):
-        self.assert_mutation('(+x)', ['(-x)'])
 
 
 class SliceIndexRemoveTest(OperatorTestCase):
