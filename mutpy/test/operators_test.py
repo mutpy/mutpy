@@ -158,8 +158,21 @@ class ArithmeticOperatorReplacementTest(OperatorTestCase):
                             ['pass' + EOL + 'x - y' + EOL + 'x - y', 'pass' + EOL + 'x + y' + EOL + 'x + y'],
                             [2, 3])
 
-    def test_augmented_add_to_augmented_sub_replacement(self):
+    def test_not_mutate_augmented_assign(self):
+        self.assert_mutation('x += y', [])
+
+
+class AssignmentOperatorReplacementTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.AssignmentOperatorReplacement()
+
+    def test_add_to_sub_replacement(self):
         self.assert_mutation('x += y', ['x -= y'])
+
+    def test_not_mutate_normal_use(self):
+        self.assert_mutation('x + y', [])
 
 
 class BitwiseOperatorReplacement(OperatorTestCase):
