@@ -360,7 +360,7 @@ class MembershipTestReplacement(MutationOperator):
         return ast.In()
 
 
-class ExceptionHandleDeletion(MutationOperator):
+class ExceptionHandlerDeletion(MutationOperator):
 
     def mutate_ExceptHandler(self, node):
         return ast.ExceptHandler(type=node.type, name=node.name, body=[ast.Raise()])
@@ -485,7 +485,7 @@ all_operators = {
     ConditionalOperatorDeletion,
     ConditionalOperatorInsertion,
     ConstantReplacement,
-    ExceptionHandleDeletion,
+    ExceptionHandlerDeletion,
     LogicalConnectorReplacement,
     LogicalOperatorDeletion,
     LogicalOperatorReplacement,
