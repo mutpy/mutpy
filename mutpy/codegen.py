@@ -183,7 +183,7 @@ class AbstractSourceGenerator(ast.NodeVisitor):
     def visit_AugAssign(self, node):
         self.newline(node)
         self.visit(node.target)
-        self.write(BINOP_SYMBOLS[type(node.op)] + '=')
+        self.write(' ' + BINOP_SYMBOLS[type(node.op)] + '= ')
         self.visit(node.value)
 
     def visit_ImportFrom(self, node):
