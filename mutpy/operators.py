@@ -1,17 +1,19 @@
 import ast
 import re
 import copy
+import functools
 from mutpy import utils
 
 class MutationResign(Exception): pass
 
 class MutationOperator:
 
-    def mutate(self, node, to_mutate=None, sampler=None, coverage_injector=None):
+    def mutate(self, node, to_mutate=None, sampler=None, coverage_injector=None, module=None):
         self.to_mutate = to_mutate
         self.sampler = sampler
         self.lineno = 1
         self.coverage_injector = coverage_injector
+        self.module = module
         for new_node in self.visit(node):
             yield new_node, self.lineno
 
@@ -395,6 +397,26 @@ class ClassmethodDecoratorInsertion(MethodDecoratorInsertionMutationOperator):
         return 'classmethod'
 
 
+class OverridingMethodDeletion(MutationOperator):
+
+    def mutate_FunctionDef(self, node):
+        parent = node.parent
+        parent_names = []
+        while parent:
+            if not isinstance(parent, ast.Module):
+                parent_names.append(parent.name)
+            if not isinstance(parent, ast.ClassDef) and not isinstance(parent, ast.Module):
+                raise MutationResign()
+            parent = parent.parent
+        getattr_rec = lambda obj, attr: functools.reduce(getattr, attr, obj)
+        klass = getattr_rec(self.module, reversed(parent_names))
+        for base_klass in klass.mro():
+            if base_klass != klass and base_klass != object:
+                if hasattr(base_klass, node.name):
+                    return ast.Pass()
+        raise MutationResign()
+
+
 all_operators = {
     ArithmeticOperatorReplacement,
     BitwiseOperatorReplacement,
@@ -407,10 +429,11 @@ all_operators = {
     LogicalOperatorReplacement,
     MembershipTestReplacement,
     OneIterationLoop,
+    OverridingMethodDeletion,
     ReverseIterationLoop,
     SliceIndexRemove,
     StatementDeletion,
     UnaryOperatorReplacement,
-    ZeroIterationLoop
+    ZeroIterationLoop,
 }
 

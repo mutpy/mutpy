@@ -118,8 +118,8 @@ class MutationController(views.ViewNotifier):
         if coverage_injector:
             self.score.update_coverage(*coverage_injector.get_result())
 
-        for op, lineno, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate, coverage_injector):
-
+        for op, lineno, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate, coverage_injector,
+                module=target_module):
             mutation_number = self.score.all_mutants + 1
             self.notify_mutation(mutation_number, op, filename, lineno, mutant_ast)
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
@@ -229,8 +229,8 @@ class Mutator:
     def add_operator(self, operator):
         self.operators.append(operator)
 
-    def mutate(self, target_ast, to_mutate, coverage_injector):
+    def mutate(self, target_ast, to_mutate, coverage_injector, module=None):
         for op in utils.sort_operators(self.operators):
-            for mutant, lineno in op().mutate(target_ast, to_mutate, self.sampler, coverage_injector):
+            for mutant, lineno in op().mutate(target_ast, to_mutate, self.sampler, coverage_injector, module=module):
                 yield op, lineno, mutant
 

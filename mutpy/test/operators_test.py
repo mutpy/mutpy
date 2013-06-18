@@ -44,7 +44,7 @@ class MutationOperatorTest(unittest.TestCase):
 
 class OperatorTestCase(unittest.TestCase):
 
-    def assert_mutation(self, original, mutants, lines=None, operator=None, with_coverage=False):
+    def assert_mutation(self, original, mutants, lines=None, operator=None, with_coverage=False, with_exec=False):
         original_ast = utils.create_ast(original)
         if with_coverage:
             coverage_injector = coverage.CoverageInjector()
@@ -57,7 +57,10 @@ class OperatorTestCase(unittest.TestCase):
             mutants = [mutants]
         mutants = list(map(codegen.remove_extra_lines, mutants))
         original = codegen.remove_extra_lines(original)
-        for mutant, lineno in operator.mutate(original_ast, coverage_injector=coverage_injector):
+        module = None
+        if with_exec:
+            module = utils.create_module(original_ast)
+        for mutant, lineno in operator.mutate(original_ast, coverage_injector=coverage_injector, module=module):
             mutant_code = codegen.remove_extra_lines(codegen.to_source(mutant))
             self.assertIn(mutant_code, mutants)
             mutants.remove(mutant_code)
@@ -538,4 +541,57 @@ class MutateOnlyCoveredNodesTest(OperatorTestCase):
                              2 * INDENT + PASS, [],
                              operator=operators.ClassmethodDecoratorDeletion(),
                              with_coverage=True)
+
+
+class OverridingMethodDeletionTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.OverridingMethodDeletion()
+
+    def test_delete_overriding_method(self):
+        self.assert_mutation(utils.f("""
+        class A:
+            def foo(self):
+                pass
+        class B(A):
+            def foo(self):
+                pass
+        """), [utils.f("""
+        class A:
+            def foo(self):
+                pass
+        class B(A):
+            pass
+        """)], with_exec=True)
+
+    def test_delete_overriding_method_in_inner_class(self):
+        self.assert_mutation(utils.f("""
+        class X:
+            class A:
+                def foo(self):
+                    pass
+            class B(A):
+                def foo(self):
+                    pass
+        """), [utils.f("""
+        class X:
+            class A:
+                def foo(self):
+                    pass
+            class B(A):
+                pass
+        """)], with_exec=True)
+
+    def test_delete_overriding_method_when_base_class_from_other_module(self):
+        self.assert_mutation(utils.f("""
+        import ast
+        class A(ast.NodeTransformer):
+            def visit(self):
+                pass
+        """), [utils.f("""
+        import ast
+        class A(ast.NodeTransformer):
+            pass
+        """)], with_exec=True)
 
