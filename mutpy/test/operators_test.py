@@ -315,11 +315,11 @@ class MembershipTestReplacementTest(OperatorTestCase):
         self.assert_mutation('x not in y', ['x in y'])
 
 
-class ExceptionHandleDeletionTest(OperatorTestCase):
+class ExceptionHandlerDeletionTest(OperatorTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.op = operators.ExceptionHandleDeletion()
+        cls.op = operators.ExceptionHandlerDeletion()
 
     def test_delete_except(self):
         self.assert_mutation('try:' + EOL + INDENT + PASS + EOL + 'except Z:' + EOL + INDENT + PASS,
@@ -566,7 +566,7 @@ class MutateOnlyCoveredNodesTest(OperatorTestCase):
         self.assert_mutation('try:' + EOL + INDENT + 'raise' + EOL + 'except:' + EOL + INDENT + 'try:' + EOL +
                              2 * INDENT + PASS + EOL + INDENT + 'except:' + EOL + 2 * INDENT + PASS,
                              ['try:' + EOL + INDENT + 'raise' + EOL + 'except:' + EOL + INDENT + 'raise'],
-                             operator=operators.ExceptionHandleDeletion(),
+                             operator=operators.ExceptionHandlerDeletion(),
                              with_coverage=True)
 
     def test_not_covered_for_node(self):
