@@ -194,11 +194,11 @@ class ArithmeticOperatorDeletionTest(OperatorTestCase):
         self.assert_mutation('+x', ['x'])
 
 
-class BitwiseOperatorReplacement(OperatorTestCase):
+class LogicalOperatorReplacementTest(OperatorTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.op = operators.BitwiseOperatorReplacement()
+        cls.op = operators.LogicalOperatorReplacement()
 
     def test_bin_and_to_bit_or(self):
         self.assert_mutation('x & y', ['x | y'])
