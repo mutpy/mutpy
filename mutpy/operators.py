@@ -212,6 +212,14 @@ class LogicalOperatorReplacement(MutationOperator):
         return ast.LShift()
 
 
+class LogicalOperatorDeletion(MutationOperator):
+
+    def mutate_UnaryOp(self, node):
+        if isinstance(node.op, ast.Invert):
+            return node.operand
+        raise MutationResign()
+
+
 class LogicalConnectorReplacement(MutationOperator):
 
     def mutate_And(self, node):
@@ -479,6 +487,7 @@ all_operators = {
     ConstantReplacement,
     ExceptionHandleDeletion,
     LogicalConnectorReplacement,
+    LogicalOperatorDeletion,
     LogicalOperatorReplacement,
     MembershipTestReplacement,
     OneIterationLoop,
