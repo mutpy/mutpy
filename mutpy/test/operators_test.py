@@ -239,11 +239,11 @@ class LogicalConnectorReplacementTest(OperatorTestCase):
         self.assert_mutation('(x or y)', ['(x and y)'])
 
 
-class ConditionalOperatorReplacementTest(OperatorTestCase):
+class RelationalOperatorReplacementTest(OperatorTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.op = operators.ConditionalOperatorReplacement()
+        cls.op = operators.RelationalOperatorReplacement()
 
     def test_lt(self):
         self.assert_mutation('x < y', ['x > y', 'x <= y'])

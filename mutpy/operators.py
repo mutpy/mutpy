@@ -229,7 +229,7 @@ class LogicalConnectorReplacement(MutationOperator):
         return ast.And()
 
 
-class ConditionalOperatorReplacement(MutationOperator):
+class RelationalOperatorReplacement(MutationOperator):
 
     def mutate_Lt(self, node):
         return ast.Gt()
@@ -483,7 +483,6 @@ all_operators = {
     ClassmethodDecoratorInsertion,
     ConditionalOperatorDeletion,
     ConditionalOperatorInsertion,
-    ConditionalOperatorReplacement,
     ConstantReplacement,
     ExceptionHandleDeletion,
     LogicalConnectorReplacement,
@@ -492,6 +491,7 @@ all_operators = {
     MembershipTestReplacement,
     OneIterationLoop,
     OverridingMethodDeletion,
+    RelationalOperatorReplacement,
     ReverseIterationLoop,
     SliceIndexRemove,
     StatementDeletion,
