@@ -212,7 +212,7 @@ class BitwiseOperatorReplacement(MutationOperator):
         return ast.LShift()
 
 
-class LogicalOperatorReplacement(MutationOperator):
+class LogicalConnectorReplacement(MutationOperator):
 
     def mutate_And(self, node):
         return ast.Or()
@@ -479,7 +479,7 @@ all_operators = {
     ConditionalOperatorReplacement,
     ConstantReplacement,
     ExceptionHandleDeletion,
-    LogicalOperatorReplacement,
+    LogicalConnectorReplacement,
     MembershipTestReplacement,
     OneIterationLoop,
     OverridingMethodDeletion,
