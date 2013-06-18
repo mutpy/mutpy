@@ -181,6 +181,19 @@ class AssignmentOperatorReplacementTest(OperatorTestCase):
         self.assert_mutation('x + y', [])
 
 
+class ArithmeticOperatorDeletionTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.ArithmeticOperatorDeletion()
+
+    def test_usub(self):
+        self.assert_mutation('-x', ['x'])
+
+    def test_uadd(self):
+        self.assert_mutation('+x', ['x'])
+
+
 class BitwiseOperatorReplacement(OperatorTestCase):
 
     @classmethod
