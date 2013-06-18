@@ -216,11 +216,11 @@ class BitwiseOperatorReplacement(OperatorTestCase):
         self.assert_mutation('x >> y', ['x << y'])
 
 
-class LogicaOperatorReplacementTest(OperatorTestCase):
+class LogicalConnectorReplacementTest(OperatorTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.op = operators.LogicalOperatorReplacement()
+        cls.op = operators.LogicalConnectorReplacement()
 
     def test_and_to_or(self):
         self.assert_mutation('(x and y)', ['(x or y)'])
