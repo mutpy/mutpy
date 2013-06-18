@@ -216,6 +216,16 @@ class LogicalOperatorReplacementTest(OperatorTestCase):
         self.assert_mutation('x >> y', ['x << y'])
 
 
+class LogicalOperatorDeletionTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.LogicalOperatorDeletion()
+
+    def test_invert(self):
+        self.assert_mutation('~x', ['x'])
+
+
 class LogicalConnectorReplacementTest(OperatorTestCase):
 
     @classmethod
