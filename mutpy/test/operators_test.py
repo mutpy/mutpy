@@ -755,3 +755,62 @@ class SuperCallingInsertTest(OperatorTestCase):
                 super().foo(x, y=1, *args, **kwargs)
                 pass
         """)], with_exec=True)
+
+
+class HidingVariableDeletionTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.HidingVariableDeletion()
+
+    def test_delete_variable(self):
+        self.assert_mutation(utils.f("""
+        class B:
+            x = 1
+        class A(B):
+            x = 2
+        """), [utils.f("""
+        class B:
+            x = 1
+        class A(B):
+            pass
+        """)], with_exec=True)
+
+    def test_delete_variable_if_one_hiding_in_two_targets(self):
+        self.assert_mutation(utils.f("""
+        class B:
+            x = 1
+        class A(B):
+            (x, y) = (2, 3)
+        """), [utils.f("""
+        class B:
+            x = 1
+        class A(B):
+            y = 3
+        """)], with_exec=True)
+
+    def test_delete_variable_if_one_hiding_in_three_targets(self):
+        self.assert_mutation(utils.f("""
+        class B:
+            x = 1
+        class A(B):
+            (x, y, z) = (2, 3, 4)
+        """), [utils.f("""
+        class B:
+            x = 1
+        class A(B):
+            (y, z) = (3, 4)
+        """)], with_exec=True)
+
+    def test_delete_variable_if_two_hiding_in_two_targets(self):
+        self.assert_mutation(utils.f("""
+        class B:
+            (x, y) = (1, 2)
+        class A(B):
+            (x, y) = (3, 4)
+        """), [utils.f("""
+        class B:
+            (x, y) = (1, 2)
+        class A(B):
+            pass
+        """)], with_exec=True)
