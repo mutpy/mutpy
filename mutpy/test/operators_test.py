@@ -346,7 +346,6 @@ class ExceptionSwallowingTest(OperatorTestCase):
         """), [])
 
 
-
 class ExceptionHandlerDeletionTest(OperatorTestCase):
 
     @classmethod
@@ -364,6 +363,14 @@ class ExceptionHandlerDeletionTest(OperatorTestCase):
                             + INDENT + 'raise' + EOL + 'except Y:' + EOL + INDENT + PASS,
                              'try:' + EOL + INDENT + PASS + EOL + 'except Z:' + EOL
                             + INDENT + PASS + EOL + 'except Y:' + EOL + INDENT + 'raise'])
+
+    def test_not_delete_if_raise(self):
+        self.assert_mutation(utils.f("""
+        try:
+            pass
+        except:
+            raise
+        """), [])
 
 
 class ZeroIterationLoopTest(OperatorTestCase):
