@@ -363,6 +363,8 @@ class MembershipTestReplacement(MutationOperator):
 class ExceptionHandlerDeletion(MutationOperator):
 
     def mutate_ExceptHandler(self, node):
+        if node.body and isinstance(node.body[0], ast.Raise):
+            raise MutationResign()
         return ast.ExceptHandler(type=node.type, name=node.name, body=[ast.Raise()])
 
 
