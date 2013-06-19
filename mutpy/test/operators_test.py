@@ -318,6 +318,35 @@ class MembershipTestReplacementTest(OperatorTestCase):
         self.assert_mutation('x not in y', ['x in y'])
 
 
+class ExceptionSwallowingTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.ExceptionSwallowing()
+
+    def test_swallow_exception(self):
+        self.assert_mutation(utils.f("""
+        try:
+            pass
+        except:
+            raise
+        """), [utils.f("""
+        try:
+            pass
+        except:
+            pass
+        """)])
+
+    def test_not_swallow_if_pass(self):
+        self.assert_mutation(utils.f("""
+        try:
+            pass
+        except:
+            pass
+        """), [])
+
+
+
 class ExceptionHandlerDeletionTest(OperatorTestCase):
 
     @classmethod
