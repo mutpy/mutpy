@@ -366,6 +366,18 @@ class ExceptionHandlerDeletion(MutationOperator):
         return ast.ExceptHandler(type=node.type, name=node.name, body=[ast.Raise()])
 
 
+class ExceptionSwallowing(MutationOperator):
+
+    def mutate_ExceptHandler(self, node):
+        if len(node.body) == 1 and isinstance(node.body[0], ast.Pass):
+            raise MutationResign()
+        return ast.ExceptHandler(type=node.type, name=node.name, body=[ast.Pass()])
+
+    @classmethod
+    def name(cls):
+        return 'EXS'
+
+
 class ZeroIterationLoop(MutationOperator):
 
     def zero_iteration(self, node):
@@ -578,6 +590,7 @@ all_operators = {
     ConditionalOperatorInsertion,
     ConstantReplacement,
     ExceptionHandlerDeletion,
+    ExceptionSwallowing,
     LogicalConnectorReplacement,
     LogicalOperatorDeletion,
     LogicalOperatorReplacement,
