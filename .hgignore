@@ -17,3 +17,6 @@ docs/_build/*
 
 # setup.py
 MutPy.egg-info/*
+
+# PyCharm
+.idea
