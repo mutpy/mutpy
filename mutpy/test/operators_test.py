@@ -694,3 +694,28 @@ class SuperCallingDeletionTest(OperatorTestCase):
             def foo(self, x):
                 pass
         """)])
+
+
+class SuperCallingInsertTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.SuperCallingInsert()
+
+    def test_change_position_from_first_to_last(self):
+        self.assert_mutation(utils.f("""
+        class B:
+            def foo(self, x, y=1, *args, **kwargs):
+                pass
+        class A(B):
+            def foo(self, x, y=1, *args, **kwargs):
+                pass
+        """), [utils.f("""
+        class B:
+            def foo(self, x, y=1, *args, **kwargs):
+                pass
+        class A(B):
+            def foo(self, x, y=1, *args, **kwargs):
+                super().foo(x, y=1, *args, **kwargs)
+                pass
+        """)], with_exec=True)
