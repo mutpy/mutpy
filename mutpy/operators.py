@@ -472,7 +472,9 @@ class ClassmethodDecoratorInsertion(MethodDecoratorInsertionMutationOperator):
 
 class AbstractOverriddenElementModification(MutationOperator):
 
-    def is_overridden(self, node):
+    def is_overridden(self, node, name=None):
+        if not name:
+            name = node.name
         parent = node.parent
         parent_names = []
         while parent:
@@ -484,7 +486,7 @@ class AbstractOverriddenElementModification(MutationOperator):
         getattr_rec = lambda obj, attr: functools.reduce(getattr, attr, obj)
         klass = getattr_rec(self.module, reversed(parent_names))
         for base_klass in klass.mro()[1:-1]:
-            if hasattr(base_klass, node.name):
+            if hasattr(base_klass, name):
                 return True
         return False
 
@@ -495,6 +497,45 @@ class OverridingMethodDeletion(AbstractOverriddenElementModification):
         if self.is_overridden(node):
             return ast.Pass()
         raise MutationResign()
+
+
+class HidingVariableDeletion(AbstractOverriddenElementModification):
+
+    def mutate_Assign(self, node):
+        if len(node.targets) > 1:
+            raise MutationResign()
+        if isinstance(node.targets[0], ast.Name) and self.is_overridden(node, name=node.targets[0].id):
+            return ast.Pass()
+        elif isinstance(node.targets[0], ast.Tuple) and isinstance(node.value, ast.Tuple):
+            return self.mutate_unpack(node)
+        else:
+            raise MutationResign()
+
+    def mutate_unpack(self, node):
+        target = node.targets[0]
+        value = node.value
+        new_targets = []
+        new_values = []
+        for target_element, value_element in zip(target.elts, value.elts):
+            if not self.is_overridden(node, target_element.id):
+                new_targets.append(target_element)
+                new_values.append(value_element)
+        if len(new_targets) == len(target.elts):
+            raise MutationResign()
+        if not new_targets:
+            return ast.Pass()
+        elif len(new_targets) == 1:
+            node.targets = new_targets
+            node.value = new_values[0]
+            return node
+        else:
+            target.elts = new_targets
+            value.elts = new_values
+            return node
+
+    @classmethod
+    def name(cls):
+        return 'IHD'
 
 
 class AbstractSuperCallingModification(MutationOperator):
@@ -593,6 +634,7 @@ all_operators = {
     ConstantReplacement,
     ExceptionHandlerDeletion,
     ExceptionSwallowing,
+    HidingVariableDeletion,
     LogicalConnectorReplacement,
     LogicalOperatorDeletion,
     LogicalOperatorReplacement,
