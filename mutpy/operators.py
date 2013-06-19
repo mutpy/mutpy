@@ -456,9 +456,9 @@ class ClassmethodDecoratorInsertion(MethodDecoratorInsertionMutationOperator):
         return 'classmethod'
 
 
-class OverridingMethodDeletion(MutationOperator):
+class AbstractOverriddenElementModification(MutationOperator):
 
-    def mutate_FunctionDef(self, node):
+    def is_overridden(self, node):
         parent = node.parent
         parent_names = []
         while parent:
@@ -469,10 +469,17 @@ class OverridingMethodDeletion(MutationOperator):
             parent = parent.parent
         getattr_rec = lambda obj, attr: functools.reduce(getattr, attr, obj)
         klass = getattr_rec(self.module, reversed(parent_names))
-        for base_klass in klass.mro():
-            if base_klass != klass and base_klass != object:
-                if hasattr(base_klass, node.name):
-                    return ast.Pass()
+        for base_klass in klass.mro()[1:-1]:
+            if hasattr(base_klass, node.name):
+                return True
+        return False
+
+
+class OverridingMethodDeletion(AbstractOverriddenElementModification):
+
+    def mutate_FunctionDef(self, node):
+        if self.is_overridden(node):
+            return ast.Pass()
         raise MutationResign()
 
 
@@ -492,7 +499,7 @@ class AbstractSuperCallingModification(MutationOperator):
             if self.is_super_call(node, stmt):
                 break
         else:
-            raise MutationResign()
+            return None, None
         return index, stmt
 
 
@@ -505,6 +512,8 @@ class OverriddenMethodCallingPositionChange(AbstractSuperCallingModification):
         if not self.should_mutate(node):
             raise MutationResign()
         index, stmt = self.get_super_call(node)
+        if index is None:
+            raise MutationResign()
         super_call = node.body[index]
         del node.body[index]
         if index == 0:
@@ -524,8 +533,39 @@ class SuperCallingDeletion(AbstractSuperCallingModification):
         if not self.should_mutate(node):
             raise MutationResign()
         index, _ = self.get_super_call(node)
+        if index is None:
+            raise MutationResign()
         node.body[index] = ast.Pass()
         return node
+
+
+class SuperCallingInsert(AbstractSuperCallingModification, AbstractOverriddenElementModification):
+
+    def should_mutate(self, node):
+        return super().should_mutate(node) and self.is_overridden(node)
+
+    def mutate_FunctionDef(self, node):
+        if not self.should_mutate(node):
+            raise MutationResign()
+        index, stmt = self.get_super_call(node)
+        if index is not None:
+            raise MutationResign()
+        node.body.insert(0, self.create_super_call(node))
+        return node
+
+    def create_super_call(self, node):
+        super_call = utils.create_ast('super().{}()'.format(node.name)).body[0]
+        for arg in node.args.args[1:-len(node.args.defaults) or None]:
+            super_call.value.args.append(ast.Name(id=arg.arg, ctx=ast.Load()))
+        for arg, default in zip(node.args.args[-len(node.args.defaults):], node.args.defaults):
+            super_call.value.keywords.append(ast.keyword(arg=arg.arg, value=default))
+        for arg, default in zip(node.args.kwonlyargs, node.args.kw_defaults):
+            super_call.value.keywords.append(ast.keyword(arg=arg.arg, value=default))
+        if node.args.vararg:
+            super_call.value.starargs = ast.Name(id=node.args.vararg, ctx=ast.Load())
+        if node.args.kwarg:
+            super_call.value.kwargs = ast.Name(id=node.args.kwarg, ctx=ast.Load())
+        return super_call
 
 
 all_operators = {
@@ -550,6 +590,7 @@ all_operators = {
     SliceIndexRemove,
     StatementDeletion,
     SuperCallingDeletion,
+    SuperCallingInsert,
     ZeroIterationLoop,
 }
 
