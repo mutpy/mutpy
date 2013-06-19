@@ -476,18 +476,35 @@ class OverridingMethodDeletion(MutationOperator):
         raise MutationResign()
 
 
-class OverriddenMethodCallingPositionChange(MutationOperator):
+class AbstractSuperCallingModification(MutationOperator):
 
-    def mutate_FunctionDef(self, node):
-        if not isinstance(node.parent, ast.ClassDef):
-            raise MutationResign()
-        if len(node.body) == 1:
-            raise MutationResign()
+    def is_super_call(self, node, stmt):
+        return isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call) and \
+            isinstance(stmt.value.func, ast.Attribute) and isinstance(stmt.value.func.value, ast.Call) and \
+            isinstance(stmt.value.func.value.func, ast.Name) and stmt.value.func.value.func.id == 'super' and \
+            stmt.value.func.attr == node.name
+
+    def should_mutate(self, node):
+        return isinstance(node.parent, ast.ClassDef)
+
+    def get_super_call(self, node):
         for index, stmt in enumerate(node.body):
             if self.is_super_call(node, stmt):
                 break
         else:
             raise MutationResign()
+        return index, stmt
+
+
+class OverriddenMethodCallingPositionChange(AbstractSuperCallingModification):
+
+    def should_mutate(self, node):
+        return super().should_mutate(node) and len(node.body) > 1
+
+    def mutate_FunctionDef(self, node):
+        if not self.should_mutate(node):
+            raise MutationResign()
+        index, stmt = self.get_super_call(node)
         super_call = node.body[index]
         del node.body[index]
         if index == 0:
@@ -496,15 +513,19 @@ class OverriddenMethodCallingPositionChange(MutationOperator):
             node.body.insert(0, super_call)
         return node
 
-    def is_super_call(self, node, stmt):
-        return isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call) and \
-            isinstance(stmt.value.func, ast.Attribute) and isinstance(stmt.value.func.value, ast.Call) and \
-            isinstance(stmt.value.func.value.func, ast.Name) and stmt.value.func.value.func.id == 'super' and \
-            stmt.value.func.attr == node.name
-
     @classmethod
     def name(cls):
         return 'IOP'
+
+
+class SuperCallingDeletion(AbstractSuperCallingModification):
+
+    def mutate_FunctionDef(self, node):
+        if not self.should_mutate(node):
+            raise MutationResign()
+        index, _ = self.get_super_call(node)
+        node.body[index] = ast.Pass()
+        return node
 
 
 all_operators = {
@@ -528,6 +549,7 @@ all_operators = {
     ReverseIterationLoop,
     SliceIndexRemove,
     StatementDeletion,
+    SuperCallingDeletion,
     ZeroIterationLoop,
 }
 

@@ -673,3 +673,21 @@ class OverriddenMethodCallingPositionChangeTest(OperatorTestCase):
             def foo(self):
                 super().foo()
         """), [])
+
+
+class SuperCallingDeletionTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.SuperCallingDeletion()
+
+    def test_change_position_from_first_to_last(self):
+        self.assert_mutation(utils.f("""
+        class A:
+            def foo(self, x):
+                super().foo(x)
+        """), [utils.f("""
+        class A:
+            def foo(self, x):
+                pass
+        """)])
