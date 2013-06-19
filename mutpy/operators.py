@@ -476,6 +476,37 @@ class OverridingMethodDeletion(MutationOperator):
         raise MutationResign()
 
 
+class OverriddenMethodCallingPositionChange(MutationOperator):
+
+    def mutate_FunctionDef(self, node):
+        if not isinstance(node.parent, ast.ClassDef):
+            raise MutationResign()
+        if len(node.body) == 1:
+            raise MutationResign()
+        for index, stmt in enumerate(node.body):
+            if self.is_super_call(node, stmt):
+                break
+        else:
+            raise MutationResign()
+        super_call = node.body[index]
+        del node.body[index]
+        if index == 0:
+            node.body.append(super_call)
+        else:
+            node.body.insert(0, super_call)
+        return node
+
+    def is_super_call(self, node, stmt):
+        return isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call) and \
+            isinstance(stmt.value.func, ast.Attribute) and isinstance(stmt.value.func.value, ast.Call) and \
+            isinstance(stmt.value.func.value.func, ast.Name) and stmt.value.func.value.func.id == 'super' and \
+            stmt.value.func.attr == node.name
+
+    @classmethod
+    def name(cls):
+        return 'IOP'
+
+
 all_operators = {
     ArithmeticOperatorDeletion,
     ArithmeticOperatorReplacement,
@@ -491,6 +522,7 @@ all_operators = {
     LogicalOperatorReplacement,
     MembershipTestReplacement,
     OneIterationLoop,
+    OverriddenMethodCallingPositionChange,
     OverridingMethodDeletion,
     RelationalOperatorReplacement,
     ReverseIterationLoop,

@@ -634,3 +634,42 @@ class OverridingMethodDeletionTest(OperatorTestCase):
             pass
         """)], with_exec=True)
 
+
+class OverriddenMethodCallingPositionChangeTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.OverriddenMethodCallingPositionChange()
+
+    def test_change_position_from_first_to_last(self):
+        self.assert_mutation(utils.f("""
+        class A:
+            def foo(self):
+                super().foo()
+                pass
+        """), [utils.f("""
+        class A:
+            def foo(self):
+                pass
+                super().foo()
+        """)])
+
+    def test_change_position_from_last_to_first(self):
+        self.assert_mutation(utils.f("""
+        class A:
+            def foo(self):
+                pass
+                super().foo()
+        """), [utils.f("""
+        class A:
+            def foo(self):
+                super().foo()
+                pass
+        """)])
+
+    def test_not_change_position_if_single_statement(self):
+        self.assert_mutation(utils.f("""
+        class A:
+            def foo(self):
+                super().foo()
+        """), [])
