@@ -4,20 +4,36 @@ import copy
 import functools
 from mutpy import utils
 
+
 class MutationResign(Exception): pass
+
+
+class Mutation:
+
+    def __init__(self, operator, lineno, marker):
+        self.operator = operator
+        self.lineno = lineno
+        self.marker = marker
+
 
 class MutationOperator:
 
-    def mutate(self, node, to_mutate=None, sampler=None, coverage_injector=None, module=None):
+    def mutate(self, node, to_mutate=None, sampler=None, coverage_injector=None, module=None, only_marked_node=None):
         self.to_mutate = to_mutate
         self.sampler = sampler
         self.lineno = 1
+        self.marker = getattr(node, 'marker', None)
+        self.only_marked_node = only_marked_node
         self.coverage_injector = coverage_injector
         self.module = module
         for new_node in self.visit(node):
-            yield new_node, self.lineno
+            yield Mutation(operator=self.__class__, lineno=self.lineno, marker=self.marker), new_node
 
     def visit(self, node):
+        if self.only_marked_node is not None and self.only_marked_node != getattr(node, 'marker', None):
+            for new_node in self.generic_visit(node):
+                yield new_node
+            return
         if self.has_notmutate(node) or (self.coverage_injector and not self.coverage_injector.is_covered(node)):
             return
 
@@ -89,6 +105,8 @@ class MutationOperator:
     def set_mutation_lineno(self, node):
         if hasattr(node, 'lineno'):
             self.lineno = node.lineno
+        if hasattr(node, 'marker'):
+            self.marker = node.marker
 
     def find_visitors(self, node):
         method_prefix = 'mutate_' + node.__class__.__name__
@@ -474,6 +492,8 @@ class ClassmethodDecoratorInsertion(MethodDecoratorInsertionMutationOperator):
 class AbstractOverriddenElementModification(MutationOperator):
 
     def is_overridden(self, node, name=None):
+        if not isinstance(node.parent, ast.ClassDef):
+            raise MutationResign()
         if not name:
             name = node.name
         parent = node.parent

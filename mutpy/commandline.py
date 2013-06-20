@@ -38,6 +38,9 @@ def build_parser():
                         help='percentage of the generated mutants (mutation sampling)')
     parser.add_argument('--coverage', action='store_true',
                         help='mutate only covered code')
+    parser.add_argument('--order', type=int, metavar='ORDER', default=1, help='mutaiton order')
+    parser.add_argument('--hom-strategy', type=str, metavar='HOM_STRATEGY', help='HOM strategy', default='FIRST_TO_LAST')
+
     return parser
 
 
@@ -83,7 +86,14 @@ def build_mutator(cfg):
     operators_set -= {get_operator(name, name_to_operator)
                       for name in cfg.disable_operator}
 
-    return controller.Mutator(operators_set, cfg.percentage)
+    if cfg.order == 1:
+        return controller.FirstOrderMutator(operators_set, cfg.percentage)
+    else:
+        hom_strategies = {
+            'FIRST_TO_LAST': controller.FirstToLastHOMStrategy
+        }
+        hom_strategy = hom_strategies[cfg.hom_strategy](order=cfg.order)
+        return controller.HighOrderMutator(operators_set, cfg.percentage, hom_strategy=hom_strategy)
 
 
 def get_operator(name, name_to_operator):

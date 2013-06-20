@@ -60,16 +60,16 @@ class OperatorTestCase(unittest.TestCase):
         module = None
         if with_exec:
             module = utils.create_module(original_ast)
-        for mutant, lineno in operator.mutate(original_ast, coverage_injector=coverage_injector, module=module):
-            mutant_code = codegen.remove_extra_lines(codegen.to_source(mutant))
+        for mutation, mutatnt in operator.mutate(original_ast, coverage_injector=coverage_injector, module=module):
+            mutant_code = codegen.remove_extra_lines(codegen.to_source(mutatnt))
             msg = '\n\nMutant:\n\n' + mutant_code + '\n\nNot found in:'
             for other_mutant in mutants:
                 msg += '\n\n----------\n\n' + other_mutant
             self.assertIn(mutant_code, mutants, msg)
             mutants.remove(mutant_code)
-            self.assert_location(mutant)
+            self.assert_location(mutatnt)
             if not lines is None:
-                self.assert_mutation_lineo(lineno, lines)
+                self.assert_mutation_lineo(mutation.lineno, lines)
 
         self.assertListEqual(mutants, [], 'did not generate all mutants')
 
