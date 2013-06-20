@@ -304,9 +304,12 @@ class ParentNodeTransformer(ast.NodeTransformer):
         if getattr(node, 'parent', None):
             node = copy.deepcopy(node)
         node.parent = getattr(self, 'parent', None)
+        node.children = []
         self.parent = node
         result_node = super().visit(node)
         self.parent = node.parent
+        if self.parent:
+            self.parent.children.append(node)
         return result_node
 
 
