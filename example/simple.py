@@ -1,8 +1,20 @@
 from mutpy.utils import notmutate
 
 
-class Simple:
+class Base:
+    X = 1
+
+    def foo(self):
+        return 1
+
+    def bar(self):
+        self.x = 1
+
+
+class Simple(Base):
     """Simple class."""
+
+    X = 2
 
     def __init__(self, z):
         self.z = z
@@ -50,3 +62,30 @@ class Simple:
     def get_magic(self):
         return self.z
 
+    def negate_number(self, x):
+        return -x
+
+    def negate_bool(self, x):
+        return not x
+
+    def negate_bitwise(self, x):
+        return ~x
+
+    def bool_conjunction(self, a, b):
+        return a or b
+
+    def bitwise_conjunction(self, a, b):
+        return a | b
+
+    def foo(self):
+        return 2
+
+    def bar(self):
+        super().bar()
+        self.x += 1
+
+    def handle_exception(self):
+        try:
+            raise AttributeError
+        except AttributeError:
+            return 1

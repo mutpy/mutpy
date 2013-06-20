@@ -44,3 +44,31 @@ class SimpleGoodTest(unittest.TestCase):
     def test_is_not_odd(self):
         self.assertFalse(self.simple.is_odd(2))
 
+    def test_negate_number(self):
+        self.assertEqual(self.simple.negate_number(10), -10)
+
+    def test_negate_bool(self):
+        self.assertEqual(self.simple.negate_bool(True), False)
+
+    def test_negate_bitwise(self):
+        self.assertEqual(self.simple.negate_bitwise(1), -2)
+
+    def test_bool_conjunction(self):
+        self.assertEqual(self.simple.bool_conjunction(True, False), True)
+
+    def test_bitwise_conjunction(self):
+        self.assertEqual(self.simple.bitwise_conjunction(1, 0), 1)
+
+    def test_override(self):
+        self.assertEqual(self.simple.foo(), 2)
+
+    def test_overridden_call(self):
+        self.simple.bar()
+
+        self.assertEqual(self.simple.x, 2)
+
+    def test_handle_exception(self):
+        self.assertEqual(self.simple.handle_exception(), 1)
+
+    def test_class_variable(self):
+        self.assertEqual(self.simple.X, 2)
