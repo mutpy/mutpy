@@ -337,3 +337,13 @@ class InjectImporterTest(unittest.TestCase):
         del sys.modules['source']
         importer.uninstall()
 
+
+class ParentNodeTransformerTest(unittest.TestCase):
+
+    def test_set_parent(self):
+        node = utils.create_ast('x += y + z')
+
+        utils.ParentNodeTransformer().visit(node)
+
+        self.assertEqual(node.body[0].op.parent, node.body[0])
+        self.assertEqual(node.body[0].value.op.parent, node.body[0].value)
