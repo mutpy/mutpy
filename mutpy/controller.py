@@ -231,8 +231,11 @@ class FirstToLastHOMStrategy:
             mutations_to_apply = []
             index = 0
             for _ in range(self.order):
-                mutations_to_apply.append(mutations.pop(index))
-                index = 0 if index == -1 else -1
+                try:
+                    mutations_to_apply.append(mutations.pop(index))
+                    index = 0 if index == -1 else -1
+                except IndexError:
+                    pass
             yield mutations_to_apply
 
 
