@@ -28,7 +28,7 @@ class CoverageInjectorTest(unittest.TestCase):
 
         self.coverage_injector.inject(node)
 
-        self.assertEqual(self.coverage_injector.get_result(), (1, 1))
+        self.assertEqual(self.coverage_injector.get_result(), (1, 5))
 
     def test_future_statement_coverage(self):
         node = utils.create_ast('from __future__ import print_function')

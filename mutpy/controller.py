@@ -1,3 +1,4 @@
+from collections import defaultdict
 from os import path
 import sys
 import unittest
@@ -118,9 +119,11 @@ class MutationController(views.ViewNotifier):
         if coverage_injector:
             self.score.update_coverage(*coverage_injector.get_result())
 
-        for op, lineno, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate, coverage_injector,
+        for mutations, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate, coverage_injector,
                 module=target_module):
             mutation_number = self.score.all_mutants + 1
+            op = mutations[0].operator
+            lineno = mutations[0].lineno
             self.notify_mutation(mutation_number, op, filename, lineno, mutant_ast)
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
             if mutant_module:
@@ -220,17 +223,69 @@ class MutationController(views.ViewNotifier):
         self.score.inc_killed()
 
 
-class Mutator:
+class FirstToLastHOMStrategy:
 
-    def __init__(self, operators, percentage):
+    def __init__(self, order=2):
+        self.order = order
+
+    def generate(self, mutations):
+        while mutations:
+            mutations_to_apply = []
+            index = 0
+            for _ in range(self.order):
+                mutations_to_apply.append(mutations.pop(index))
+                index = 0 if index == -1 else -1
+            yield mutations_to_apply
+
+
+class FirstOrderMutator:
+
+    def __init__(self, operators, percentage=100, hom_strategy=None):
         self.operators = operators
         self.sampler = utils.RandomSampler(percentage)
+        self.hom_strategy = hom_strategy or FirstToLastHOMStrategy(order=2)
 
-    def add_operator(self, operator):
-        self.operators.append(operator)
-
-    def mutate(self, target_ast, to_mutate, coverage_injector, module=None):
+    def mutate(self, target_ast, to_mutate=None, coverage_injector=None, module=None):
         for op in utils.sort_operators(self.operators):
-            for mutant, lineno in op().mutate(target_ast, to_mutate, self.sampler, coverage_injector, module=module):
-                yield op, lineno, mutant
+            for mutation, mutant in op().mutate(target_ast, to_mutate, self.sampler, coverage_injector, module=module):
+                yield [mutation], mutant
 
+
+class HighOrderMutator(FirstOrderMutator):
+
+    def __init__(self, *args, hom_strategy=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.hom_strategy = hom_strategy or FirstToLastHOMStrategy(order=2)
+
+    def mutate(self, target_ast, to_mutate=None, coverage_injector=None, module=None):
+        coverage.MarkerNodeTransformer().visit(target_ast)
+        mutations = self.generate_all_mutations(coverage_injector, module, target_ast, to_mutate)
+        for mutations_to_apply in self.hom_strategy.generate(mutations):
+            generators = []
+            applied_mutations = []
+            mutant = target_ast
+            for mutation in mutations_to_apply:
+                generator = mutation.operator().mutate(mutant, to_mutate, self.sampler, coverage_injector, module=module, only_marked_node=mutation.marker)
+                try:
+                    mutation, mutant = generator.__next__()
+                except StopIteration:
+                    assert False, 'no mutations!'
+                applied_mutations.append(mutation)
+                generators.append(generator)
+            yield applied_mutations, mutant
+            self.finish_generators(generators)
+
+    def generate_all_mutations(self, coverage_injector, module, target_ast, to_mutate):
+        mutations = []
+        for op in utils.sort_operators(self.operators):
+            for mutation, _ in op().mutate(target_ast, to_mutate, None, coverage_injector, module=module):
+                mutations.append(mutation)
+        return mutations
+
+    def finish_generators(self, generators):
+        for generator in generators:
+            try:
+                generator.__next__()
+            except StopIteration:
+                continue
+            assert False, 'too many mutations!'
