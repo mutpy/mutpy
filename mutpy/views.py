@@ -112,10 +112,11 @@ class TextView(QuietTextView):
         for fail in result.failures:
                 self.level_print('fail in {} - {}'.format(fail[0], fail[1].split("\n")[-2]), 2)
 
-    def mutation(self, number, op, filename, lineno, mutant):
-        self.level_print('[#{:>4}] {:<3} {}:{:<3}: '.format(number, op.name(), filename, lineno), ended=False, level=2)
-        if self.show_mutants:
-            self.print_code(mutant, lineno)
+    def mutation(self, number, mutations, filename, mutant):
+        for mutation in mutations:
+            self.level_print('[#{:>4}] {:<3} {}:{:<3}: '.format(number, mutation.operator.name(), filename, mutation.lineno), ended=False, level=2)
+            if self.show_mutants:
+                self.print_code(mutant, mutation.lineno)
 
     def cant_load(self, name, exception):
         self.level_print(self.decorate('Can\'t load module: ', 'red', attrs=['bold']) + '{} ({}: {})'.format(name,

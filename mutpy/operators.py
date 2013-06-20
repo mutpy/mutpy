@@ -30,16 +30,14 @@ class MutationOperator:
             yield Mutation(operator=self.__class__, lineno=self.lineno, marker=self.marker), new_node
 
     def visit(self, node):
+        if self.has_notmutate(node) or (self.coverage_injector and not self.coverage_injector.is_covered(node)):
+            return
+        self.set_mutation_lineno(node)
         if self.only_marked_node is not None and self.only_marked_node != getattr(node, 'marker', None):
             for new_node in self.generic_visit(node):
                 yield new_node
             return
-        if self.has_notmutate(node) or (self.coverage_injector and not self.coverage_injector.is_covered(node)):
-            return
-
-        self.set_mutation_lineno(node)
         visitors = self.find_visitors(node)
-
         if visitors:
             for visitor in visitors:
                 try:

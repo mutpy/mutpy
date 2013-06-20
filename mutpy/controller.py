@@ -122,9 +122,7 @@ class MutationController(views.ViewNotifier):
         for mutations, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate, coverage_injector,
                 module=target_module):
             mutation_number = self.score.all_mutants + 1
-            op = mutations[0].operator
-            lineno = mutations[0].lineno
-            self.notify_mutation(mutation_number, op, filename, lineno, mutant_ast)
+            self.notify_mutation(mutation_number, mutations, filename, mutant_ast)
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
             if mutant_module:
                 self.run_tests_with_mutant(test_modules, mutant_module)
@@ -267,10 +265,10 @@ class HighOrderMutator(FirstOrderMutator):
             for mutation in mutations_to_apply:
                 generator = mutation.operator().mutate(mutant, to_mutate, self.sampler, coverage_injector, module=module, only_marked_node=mutation.marker)
                 try:
-                    mutation, mutant = generator.__next__()
+                    new_mutation, mutant = generator.__next__()
                 except StopIteration:
                     assert False, 'no mutations!'
-                applied_mutations.append(mutation)
+                applied_mutations.append(new_mutation)
                 generators.append(generator)
             yield applied_mutations, mutant
             self.finish_generators(generators)
