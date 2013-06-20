@@ -309,7 +309,7 @@ class ParentNodeTransformer(ast.NodeTransformer):
         result_node = super().visit(node)
         self.parent = node.parent
         if self.parent:
-            self.parent.children.append(node)
+            self.parent.children += [node] + node.children
         return result_node
 
 

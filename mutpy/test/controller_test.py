@@ -209,3 +209,20 @@ class HighOrderMutatorTest(unittest.TestCase):
                 self.assertEqual(len(mutations), 1)
         self.assertEqual(number, 1)
         self.assertEqual(codegen.to_source(target_ast), '(-a)')
+
+    def test_second_order_mutation_with_multiple_visitors(self):
+        mutator = controller.HighOrderMutator(
+            operators=[operators.ConstantReplacement],
+        )
+        target_ast = utils.create_ast('x = "test"')
+        number = None
+        for number, (mutations, mutant) in enumerate(mutator.mutate(target_ast)):
+            if number == 0:
+                self.assertEqual("x = 'mutpy'", codegen.to_source(mutant))
+                self.assertEqual(len(mutations), 1)
+            elif number == 1:
+                self.assertEqual("x = ''", codegen.to_source(mutant))
+                self.assertEqual(len(mutations), 1)
+        self.assertEqual(number, 1)
+        self.assertEqual(codegen.to_source(target_ast), "x = 'test'")
+
