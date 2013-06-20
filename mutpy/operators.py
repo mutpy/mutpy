@@ -157,6 +157,7 @@ class AbstractArithmeticOperatorReplacement(MutationOperator):
     def mutate_Mod(self, node):
         if self.should_mutate(node):
             return ast.Mult()
+        raise MutationResign()
 
     def mutate_Pow(self, node):
         if self.should_mutate(node):
@@ -497,6 +498,10 @@ class OverridingMethodDeletion(AbstractOverriddenElementModification):
         if self.is_overridden(node):
             return ast.Pass()
         raise MutationResign()
+
+    @classmethod
+    def name(cls):
+        return 'IOD'
 
 
 class HidingVariableDeletion(AbstractOverriddenElementModification):
