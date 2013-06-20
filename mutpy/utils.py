@@ -1,3 +1,4 @@
+import copy
 import sys
 import importlib
 import unittest
@@ -300,6 +301,8 @@ class MutationSubprocess(Process):
 class ParentNodeTransformer(ast.NodeTransformer):
 
     def visit(self, node):
+        if getattr(node, 'parent', None):
+            node = copy.deepcopy(node)
         node.parent = getattr(self, 'parent', None)
         self.parent = node
         result_node = super().visit(node)
