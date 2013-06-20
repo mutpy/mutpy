@@ -119,6 +119,8 @@ class TextView(QuietTextView):
                 ended=False,
                 level=2,
             )
+            if mutation != mutations[-1]:
+                print()
             if self.show_mutants:
                 self.print_code(mutant, mutation.node.lineno)
 
