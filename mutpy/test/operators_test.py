@@ -56,7 +56,6 @@ class OperatorTestCase(unittest.TestCase):
         if isinstance(mutants, str):
             mutants = [mutants]
         mutants = list(map(codegen.remove_extra_lines, mutants))
-        original = codegen.remove_extra_lines(original)
         module = None
         if with_exec:
             module = utils.create_module(original_ast)
@@ -69,7 +68,7 @@ class OperatorTestCase(unittest.TestCase):
             mutants.remove(mutant_code)
             self.assert_location(mutatnt)
             if not lines is None:
-                self.assert_mutation_lineo(mutation.lineno, lines)
+                self.assert_mutation_lineo(mutation.node.lineno, lines)
 
         self.assertListEqual(mutants, [], 'did not generate all mutants')
 

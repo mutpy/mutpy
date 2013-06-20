@@ -1,4 +1,3 @@
-from collections import defaultdict
 from os import path
 import sys
 import unittest
@@ -227,16 +226,29 @@ class FirstToLastHOMStrategy:
         self.order = order
 
     def generate(self, mutations):
+        mutations = mutations[:]
         while mutations:
             mutations_to_apply = []
             index = 0
-            for _ in range(self.order):
+            available_mutations = mutations[:]
+            while len(mutations_to_apply) < self.order and available_mutations:
                 try:
-                    mutations_to_apply.append(mutations.pop(index))
+                    mutations_to_apply.append(available_mutations.pop(index))
                     index = 0 if index == -1 else -1
                 except IndexError:
-                    pass
+                    break
+                self.filter_available_mutations(mutations_to_apply, available_mutations)
             yield mutations_to_apply
+            for mutation in mutations_to_apply:
+                mutations.remove(mutation)
+
+    def filter_available_mutations(self, mutations_to_apply, available_mutations):
+        for mutation_to_apply in mutations_to_apply:
+            for available_mutation in available_mutations:
+                if mutation_to_apply.node == available_mutation.node or \
+                   mutation_to_apply.node in available_mutation.node.children or \
+                   available_mutation.node in mutation_to_apply.node.children:
+                    available_mutations.remove(available_mutation)
 
 
 class FirstOrderMutator:
@@ -259,14 +271,19 @@ class HighOrderMutator(FirstOrderMutator):
         self.hom_strategy = hom_strategy or FirstToLastHOMStrategy(order=2)
 
     def mutate(self, target_ast, to_mutate=None, coverage_injector=None, module=None):
-        coverage.MarkerNodeTransformer().visit(target_ast)
         mutations = self.generate_all_mutations(coverage_injector, module, target_ast, to_mutate)
         for mutations_to_apply in self.hom_strategy.generate(mutations):
             generators = []
             applied_mutations = []
             mutant = target_ast
             for mutation in mutations_to_apply:
-                generator = mutation.operator().mutate(mutant, to_mutate, self.sampler, coverage_injector, module=module, only_marked_node=mutation.marker)
+                generator = mutation.operator().mutate(
+                    mutant,
+                    to_mutate=to_mutate,
+                    sampler=self.sampler,
+                    coverage_injector=coverage_injector,
+                    module=module,
+                    only_node=mutation.node)
                 try:
                     new_mutation, mutant = generator.__next__()
                 except StopIteration:
