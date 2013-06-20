@@ -109,22 +109,20 @@ class MulTest(TestCase):
 class FirstToLastHOMStrategyTest(unittest.TestCase):
 
     def test_generate(self):
-        changes = [
+        mutations = [
             operators.Mutation(operator=operators.ArithmeticOperatorReplacement, lineno=1, marker=1),
             operators.Mutation(operator=operators.ArithmeticOperatorReplacement, lineno=1, marker=2),
             operators.Mutation(operator=operators.ArithmeticOperatorReplacement, lineno=1, marker=3),
-            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, lineno=1, marker=4),
         ]
-        hom_startegy = controller.FirstToLastHOMStrategy(order=2)
+        hom_strategy = controller.FirstToLastHOMStrategy(order=2)
 
-        changes_to_apply = list(hom_startegy.generate(changes))
+        changes_to_apply = list(hom_strategy.generate(mutations))
 
         self.assertEqual(len(changes_to_apply[0]), 2)
         self.assertEqual(changes_to_apply[0][0].marker, 1)
-        self.assertEqual(changes_to_apply[0][1].marker, 4)
-        self.assertEqual(len(changes_to_apply[1]), 2)
+        self.assertEqual(changes_to_apply[0][1].marker, 3)
+        self.assertEqual(len(changes_to_apply[1]), 1)
         self.assertEqual(changes_to_apply[1][0].marker, 2)
-        self.assertEqual(changes_to_apply[1][1].marker, 3)
 
 
 class FirstOrderMutatorTest(unittest.TestCase):
