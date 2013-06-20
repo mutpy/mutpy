@@ -244,7 +244,7 @@ class FirstToLastHOMStrategy:
 
     def filter_available_mutations(self, mutations_to_apply, available_mutations):
         for mutation_to_apply in mutations_to_apply:
-            for available_mutation in available_mutations:
+            for available_mutation in available_mutations[:]:
                 if mutation_to_apply.node == available_mutation.node or \
                    mutation_to_apply.node in available_mutation.node.children or \
                    available_mutation.node in mutation_to_apply.node.children:
@@ -283,7 +283,7 @@ class HighOrderMutator(FirstOrderMutator):
                     sampler=self.sampler,
                     coverage_injector=coverage_injector,
                     module=module,
-                    only_node=mutation.node)
+                    only_mutation=mutation)
                 try:
                     new_mutation, mutant = generator.__next__()
                 except StopIteration:
@@ -291,7 +291,12 @@ class HighOrderMutator(FirstOrderMutator):
                 applied_mutations.append(new_mutation)
                 generators.append(generator)
             yield applied_mutations, mutant
-            self.finish_generators(generators)
+            for generator in reversed(generators):
+                try:
+                    generator.__next__()
+                except StopIteration:
+                    continue
+                assert False, 'too many mutations!'
 
     def generate_all_mutations(self, coverage_injector, module, target_ast, to_mutate):
         mutations = []
@@ -301,7 +306,7 @@ class HighOrderMutator(FirstOrderMutator):
         return mutations
 
     def finish_generators(self, generators):
-        for generator in generators:
+        for generator in reversed(generators):
             try:
                 generator.__next__()
             except StopIteration:

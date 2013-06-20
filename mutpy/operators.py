@@ -10,37 +10,38 @@ class MutationResign(Exception): pass
 
 class Mutation:
 
-    def __init__(self, operator, node):
+    def __init__(self, operator, node, visitor=None):
         self.operator = operator
         self.node = node
+        self.visitor = visitor
 
 
 class MutationOperator:
 
-    def mutate(self, node, to_mutate=None, sampler=None, coverage_injector=None, module=None, only_node=None):
+    def mutate(self, node, to_mutate=None, sampler=None, coverage_injector=None, module=None, only_mutation=None):
         self.to_mutate = to_mutate
         self.sampler = sampler
-        self.only_node = only_node
+        self.only_mutation = only_mutation
         self.coverage_injector = coverage_injector
         self.module = module
         for new_node in self.visit(node):
-            yield Mutation(operator=self.__class__, node=self.current_node), new_node
+            yield Mutation(operator=self.__class__, node=self.current_node, visitor=self.visitor), new_node
 
     def visit(self, node):
         if self.has_notmutate(node) or (self.coverage_injector and not self.coverage_injector.is_covered(node)):
             return
         self.fix_lineno(node)
         self.current_node = node
-        if self.only_node is not None and self.only_node != node:
-            for new_node in self.generic_visit(node):
-                yield new_node
-            return
         visitors = self.find_visitors(node)
         if visitors:
             for visitor in visitors:
                 try:
                     if self.sampler and not self.sampler.is_mutation_time():
                         raise MutationResign
+                    if self.only_mutation is not None and \
+                            (self.only_mutation.node != node or self.only_mutation.visitor != visitor.__name__):
+                        raise MutationResign
+                    self.visitor = visitor.__name__
                     new_node = visitor(copy.deepcopy(node))
                     ast.fix_missing_locations(new_node)
                     yield new_node
