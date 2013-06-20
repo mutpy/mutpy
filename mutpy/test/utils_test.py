@@ -346,4 +346,6 @@ class ParentNodeTransformerTest(unittest.TestCase):
         utils.ParentNodeTransformer().visit(node)
 
         self.assertEqual(node.body[0].op.parent, node.body[0])
+        self.assertIn(node.body[0].op, node.body[0].children)
         self.assertEqual(node.body[0].value.op.parent, node.body[0].value)
+        self.assertIn(node.body[0].value.op, node.body[0].value.children)
