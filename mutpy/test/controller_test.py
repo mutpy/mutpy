@@ -1,3 +1,4 @@
+import ast
 import unittest
 import types
 import sys
@@ -110,19 +111,49 @@ class FirstToLastHOMStrategyTest(unittest.TestCase):
 
     def test_generate(self):
         mutations = [
-            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, lineno=1, marker=1),
-            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, lineno=1, marker=2),
-            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, lineno=1, marker=3),
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
         ]
         hom_strategy = controller.FirstToLastHOMStrategy(order=2)
 
         changes_to_apply = list(hom_strategy.generate(mutations))
 
         self.assertEqual(len(changes_to_apply[0]), 2)
-        self.assertEqual(changes_to_apply[0][0].marker, 1)
-        self.assertEqual(changes_to_apply[0][1].marker, 3)
+        self.assertEqual(changes_to_apply[0][0], mutations[0])
+        self.assertEqual(changes_to_apply[0][1], mutations[2])
         self.assertEqual(len(changes_to_apply[1]), 1)
-        self.assertEqual(changes_to_apply[1][0].marker, 2)
+        self.assertEqual(changes_to_apply[1][0], mutations[1])
+
+    def test_generate_if_same_node(self):
+        node = ast.Sub()
+        mutations = [
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=node),
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=node),
+        ]
+        hom_strategy = controller.FirstToLastHOMStrategy(order=2)
+
+        changes_to_apply = list(hom_strategy.generate(mutations))
+
+        self.assertEqual(len(changes_to_apply[0]), 1)
+        self.assertEqual(changes_to_apply[0][0], mutations[0])
+        self.assertEqual(len(changes_to_apply[1]), 1)
+        self.assertEqual(changes_to_apply[1][0], mutations[1])
+
+    def test_generate_if_node_child(self):
+        node = ast.Sub(children=[])
+        mutations = [
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.UnaryOp(children=[node])),
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=node),
+        ]
+        hom_strategy = controller.FirstToLastHOMStrategy(order=2)
+
+        changes_to_apply = list(hom_strategy.generate(mutations))
+
+        self.assertEqual(len(changes_to_apply[0]), 1)
+        self.assertEqual(changes_to_apply[0][0], mutations[0])
+        self.assertEqual(len(changes_to_apply[1]), 1)
+        self.assertEqual(changes_to_apply[1][0], mutations[1])
 
 
 class FirstOrderMutatorTest(unittest.TestCase):
@@ -136,10 +167,10 @@ class FirstOrderMutatorTest(unittest.TestCase):
         for number, (mutations, mutant) in enumerate(mutator.mutate(target_ast)):
             if number == 0:
                 self.assertEqual('x += y - z', codegen.to_source(mutant))
-                self.assertEqual(mutations[0].lineno, 1)
+                self.assertEqual(len(mutations), 1)
             elif number == 1:
                 self.assertEqual('x -= y + z', codegen.to_source(mutant))
-                self.assertEqual(mutations[0].lineno, 1)
+                self.assertEqual(len(mutations), 1)
             else:
                 self.fail()
 
@@ -157,28 +188,24 @@ class HighOrderMutatorTest(unittest.TestCase):
         for number, (mutations, mutant) in enumerate(mutator.mutate(target_ast)):
             if number == 0:
                 self.assertEqual('x -= y - z', codegen.to_source(mutant))
-                self.assertEqual(mutations[0].lineno, 1)
-                self.assertEqual(mutations[1].lineno, 1)
+                self.assertEqual(len(mutations), 2)
             else:
                 self.fail()
 
         self.assertEqual(codegen.to_source(target_ast), 'x += y + z')
 
-    def test_second_order_mutation_with_first_to_last_strategy(self):
+    def test_second_order_mutation_with_same_node_as_target(self):
         mutator = controller.HighOrderMutator(
-            operators=[operators.ArithmeticOperatorReplacement],
+            operators=[operators.ArithmeticOperatorDeletion, operators.ArithmeticOperatorReplacement],
         )
-        target_ast = utils.create_ast('a + b + c + d + e')
+        target_ast = utils.create_ast('- a')
         number = None
         for number, (mutations, mutant) in enumerate(mutator.mutate(target_ast)):
             if number == 0:
-                self.assertEqual('a - b + c + d - e', codegen.to_source(mutant))
-                self.assertEqual(mutations[0].lineno, 1)
-                self.assertEqual(mutations[1].lineno, 1)
+                self.assertEqual('a', codegen.to_source(mutant))
+                self.assertEqual(len(mutations), 1)
             elif number == 1:
-                self.assertEqual('a + b - c - d + e', codegen.to_source(mutant))
-                self.assertEqual(mutations[0].lineno, 1)
-                self.assertEqual(mutations[1].lineno, 1)
-        if number != 1:
-            self.fail('no mutations!')
-        self.assertEqual(codegen.to_source(target_ast), 'a + b + c + d + e')
+                self.assertEqual('(+a)', codegen.to_source(mutant))
+                self.assertEqual(len(mutations), 1)
+        self.assertEqual(number, 1)
+        self.assertEqual(codegen.to_source(target_ast), '(-a)')

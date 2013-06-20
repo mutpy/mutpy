@@ -10,30 +10,28 @@ class MutationResign(Exception): pass
 
 class Mutation:
 
-    def __init__(self, operator, lineno, marker):
+    def __init__(self, operator, node):
         self.operator = operator
-        self.lineno = lineno
-        self.marker = marker
+        self.node = node
 
 
 class MutationOperator:
 
-    def mutate(self, node, to_mutate=None, sampler=None, coverage_injector=None, module=None, only_marked_node=None):
+    def mutate(self, node, to_mutate=None, sampler=None, coverage_injector=None, module=None, only_node=None):
         self.to_mutate = to_mutate
         self.sampler = sampler
-        self.lineno = 1
-        self.marker = getattr(node, 'marker', None)
-        self.only_marked_node = only_marked_node
+        self.only_node = only_node
         self.coverage_injector = coverage_injector
         self.module = module
         for new_node in self.visit(node):
-            yield Mutation(operator=self.__class__, lineno=self.lineno, marker=self.marker), new_node
+            yield Mutation(operator=self.__class__, node=self.current_node), new_node
 
     def visit(self, node):
         if self.has_notmutate(node) or (self.coverage_injector and not self.coverage_injector.is_covered(node)):
             return
-        self.set_mutation_lineno(node)
-        if self.only_marked_node is not None and self.only_marked_node != getattr(node, 'marker', None):
+        self.fix_lineno(node)
+        self.current_node = node
+        if self.only_node is not None and self.only_node != node:
             for new_node in self.generic_visit(node):
                 yield new_node
             return
@@ -100,11 +98,9 @@ class MutationOperator:
         except AttributeError:
             return False
 
-    def set_mutation_lineno(self, node):
-        if hasattr(node, 'lineno'):
-            self.lineno = node.lineno
-        if hasattr(node, 'marker'):
-            self.marker = node.marker
+    def fix_lineno(self, node):
+        if not hasattr(node, 'lineno') and getattr(node, 'parent', None) is not None and hasattr(node.parent, 'lineno'):
+            node.lineno = node.parent.lineno
 
     def find_visitors(self, node):
         method_prefix = 'mutate_' + node.__class__.__name__
