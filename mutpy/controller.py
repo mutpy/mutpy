@@ -49,7 +49,7 @@ class MutationScore:
 class MutationController(views.ViewNotifier):
 
     def __init__(self, target_loader, test_loader, views, mutant_generator,
-                    timeout_factor=5, disable_stdout=False, mutate_covered=False):
+                 timeout_factor=5, disable_stdout=False, mutate_covered=False):
         super().__init__(views)
         self.target_loader = target_loader
         self.test_loader = test_loader
@@ -120,7 +120,7 @@ class MutationController(views.ViewNotifier):
             self.score.update_coverage(*coverage_injector.get_result())
 
         for mutations, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate, coverage_injector,
-                module=target_module):
+                                                                  module=target_module):
             mutation_number = self.score.all_mutants + 1
             self.notify_mutation(mutation_number, mutations, filename, mutant_ast)
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
@@ -178,13 +178,12 @@ class MutationController(views.ViewNotifier):
     @utils.TimeRegister
     def run_tests_with_mutant(self, tests_modules, mutant_module):
         suite, total_duration = self.create_test_suite(tests_modules, mutant_module)
-        result = utils.MutationTestResult()
         timer = utils.Timer()
-        result = self.run_mutation_subprocess(suite, total_duration, result)
+        result = self.run_mutation_subprocess(suite, total_duration)
         timer.stop()
         self.update_score_and_notify_views(result, timer.duration)
 
-    def run_mutation_subprocess(self, suite, total_duration, result):
+    def run_mutation_subprocess(self, suite, total_duration):
         live_time = self.timeout_factor * (total_duration if total_duration > 1 else 1)
         process = utils.MutationSubprocess(suite=suite)
         with self.stdout_manager:
@@ -199,7 +198,7 @@ class MutationController(views.ViewNotifier):
         elif result['is_incompetent']:
             exception = result['exception']
             self.update_incompetent_mutant(exception)
-        elif result['is_survieved']:
+        elif result['is_survived']:
             self.update_survived_mutant(mutant_duration)
         else:
             self.update_killed_mutant(mutant_duration, result['killer'], result['exception_traceback'])
@@ -360,7 +359,8 @@ class HighOrderMutator(FirstOrderMutator):
                     sampler=self.sampler,
                     coverage_injector=coverage_injector,
                     module=module,
-                    only_mutation=mutation)
+                    only_mutation=mutation,
+                )
                 try:
                     new_mutation, mutant = generator.__next__()
                 except StopIteration:

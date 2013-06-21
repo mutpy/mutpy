@@ -35,9 +35,10 @@ class QuietTextView:
         self.colored_output = colored_output
 
     def end(self, score, duration):
-        self.level_print('Mutation score {}: {}'.format(self.time_format(duration),
-                                                         self.decorate('{:.1f}%'.format(score.count()),
-                                                                       'blue', attrs=['bold'])))
+        self.level_print('Mutation score {}: {}'.format(
+            self.time_format(duration),
+            self.decorate('{:.1f}%'.format(score.count()), 'blue', attrs=['bold']),
+        ))
 
     def level_print(self, msg, level=1, ended=True, continuation=False):
         end = "\n" if ended else ""
@@ -86,16 +87,18 @@ class TextView(QuietTextView):
 
         if score.all_mutants:
             self.level_print('killed: {} ({:.1f}%)'.format(score.killed_mutants,
-                                                       100 * score.killed_mutants / score.all_mutants), 2)
+                                                           100 * score.killed_mutants / score.all_mutants), 2)
             self.level_print('survived: {} ({:.1f}%)'.format(score.survived_mutants,
-                                                       100 * score.survived_mutants / score.all_mutants), 2)
+                                                             100 * score.survived_mutants / score.all_mutants), 2)
             self.level_print('incompetent: {} ({:.1f}%)'.format(score.incompetent_mutants,
-                                                            100 * score.incompetent_mutants / score.all_mutants), 2)
+                                                                100 * score.incompetent_mutants / score.all_mutants), 2)
             self.level_print('timeout: {} ({:.1f}%)'.format(score.timeout_mutants,
-                                                        100 * score.timeout_mutants / score.all_mutants), 2)
+                                                            100 * score.timeout_mutants / score.all_mutants), 2)
             if score.all_nodes:
-                self.level_print('Coverage: {} of {} AST nodes ({:.1f}%)'.format(score.covered_nodes, score.all_nodes,
-                                                        100 * score.covered_nodes / score.all_nodes))
+                self.level_print('Coverage: {} of {} AST nodes ({:.1f}%)'.format(
+                    score.covered_nodes, score.all_nodes,
+                    100 * score.covered_nodes / score.all_nodes
+                ))
 
     def passed(self, tests):
         self.level_print('All tests passed:')
@@ -181,10 +184,12 @@ class YAMLRaportView:
         self.mutation_info.append(self.current_mutation)
 
     def mutation(self, number, op, file, lineno, mutant):
-        self.current_mutation = {'number': number,
-                                 'filename': file,
-                                 'operator': op.__name__,
-                                 'line': lineno}
+        self.current_mutation = {
+            'number': number,
+            'filename': file,
+            'operator': op.__name__,
+            'line': lineno,
+        }
 
     def killed(self, time, killer, *args):
         self.end_mutation('killed', time, str(killer))
@@ -205,7 +210,7 @@ class YAMLRaportView:
             'time_stats': dict(utils.TimeRegister.executions),
             'coverage': {
                 'covered_nodes': score.covered_nodes,
-                'all_nodes': score.all_nodes
+                'all_nodes': score.all_nodes,
             }
         })
 
@@ -214,4 +219,3 @@ class YAMLRaportView:
 
     def __del__(self):
         self.stream.close()
-

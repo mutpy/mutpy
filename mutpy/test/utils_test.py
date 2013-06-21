@@ -36,7 +36,7 @@ class ModulesLoaderTest(unittest.TestCase):
         self.loader = utils.ModulesLoader(None, ModulesLoaderTest.tmp)
 
     def test_load_file(self):
-        self.assertRaises(NotImplementedError, lambda : self.loader.load_single('sample.py'))
+        self.assertRaises(NotImplementedError, lambda: self.loader.load_single('sample.py'))
 
     def test_load_module(self):
         module, to_mutate = self.loader.load_single('a.b.c.sample')[0]
@@ -57,13 +57,13 @@ class ModulesLoaderTest(unittest.TestCase):
         self.assertMultiLineEqual(to_mutate, 'X.f')
 
     def test_bad_target_class(self):
-        self.assertRaises(utils.ModulesLoaderException, lambda : self.loader.load_single('a.b.c.sample.Y'))
+        self.assertRaises(utils.ModulesLoaderException, lambda: self.loader.load_single('a.b.c.sample.Y'))
 
     def test_bad_target_method(self):
-        self.assertRaises(utils.ModulesLoaderException, lambda : self.loader.load_single('a.b.c.sample.X.g'))
+        self.assertRaises(utils.ModulesLoaderException, lambda: self.loader.load_single('a.b.c.sample.X.g'))
 
     def test_bad_module(self):
-        self.assertRaises(utils.ModulesLoaderException, lambda : self.loader.load_single('a.b.c.example'))
+        self.assertRaises(utils.ModulesLoaderException, lambda: self.loader.load_single('a.b.c.example'))
 
     def test_load_package(self):
         target, test = self.loader.load_single('a')
@@ -252,10 +252,11 @@ class TimeRegisterTest(unittest.TestCase):
     def test_function_with_yield(self):
         @MockTimeRegister
         def foo():
-            for i in [1,2,3]:
+            for i in [1, 2, 3]:
                 yield i
 
-        for _ in foo(): pass
+        for _ in foo():
+            pass
 
         self.assertEqual(MockTimeRegister.executions['foo'], 1)
 

@@ -45,4 +45,3 @@ class CoverageInjectorTest(unittest.TestCase):
 
         docstring_node = node.body[0]
         self.assertFalse(self.coverage_injector.is_covered(docstring_node))
-

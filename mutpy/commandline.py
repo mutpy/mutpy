@@ -4,6 +4,7 @@ from mutpy import controller, views, operators, experiments, utils
 
 VERSION = 0.2
 
+
 def main(argv):
     parser = build_parser()
     run_mutpy(parser)
@@ -64,13 +65,15 @@ def build_controller(cfg):
     mutant_generator = build_mutator(cfg)
     target_loader = utils.ModulesLoader(cfg.target, cfg.path)
     test_loader = utils.ModulesLoader(cfg.unit_test, cfg.path)
-    return controller.MutationController(target_loader=target_loader,
-                                         test_loader=test_loader,
-                                         views=built_views,
-                                         mutant_generator=mutant_generator,
-                                         timeout_factor=cfg.timeout_factor,
-                                         disable_stdout=cfg.disable_stdout,
-                                         mutate_covered=cfg.coverage)
+    return controller.MutationController(
+        target_loader=target_loader,
+        test_loader=test_loader,
+        views=built_views,
+        mutant_generator=mutant_generator,
+        timeout_factor=cfg.timeout_factor,
+        disable_stdout=cfg.disable_stdout,
+        mutate_covered=cfg.coverage,
+    )
 
 
 def build_mutator(cfg):
