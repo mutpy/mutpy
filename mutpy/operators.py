@@ -30,6 +30,8 @@ class MutationOperator:
     def visit(self, node):
         if self.has_notmutate(node) or (self.coverage_injector and not self.coverage_injector.is_covered(node)):
             return
+        if self.only_mutation and self.only_mutation.node != node and self.only_mutation.node not in node.children:
+            return
         self.fix_lineno(node)
         self.current_node = node
         visitors = self.find_visitors(node)
@@ -38,11 +40,12 @@ class MutationOperator:
                 try:
                     if self.sampler and not self.sampler.is_mutation_time():
                         raise MutationResign
-                    if self.only_mutation is not None and \
+                    if self.only_mutation and \
                             (self.only_mutation.node != node or self.only_mutation.visitor != visitor.__name__):
                         raise MutationResign
                     self.visitor = visitor.__name__
                     new_node = visitor(copy.deepcopy(node))
+                    self.fix_node_internals(node, new_node)
                     ast.fix_missing_locations(new_node)
                     yield new_node
                 except MutationResign:
@@ -102,6 +105,11 @@ class MutationOperator:
     def fix_lineno(self, node):
         if not hasattr(node, 'lineno') and getattr(node, 'parent', None) is not None and hasattr(node.parent, 'lineno'):
             node.lineno = node.parent.lineno
+
+    def fix_node_internals(self, old_node, new_node):
+        if not hasattr(new_node, 'parent'):
+            new_node.children = old_node.children
+            new_node.parent = old_node.parent
 
     def find_visitors(self, node):
         method_prefix = 'mutate_' + node.__class__.__name__
