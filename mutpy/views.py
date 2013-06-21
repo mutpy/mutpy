@@ -166,7 +166,7 @@ class DebugView:
         print('\n' + exception_traceback)
 
 
-class YAMLRaportView:
+class YAMLReportView:
 
     def __init__(self, file_name):
         self.file_name = file_name
@@ -183,12 +183,12 @@ class YAMLRaportView:
         self.current_mutation['killer'] = killer
         self.mutation_info.append(self.current_mutation)
 
-    def mutation(self, number, op, file, lineno, mutant):
+    def mutation(self, number, mutations, filename, mutant):
+        mutations = [{'operator': mutation.operator.name(), 'lineno': mutation.node.lineno} for mutation in mutations]
         self.current_mutation = {
             'number': number,
-            'filename': file,
-            'operator': op.__name__,
-            'line': lineno,
+            'mutations': mutations,
+            'filename': filename,
         }
 
     def killed(self, time, killer, *args):

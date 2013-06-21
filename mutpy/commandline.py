@@ -134,7 +134,7 @@ def build_views(cfg):
         views_list.append(views.TextView(cfg.colored_output, cfg.show_mutants))
 
     if cfg.report:
-        views_list.append(views.YAMLRaportView(cfg.report))
+        views_list.append(views.YAMLReportView(cfg.report))
 
     if cfg.debug:
         views_list.append(views.DebugView())
