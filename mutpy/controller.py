@@ -1,5 +1,5 @@
-from collections import defaultdict
 from os import path
+import random
 import sys
 import unittest
 from mutpy import views, utils, coverage
@@ -296,10 +296,35 @@ class BetweenOperatorsHOMStrategy(HOMStrategy):
             yield mutations_to_apply
 
 
+class RandomHOMStrategy(HOMStrategy):
+    name = 'RANDOM'
+
+    def __init__(self, *args, shuffler=random.shuffle, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.shuffler = shuffler
+
+    def generate(self, mutations):
+        mutations = mutations[:]
+        self.shuffler(mutations)
+        while mutations:
+            mutations_to_apply = []
+            available_mutations = mutations[:]
+            while len(mutations_to_apply) < self.order and available_mutations:
+                try:
+                    mutation = available_mutations.pop(0)
+                    mutations_to_apply.append(mutation)
+                    mutations.remove(mutation)
+                except IndexError:
+                    break
+                self.remove_bad_mutations(mutations_to_apply, available_mutations)
+            yield mutations_to_apply
+
+
 hom_strategies = [
     FirstToLastHOMStrategy,
     EachChoiceHOMStrategy,
     BetweenOperatorsHOMStrategy,
+    RandomHOMStrategy,
 ]
 
 
