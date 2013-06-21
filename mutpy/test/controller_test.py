@@ -234,6 +234,30 @@ class BetweenOperatorsHOMStrategyTest(unittest.TestCase):
         self.assertEqual(changes_to_apply[1][1], mutations[3])
 
 
+class RandomHOMStrategyTest(unittest.TestCase):
+
+    def test_generate(self):
+        mutations = [
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
+        ]
+
+        def shuffler(mutations):
+            mutations.reverse()
+
+        hom_strategy = controller.RandomHOMStrategy(order=2, shuffler=shuffler)
+
+        changes_to_apply = list(hom_strategy.generate(mutations))
+
+        self.assertEqual(len(changes_to_apply), 2)
+        self.assertEqual(len(changes_to_apply[0]), 2)
+        self.assertEqual(changes_to_apply[0][0], mutations[2])
+        self.assertEqual(changes_to_apply[0][1], mutations[1])
+        self.assertEqual(len(changes_to_apply[1]), 1)
+        self.assertEqual(changes_to_apply[1][0], mutations[0])
+
+
 class FirstOrderMutatorTest(unittest.TestCase):
 
     def test_first_order_mutation(self):
