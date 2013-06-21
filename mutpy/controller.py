@@ -368,12 +368,7 @@ class HighOrderMutator(FirstOrderMutator):
                 applied_mutations.append(new_mutation)
                 generators.append(generator)
             yield applied_mutations, mutant
-            for generator in reversed(generators):
-                try:
-                    generator.__next__()
-                except StopIteration:
-                    continue
-                assert False, 'too many mutations!'
+            self.finish_generators(generators)
 
     def generate_all_mutations(self, coverage_injector, module, target_ast, to_mutate):
         mutations = []
