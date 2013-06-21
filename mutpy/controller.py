@@ -1,3 +1,4 @@
+from collections import defaultdict
 from os import path
 import sys
 import unittest
@@ -220,10 +221,23 @@ class MutationController(views.ViewNotifier):
         self.score.inc_killed()
 
 
-class FirstToLastHOMStrategy:
+class HOMStrategy:
 
     def __init__(self, order=2):
         self.order = order
+
+    def remove_bad_mutations(self, mutations_to_apply, available_mutations, allow_same_operators=True):
+        for mutation_to_apply in mutations_to_apply:
+            for available_mutation in available_mutations[:]:
+                if mutation_to_apply.node == available_mutation.node or \
+                   mutation_to_apply.node in available_mutation.node.children or \
+                   available_mutation.node in mutation_to_apply.node.children or \
+                   (not allow_same_operators and mutation_to_apply.operator == available_mutation.operator):
+                    available_mutations.remove(available_mutation)
+
+
+class FirstToLastHOMStrategy(HOMStrategy):
+    name = 'FIRST_TO_LAST'
 
     def generate(self, mutations):
         mutations = mutations[:]
@@ -233,22 +247,60 @@ class FirstToLastHOMStrategy:
             available_mutations = mutations[:]
             while len(mutations_to_apply) < self.order and available_mutations:
                 try:
-                    mutations_to_apply.append(available_mutations.pop(index))
+                    mutation = available_mutations.pop(index)
+                    mutations_to_apply.append(mutation)
+                    mutations.remove(mutation)
                     index = 0 if index == -1 else -1
                 except IndexError:
                     break
-                self.filter_available_mutations(mutations_to_apply, available_mutations)
+                self.remove_bad_mutations(mutations_to_apply, available_mutations)
             yield mutations_to_apply
-            for mutation in mutations_to_apply:
-                mutations.remove(mutation)
 
-    def filter_available_mutations(self, mutations_to_apply, available_mutations):
-        for mutation_to_apply in mutations_to_apply:
-            for available_mutation in available_mutations[:]:
-                if mutation_to_apply.node == available_mutation.node or \
-                   mutation_to_apply.node in available_mutation.node.children or \
-                   available_mutation.node in mutation_to_apply.node.children:
-                    available_mutations.remove(available_mutation)
+
+class EachChoiceHOMStrategy(HOMStrategy):
+    name = 'EACH_CHOICE'
+
+    def generate(self, mutations):
+        mutations = mutations[:]
+        while mutations:
+            mutations_to_apply = []
+            available_mutations = mutations[:]
+            while len(mutations_to_apply) < self.order and available_mutations:
+                try:
+                    mutation = available_mutations.pop(0)
+                    mutations_to_apply.append(mutation)
+                    mutations.remove(mutation)
+                except IndexError:
+                    break
+                self.remove_bad_mutations(mutations_to_apply, available_mutations)
+            yield mutations_to_apply
+
+
+class BetweenOperatorsHOMStrategy(HOMStrategy):
+    name = 'BETWEEN_OPERATORS'
+
+    def generate(self, mutations):
+        usage = {mutation: 0 for mutation in mutations}
+        not_used = mutations[:]
+        while not_used:
+            mutations_to_apply = []
+            available_mutations = mutations[:]
+            available_mutations.sort(key=lambda x: usage[x])
+            while len(mutations_to_apply) < self.order and available_mutations:
+                mutation = available_mutations.pop(0)
+                mutations_to_apply.append(mutation)
+                if not usage[mutation]:
+                    not_used.remove(mutation)
+                usage[mutation] += 1
+                self.remove_bad_mutations(mutations_to_apply, available_mutations, allow_same_operators=False)
+            yield mutations_to_apply
+
+
+hom_strategies = [
+    FirstToLastHOMStrategy,
+    EachChoiceHOMStrategy,
+    BetweenOperatorsHOMStrategy,
+]
 
 
 class FirstOrderMutator:

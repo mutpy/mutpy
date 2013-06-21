@@ -119,6 +119,7 @@ class FirstToLastHOMStrategyTest(unittest.TestCase):
 
         changes_to_apply = list(hom_strategy.generate(mutations))
 
+        self.assertEqual(len(changes_to_apply), 2)
         self.assertEqual(len(changes_to_apply[0]), 2)
         self.assertEqual(changes_to_apply[0][0], mutations[0])
         self.assertEqual(changes_to_apply[0][1], mutations[2])
@@ -135,6 +136,7 @@ class FirstToLastHOMStrategyTest(unittest.TestCase):
 
         changes_to_apply = list(hom_strategy.generate(mutations))
 
+        self.assertEqual(len(changes_to_apply), 2)
         self.assertEqual(len(changes_to_apply[0]), 1)
         self.assertEqual(changes_to_apply[0][0], mutations[0])
         self.assertEqual(len(changes_to_apply[1]), 1)
@@ -150,10 +152,86 @@ class FirstToLastHOMStrategyTest(unittest.TestCase):
 
         changes_to_apply = list(hom_strategy.generate(mutations))
 
+        self.assertEqual(len(changes_to_apply), 2)
         self.assertEqual(len(changes_to_apply[0]), 1)
         self.assertEqual(changes_to_apply[0][0], mutations[0])
         self.assertEqual(len(changes_to_apply[1]), 1)
         self.assertEqual(changes_to_apply[1][0], mutations[1])
+
+
+class EachChoiceHOMStrategyTest(unittest.TestCase):
+
+    def test_generate(self):
+        mutations = [
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
+        ]
+        hom_strategy = controller.EachChoiceHOMStrategy(order=2)
+
+        changes_to_apply = list(hom_strategy.generate(mutations))
+
+        self.assertEqual(len(changes_to_apply), 2)
+        self.assertEqual(len(changes_to_apply[0]), 2)
+        self.assertEqual(changes_to_apply[0][0], mutations[0])
+        self.assertEqual(changes_to_apply[0][1], mutations[1])
+        self.assertEqual(len(changes_to_apply[1]), 1)
+        self.assertEqual(changes_to_apply[1][0], mutations[2])
+
+
+class BetweenOperatorsHOMStrategyTest(unittest.TestCase):
+
+    def test_generate_if_one_operator(self):
+        mutations = [
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
+        ]
+        hom_strategy = controller.BetweenOperatorsHOMStrategy(order=2)
+
+        changes_to_apply = list(hom_strategy.generate(mutations))
+
+        self.assertEqual(len(changes_to_apply), 2)
+        self.assertEqual(len(changes_to_apply[0]), 1)
+        self.assertEqual(changes_to_apply[0][0], mutations[0])
+        self.assertEqual(len(changes_to_apply[1]), 1)
+        self.assertEqual(changes_to_apply[1][0], mutations[1])
+
+    def test_generate_if_two_operators(self):
+        mutations = [
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
+            operators.Mutation(operator=operators.AssignmentOperatorReplacement, node=ast.Sub(children=[])),
+        ]
+        hom_strategy = controller.BetweenOperatorsHOMStrategy(order=2)
+
+        changes_to_apply = list(hom_strategy.generate(mutations))
+
+        self.assertEqual(len(changes_to_apply), 2)
+        self.assertEqual(len(changes_to_apply[0]), 2)
+        self.assertEqual(changes_to_apply[0][0], mutations[0])
+        self.assertEqual(changes_to_apply[0][1], mutations[2])
+        self.assertEqual(len(changes_to_apply[1]), 2)
+        self.assertEqual(changes_to_apply[1][0], mutations[1])
+        self.assertEqual(changes_to_apply[1][1], mutations[2])
+
+    def test_generate_if_three_operators(self):
+        mutations = [
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
+            operators.Mutation(operator=operators.ArithmeticOperatorReplacement, node=ast.Sub(children=[])),
+            operators.Mutation(operator=operators.AssignmentOperatorReplacement, node=ast.Sub(children=[])),
+            operators.Mutation(operator=operators.ConstantReplacement, node=ast.Sub(children=[])),
+        ]
+        hom_strategy = controller.BetweenOperatorsHOMStrategy(order=2)
+
+        changes_to_apply = list(hom_strategy.generate(mutations))
+
+        self.assertEqual(len(changes_to_apply), 2)
+        self.assertEqual(len(changes_to_apply[0]), 2)
+        self.assertEqual(changes_to_apply[0][0], mutations[0])
+        self.assertEqual(changes_to_apply[0][1], mutations[2])
+        self.assertEqual(len(changes_to_apply[1]), 2)
+        self.assertEqual(changes_to_apply[1][0], mutations[1])
+        self.assertEqual(changes_to_apply[1][1], mutations[3])
 
 
 class FirstOrderMutatorTest(unittest.TestCase):
