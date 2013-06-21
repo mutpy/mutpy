@@ -101,6 +101,9 @@ def build_mutator(cfg):
 
 
 def build_hom_strategy(cfg):
+    if cfg.order < 1:
+        print('Order should be > 0.')
+        sys.exit(-1)
     try:
         name_to_hom_strategy = {hom_strategy.name: hom_strategy for hom_strategy in controller.hom_strategies}
         return name_to_hom_strategy[cfg.hom_strategy](order=cfg.order)
