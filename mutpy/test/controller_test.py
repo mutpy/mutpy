@@ -79,24 +79,26 @@ class MutationScoreStoreView:
 
 class MutationControllerTest(unittest.TestCase):
     TARGET_SRC = 'def mul(x): return x * x'
-    TEST_SRC = """
-import target
-from unittest import TestCase
-class MulTest(TestCase):
-    def test_mul(self):
-        self.assertEqual(target.mul(2), 4)
-"""
+    TEST_SRC = utils.f("""
+    import target
+    from unittest import TestCase
+    class MulTest(TestCase):
+        def test_mul(self):
+            self.assertEqual(target.mul(2), 4)
+    """)
 
     def setUp(self):
         target_loader = MockModulesLoader('target', self.TARGET_SRC)
         test_loader = MockModulesLoader('test', self.TEST_SRC)
         self.score_view = MutationScoreStoreView()
         mutator = controller.FirstOrderMutator([operators.ArithmeticOperatorReplacement], percentage=100)
-        self.mutation_controller = MockMutationController(target_loader=target_loader,
-                                                            test_loader=test_loader,
-                                                            views=[self.score_view],
-                                                            mutant_generator=mutator,
-                                                            mutate_covered=True)
+        self.mutation_controller = MockMutationController(
+            target_loader=target_loader,
+            test_loader=test_loader,
+            views=[self.score_view],
+            mutant_generator=mutator,
+            mutate_covered=True,
+        )
 
     def test_run(self):
         self.mutation_controller.run()
@@ -327,4 +329,3 @@ class HighOrderMutatorTest(unittest.TestCase):
                 self.assertEqual(len(mutations), 1)
         self.assertEqual(number, 1)
         self.assertEqual(codegen.to_source(target_ast), "x = 'test'")
-

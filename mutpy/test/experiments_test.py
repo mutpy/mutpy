@@ -28,12 +28,16 @@ class StaticmethodDecoratorDeletionTest(OperatorTestCase):
         cls.op = experiments.StaticmethodDecoratorDeletion()
 
     def test_single_staticmethod_deletion(self):
-        self.assert_mutation('@staticmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' ,
-                             ['def f():' + EOL + INDENT + 'pass'])
+        self.assert_mutation(
+            '@staticmethod' + EOL + 'def f():' + EOL + INDENT + 'pass',
+            ['def f():' + EOL + INDENT + 'pass'],
+        )
 
     def test_staticmethod_deletion_with_other(self):
-        self.assert_mutation('@staticmethod' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' ,
-                             ['@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass'])
+        self.assert_mutation(
+            '@staticmethod' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass',
+            ['@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass'],
+        )
 
 
 class StaticmethodDecoratorInsertionTest(OperatorTestCase):
@@ -64,4 +68,3 @@ class StaticmethodDecoratorInsertionTest(OperatorTestCase):
                 def f():
                     pass
         """))
-

@@ -5,7 +5,8 @@ import functools
 from mutpy import utils
 
 
-class MutationResign(Exception): pass
+class MutationResign(Exception):
+    pass
 
 
 class Mutation:
@@ -129,6 +130,9 @@ class MutationOperator:
 
 
 class AbstractArithmeticOperatorReplacement(MutationOperator):
+
+    def should_mutate(self, node):
+        raise NotImplementedError()
 
     def mutate_Add(self, node):
         if self.should_mutate(node):
@@ -331,6 +335,7 @@ class StatementDeletion(MutationOperator):
     @classmethod
     def name(cls):
         return 'SDL'
+
 
 class ConditionalOperatorInsertion(MutationOperator):
 
@@ -678,4 +683,3 @@ all_operators = {
     SuperCallingInsert,
     ZeroIterationLoop,
 }
-

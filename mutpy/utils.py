@@ -34,7 +34,7 @@ class ModulesLoaderException(Exception):
         self.exception = exception
 
     def __str__(self):
-        return "cant't load {}".format(self.name)
+        return "can't load {}".format(self.name)
 
 
 class ModulesLoader:
@@ -180,7 +180,7 @@ class StdoutManager:
         if self.disable:
             sys.stdout = StringIO()
 
-    def __exit__(self, type , value , traceback):
+    def __exit__(self, type, value, traceback):
         sys.stdout = sys.__stdout__
 
 
@@ -200,7 +200,7 @@ class MutationTestResult(unittest.TestResult):
     def is_incompetent(self):
         return bool(self.type_error)
 
-    def is_survieved(self):
+    def is_survived(self):
         return self.wasSuccessful()
 
     def get_killer(self):
@@ -222,10 +222,10 @@ class MutationTestResult(unittest.TestResult):
     def serialize(self):
         return {
             'is_incompetent': self.is_incompetent(),
-            'is_survieved': self.is_survieved(),
+            'is_survived': self.is_survived(),
             'killer': str(self.get_killer()),
             'exception_traceback': str(self.get_exception_traceback()),
-            'exception': self.get_exception()
+            'exception': self.get_exception(),
         }
 
 
@@ -320,8 +320,8 @@ def create_ast(code):
 def is_docstring(node):
     def_node = node.parent.parent
     return (isinstance(def_node, (ast.FunctionDef, ast.ClassDef, ast.Module)) and def_node.body and
-        isinstance(def_node.body[0], ast.Expr) and isinstance(def_node.body[0].value, ast.Str) and
-        def_node.body[0].value == node)
+            isinstance(def_node.body[0], ast.Expr) and isinstance(def_node.body[0].value, ast.Str) and
+            def_node.body[0].value == node)
 
 
 def get_by_python_version(classes, python_version=sys.version_info):
@@ -343,4 +343,3 @@ def f(text):
     lines = text.split('\n')[1:-1]
     indention = re.search('(\s*).*', lines[0]).group(1)
     return '\n'.join(line[len(indention):] for line in lines)
-

@@ -4,6 +4,7 @@ from mutpy import utils
 
 COVERAGE_SET_NAME = '__covered_nodes__'
 
+
 class MarkerNodeTransformer(ast.NodeTransformer):
 
     def __init__(self):
@@ -91,7 +92,7 @@ class CoverageNodeTransformerPython32(AbstractCoverageNodeTransformer):
             ast.Return,
             ast.TryExcept,
             ast.TryFinally,
-            ast.While
+            ast.While,
         }
 
     @classmethod
@@ -99,7 +100,7 @@ class CoverageNodeTransformerPython32(AbstractCoverageNodeTransformer):
         return {
             ast.ClassDef,
             ast.ExceptHandler,
-            ast.FunctionDef
+            ast.FunctionDef,
         }
 
 
@@ -127,7 +128,7 @@ class CoverageNodeTransformerPython33(AbstractCoverageNodeTransformer):
             ast.Raise,
             ast.Return,
             ast.Try,
-            ast.While
+            ast.While,
         }
 
     @classmethod
@@ -135,13 +136,13 @@ class CoverageNodeTransformerPython33(AbstractCoverageNodeTransformer):
         return {
             ast.ClassDef,
             ast.ExceptHandler,
-            ast.FunctionDef
+            ast.FunctionDef,
         }
 
 
 CoverageNodeTransformer = utils.get_by_python_version([
     CoverageNodeTransformerPython32,
-    CoverageNodeTransformerPython33
+    CoverageNodeTransformerPython33,
 ])
 
 
@@ -159,7 +160,7 @@ class CoverageInjector:
             return utils.create_module(
                 ast_node=coverage_node,
                 module_name=module_name,
-                module_dict={COVERAGE_SET_NAME: self.covered_nodes}
+                module_dict={COVERAGE_SET_NAME: self.covered_nodes},
             )
 
     def is_covered(self, child_node):
@@ -168,5 +169,4 @@ class CoverageInjector:
         return child_node.marker in self.covered_nodes
 
     def get_result(self):
-        return (len(self.covered_nodes), self.marker_transformer.last_marker)
-
+        return len(self.covered_nodes), self.marker_transformer.last_marker
