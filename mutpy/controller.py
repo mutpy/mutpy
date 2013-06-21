@@ -321,9 +321,9 @@ class RandomHOMStrategy(HOMStrategy):
 
 
 hom_strategies = [
-    FirstToLastHOMStrategy,
-    EachChoiceHOMStrategy,
     BetweenOperatorsHOMStrategy,
+    EachChoiceHOMStrategy,
+    FirstToLastHOMStrategy,
     RandomHOMStrategy,
 ]
 
