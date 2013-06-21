@@ -2,7 +2,7 @@ import unittest
 from mutpy import commandline
 
 
-class ComandLineTest(unittest.TestCase):
+class CommandLineTest(unittest.TestCase):
 
     def test_build_mutator_with_disable_operator(self):
         parser = commandline.build_parser()

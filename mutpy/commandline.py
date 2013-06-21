@@ -39,7 +39,9 @@ def build_parser():
     parser.add_argument('--coverage', action='store_true',
                         help='mutate only covered code')
     parser.add_argument('--order', type=int, metavar='ORDER', default=1, help='mutaiton order')
-    parser.add_argument('--hom-strategy', type=str, metavar='HOM_STRATEGY', help='HOM strategy', default='FIRST_TO_LAST')
+    parser.add_argument('--hom-strategy', type=str, metavar='HOM_STRATEGY', help='HOM strategy',
+                        default='FIRST_TO_LAST')
+    parser.add_argument('--list-hom-strategies', action='store_true', help='list available HOM strategies')
 
     return parser
 
@@ -48,6 +50,8 @@ def run_mutpy(parser):
     cfg = parser.parse_args()
     if cfg.list_operators:
         list_operators()
+    elif cfg.list_hom_strategies:
+        list_hom_strategies()
     elif cfg.target and cfg.unit_test:
         mutation_controller = build_controller(cfg)
         mutation_controller.run()
@@ -89,11 +93,17 @@ def build_mutator(cfg):
     if cfg.order == 1:
         return controller.FirstOrderMutator(operators_set, cfg.percentage)
     else:
-        hom_strategies = {
-            'FIRST_TO_LAST': controller.FirstToLastHOMStrategy
-        }
-        hom_strategy = hom_strategies[cfg.hom_strategy](order=cfg.order)
+        hom_strategy = build_hom_strategy(cfg)
         return controller.HighOrderMutator(operators_set, cfg.percentage, hom_strategy=hom_strategy)
+
+
+def build_hom_strategy(cfg):
+    try:
+        name_to_hom_strategy = {hom_strategy.name: hom_strategy for hom_strategy in controller.hom_strategies}
+        return name_to_hom_strategy[cfg.hom_strategy](order=cfg.order)
+    except KeyError:
+        print('Unsupported HOM strategy {}! Use --list-hom-strategies to show strategies.'.format(cfg.hom_strategy))
+        sys.exit(-1)
 
 
 def get_operator(name, name_to_operator):
@@ -137,3 +147,8 @@ def list_operators():
     for operator in utils.sort_operators(experiments.all_operators):
         print(' - {:3} - {}'.format(operator.name(), operator.long_name()))
 
+
+def list_hom_strategies():
+    print('HOM strategies:')
+    for strategy in controller.hom_strategies:
+        print(' - {}'.format(strategy.name))
