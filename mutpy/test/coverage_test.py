@@ -2,6 +2,18 @@ import unittest
 from mutpy import coverage, utils
 
 
+class MarkerNodeTransformerTest(unittest.TestCase):
+
+    def test_visit(self):
+        node = utils.create_ast('x = y\ny = x')
+        coverage.MarkerNodeTransformer().visit(node)
+
+        y_load_node = node.body[0].value.ctx
+        x_load_node = node.body[1].value.ctx
+
+        self.assertTrue(y_load_node.marker < x_load_node.marker)
+
+
 class CoverageInjectorTest(unittest.TestCase):
 
     def setUp(self):
