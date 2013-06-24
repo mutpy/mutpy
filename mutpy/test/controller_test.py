@@ -85,6 +85,8 @@ class MutationControllerTest(unittest.TestCase):
     class MulTest(TestCase):
         def test_mul(self):
             self.assertEqual(target.mul(2), 4)
+        def test_not_used(self):
+            pass
     """)
 
     def setUp(self):

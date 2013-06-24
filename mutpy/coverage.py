@@ -1,5 +1,6 @@
 import ast
 import copy
+import unittest
 from mutpy import utils
 
 COVERAGE_SET_NAME = '__covered_nodes__'
@@ -24,7 +25,7 @@ class AbstractCoverageNodeTransformer(ast.NodeTransformer):
 
     @classmethod
     def get_coverable_nodes(cls):
-        return cls.get_statements_nodes() | cls.get_definitions_nodes()
+        return cls.get_statements_nodes() | cls.get_definitions_nodes() | cls.get_branch_nodes()
 
     @classmethod
     def get_statements_nodes(cls):
@@ -58,7 +59,16 @@ class AbstractCoverageNodeTransformer(ast.NodeTransformer):
         return node
 
     def generate_coverage_node(self, node):
-        coverage_node = utils.create_ast('{}.add({})'.format(COVERAGE_SET_NAME, node.marker)).body[0]
+        if node.__class__ in self.get_definitions_nodes():
+            coverage_node = utils.create_ast('{}.add({})'.format(COVERAGE_SET_NAME, node.marker)).body[0]
+        else:
+            markers = {node.marker} | {node.marker for node in node.children}
+            if node.__class__ in self.get_branch_nodes():
+                for body_el in node.body:
+                    if hasattr(body_el, 'marker'):
+                        markers.difference_update({body_el.marker})
+                        markers.difference_update({node.marker for node in body_el.children})
+            coverage_node = utils.create_ast('{}.update({})'.format(COVERAGE_SET_NAME, repr(markers))).body[0]
         coverage_node.lineno = node.lineno
         coverage_node.col_offset = node.col_offset
         return coverage_node
@@ -81,18 +91,13 @@ class CoverageNodeTransformerPython32(AbstractCoverageNodeTransformer):
             ast.Continue,
             ast.Delete,
             ast.Expr,
-            ast.For,
             ast.Global,
-            ast.If,
             ast.Import,
             ast.ImportFrom,
             ast.Nonlocal,
             ast.Pass,
             ast.Raise,
             ast.Return,
-            ast.TryExcept,
-            ast.TryFinally,
-            ast.While,
         }
 
     @classmethod
@@ -101,6 +106,16 @@ class CoverageNodeTransformerPython32(AbstractCoverageNodeTransformer):
             ast.ClassDef,
             ast.ExceptHandler,
             ast.FunctionDef,
+            ast.TryExcept,
+            ast.TryFinally,
+        }
+
+    @classmethod
+    def get_branch_nodes(cls):
+        return {
+            ast.If,
+            ast.For,
+            ast.While,
         }
 
 
@@ -118,17 +133,13 @@ class CoverageNodeTransformerPython33(AbstractCoverageNodeTransformer):
             ast.Continue,
             ast.Delete,
             ast.Expr,
-            ast.For,
             ast.Global,
-            ast.If,
             ast.Import,
             ast.ImportFrom,
             ast.Nonlocal,
             ast.Pass,
             ast.Raise,
             ast.Return,
-            ast.Try,
-            ast.While,
         }
 
     @classmethod
@@ -137,6 +148,15 @@ class CoverageNodeTransformerPython33(AbstractCoverageNodeTransformer):
             ast.ClassDef,
             ast.ExceptHandler,
             ast.FunctionDef,
+            ast.Try,
+        }
+
+    @classmethod
+    def get_branch_nodes(cls):
+        return {
+            ast.If,
+            ast.For,
+            ast.While,
         }
 
 
@@ -156,6 +176,7 @@ class CoverageInjector:
         self.marker_transformer = MarkerNodeTransformer()
         marker_node = self.marker_transformer.visit(node)
         coverage_node = CoverageNodeTransformer().visit(copy.deepcopy(marker_node))
+        self.covered_nodes.add(coverage_node.marker)
         with utils.StdoutManager():
             return utils.create_module(
                 ast_node=coverage_node,
@@ -164,9 +185,26 @@ class CoverageInjector:
             )
 
     def is_covered(self, child_node):
-        if not child_node.__class__ in CoverageNodeTransformer.get_coverable_nodes():
-            return True
         return child_node.marker in self.covered_nodes
 
     def get_result(self):
         return len(self.covered_nodes), self.marker_transformer.last_marker
+
+
+class CoverageTestResult(unittest.TestResult):
+
+    def __init__(self, *args, coverage_injector=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.coverage_injector = coverage_injector
+        self.always_covered_nodes = coverage_injector.covered_nodes.copy()
+        self.test_covered_nodes = {}
+
+    def startTest(self, test):
+        super().startTest(test)
+        self.covered_nodes = self.coverage_injector.covered_nodes.copy()
+        self.coverage_injector.covered_nodes.clear()
+
+    def stopTest(self, test):
+        super().stopTest(test)
+        self.test_covered_nodes[test] = self.coverage_injector.covered_nodes.copy() | self.always_covered_nodes
+        self.coverage_injector.covered_nodes.update(self.covered_nodes)
