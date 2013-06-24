@@ -186,9 +186,10 @@ class StdoutManager:
 
 class MutationTestResult(unittest.TestResult):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, coverage_injector=None, **kwargs):
         self.type_error = None
         self.failfast = True
+        self.coverage_injector = coverage_injector
         super(MutationTestResult, self).__init__(*args, **kwargs)
 
     def addError(self, test, err):

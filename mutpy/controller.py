@@ -114,7 +114,7 @@ class MutationController(views.ViewNotifier):
     def mutate_module(self, target_module, to_mutate, test_modules):
         target_ast = self.create_target_ast(target_module)
         filename = self.get_module_base_filename(target_module)
-        coverage_injector = self.inject_coverage(target_ast, target_module, test_modules)
+        coverage_injector, coverage_result = self.inject_coverage(target_ast, target_module, test_modules)
 
         if coverage_injector:
             self.score.update_coverage(*coverage_injector.get_result())
@@ -125,20 +125,20 @@ class MutationController(views.ViewNotifier):
             self.notify_mutation(mutation_number, mutations, filename, mutant_ast)
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
             if mutant_module:
-                self.run_tests_with_mutant(test_modules, mutant_module)
+                self.run_tests_with_mutant(test_modules, mutant_module, mutations, coverage_result)
             else:
                 self.score.inc_incompetent()
 
     def inject_coverage(self, target_ast, target_module, test_modules):
         if not self.mutate_covered:
-            return None
+            return None, None
         coverage_injector = coverage.CoverageInjector()
         coverage_module = coverage_injector.inject(target_ast, target_module.__name__)
         suite, total_duration = self.create_test_suite(test_modules, coverage_module)
-        result = unittest.TestResult()
+        coverage_result = coverage.CoverageTestResult(coverage_injector=coverage_injector)
         with self.stdout_manager:
-            suite.run(result)
-        return coverage_injector
+            suite.run(coverage_result)
+        return coverage_injector, coverage_result
 
     def get_module_base_filename(self, module):
         return path.basename(module.__file__)
@@ -175,9 +175,28 @@ class MutationController(views.ViewNotifier):
         importer = utils.InjectImporter(mutant_module)
         importer.install()
 
+    def mark_not_covered_tests_as_skip(self, mutations, coverage_result, suite):
+        mutated_nodes = {mutation.node.marker for mutation in mutations}
+
+        def iter_tests(tests):
+            try:
+                for test in tests:
+                    iter_tests(test)
+            except TypeError:
+                add_skip(tests)
+
+        def add_skip(test):
+            if not mutated_nodes.issubset(coverage_result.test_covered_nodes[test]):
+                test_method = getattr(test, test._testMethodName)
+                setattr(test, test._testMethodName, unittest.skip('not covered')(test_method))
+
+        iter_tests(suite)
+
     @utils.TimeRegister
-    def run_tests_with_mutant(self, tests_modules, mutant_module):
+    def run_tests_with_mutant(self, tests_modules, mutant_module, mutations, coverage_result):
         suite, total_duration = self.create_test_suite(tests_modules, mutant_module)
+        if coverage_result:
+            self.mark_not_covered_tests_as_skip(mutations, coverage_result, suite)
         timer = utils.Timer()
         result = self.run_mutation_subprocess(suite, total_duration)
         timer.stop()
