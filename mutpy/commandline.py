@@ -43,7 +43,8 @@ def build_parser():
     parser.add_argument('--hom-strategy', type=str, metavar='HOM_STRATEGY', help='HOM strategy',
                         default='FIRST_TO_LAST')
     parser.add_argument('--list-hom-strategies', action='store_true', help='list available HOM strategies')
-
+    parser.add_argument('--mutation-number', type=int, metavar='MUTATION_NUMBER',
+                        help='run only one mutation (debug purpose)')
     return parser
 
 
@@ -73,6 +74,7 @@ def build_controller(cfg):
         timeout_factor=cfg.timeout_factor,
         disable_stdout=cfg.disable_stdout,
         mutate_covered=cfg.coverage,
+        mutation_number=cfg.mutation_number,
     )
 
 
