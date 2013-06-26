@@ -43,7 +43,7 @@ class MutationOperator:
                     if self.only_mutation and \
                             (self.only_mutation.node != node or self.only_mutation.visitor != visitor.__name__):
                         raise MutationResign
-                    new_node = visitor(copy.deepcopy(node))
+                    new_node = visitor(copy.deepcopy(node, memo={'parent': node.parent, 'children': node.children}))
                     self.visitor = visitor.__name__
                     self.current_node = node
                     self.fix_node_internals(node, new_node)

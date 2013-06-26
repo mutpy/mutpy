@@ -303,7 +303,7 @@ class ParentNodeTransformer(ast.NodeTransformer):
 
     def visit(self, node):
         if getattr(node, 'parent', None):
-            node = copy.deepcopy(node)
+            node = copy.copy(node)
         node.parent = getattr(self, 'parent', None)
         node.children = []
         self.parent = node
