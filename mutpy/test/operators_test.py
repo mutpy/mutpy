@@ -436,6 +436,29 @@ class OneIterationLoopTest(OperatorTestCase):
             ['while x:' + EOL + INDENT + PASS + EOL + INDENT + 'break'],
         )
 
+    def test_double_mutation(self):
+        self.assert_mutation(utils.f("""
+        while x:
+            pass
+        for x in y:
+            pass
+        """), [
+            utils.f("""
+            while x:
+                pass
+                break
+            for x in y:
+                pass
+            """),
+            utils.f("""
+            while x:
+                pass
+            for x in y:
+                pass
+                break
+            """),
+        ])
+
 
 class ReverseIterationLoopTest(OperatorTestCase):
 
