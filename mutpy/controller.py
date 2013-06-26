@@ -133,6 +133,13 @@ class MutationController(views.ViewNotifier):
             else:
                 self.score.inc_incompetent()
 
+        self.repair_tests_modules(target_module, test_modules)
+
+    def repair_tests_modules(self, target_module, test_modules):
+        for module, _, _ in test_modules:
+            injector = utils.ModuleInjector(target_module)
+            injector.inject_to(module)
+
     def inject_coverage(self, target_ast, target_module, test_modules):
         if not self.mutate_covered:
             return None, None
