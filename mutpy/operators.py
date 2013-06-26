@@ -17,6 +17,15 @@ class Mutation:
         self.visitor = visitor
 
 
+def copy_node(mutate):
+    def f(self, node):
+        copied_node = copy.deepcopy(node, memo={
+            id(node.parent): node.parent,
+        })
+        return mutate(self, copied_node)
+    return f
+
+
 class MutationOperator:
 
     def mutate(self, node, to_mutate=None, sampler=None, coverage_injector=None, module=None, only_mutation=None):
@@ -43,7 +52,7 @@ class MutationOperator:
                     if self.only_mutation and \
                             (self.only_mutation.node != node or self.only_mutation.visitor != visitor.__name__):
                         raise MutationResign
-                    new_node = visitor(copy.deepcopy(node, memo={'parent': node.parent, 'children': node.children}))
+                    new_node = visitor(node)
                     self.visitor = visitor.__name__
                     self.current_node = node
                     self.fix_node_internals(node, new_node)
@@ -344,9 +353,11 @@ class ConditionalOperatorInsertion(MutationOperator):
         node.test = not_node
         return node
 
+    @copy_node
     def mutate_While(self, node):
         return self.negate_test(node)
 
+    @copy_node
     def mutate_If(self, node):
         return self.negate_test(node)
 
@@ -426,15 +437,18 @@ class OneIterationLoop(MutationOperator):
         node.body.append(ast.Break())
         return node
 
+    @copy_node
     def mutate_For(self, node):
         return self.one_iteration(node)
 
+    @copy_node
     def mutate_While(self, node):
         return self.one_iteration(node)
 
 
 class ReverseIterationLoop(MutationOperator):
 
+    @copy_node
     def mutate_For(self, node):
         old_iter = node.iter
         node.iter = ast.Call(func=ast.Name(id=reversed.__name__, ctx=ast.Load()),
@@ -444,6 +458,7 @@ class ReverseIterationLoop(MutationOperator):
 
 class DecoratorDeletionMutationOperator(MutationOperator):
 
+    @copy_node
     def mutate_FunctionDef(self, node):
         for decorator in node.decorator_list:
             if isinstance(decorator, ast.Call):
@@ -470,6 +485,7 @@ class ClassmethodDecoratorDeletion(DecoratorDeletionMutationOperator):
 
 class MethodDecoratorInsertionMutationOperator(MutationOperator):
 
+    @copy_node
     def mutate_FunctionDef(self, node):
         if not isinstance(node.parent, ast.ClassDef):
             raise MutationResign()
@@ -596,6 +612,7 @@ class OverriddenMethodCallingPositionChange(AbstractSuperCallingModification):
     def should_mutate(self, node):
         return super().should_mutate(node) and len(node.body) > 1
 
+    @copy_node
     def mutate_FunctionDef(self, node):
         if not self.should_mutate(node):
             raise MutationResign()
@@ -617,6 +634,7 @@ class OverriddenMethodCallingPositionChange(AbstractSuperCallingModification):
 
 class SuperCallingDeletion(AbstractSuperCallingModification):
 
+    @copy_node
     def mutate_FunctionDef(self, node):
         if not self.should_mutate(node):
             raise MutationResign()
@@ -632,6 +650,7 @@ class SuperCallingInsert(AbstractSuperCallingModification, AbstractOverriddenEle
     def should_mutate(self, node):
         return super().should_mutate(node) and self.is_overridden(node)
 
+    @copy_node
     def mutate_FunctionDef(self, node):
         if not self.should_mutate(node):
             raise MutationResign()
