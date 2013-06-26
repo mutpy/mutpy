@@ -359,10 +359,9 @@ hom_strategies = [
 
 class FirstOrderMutator:
 
-    def __init__(self, operators, percentage=100, hom_strategy=None):
+    def __init__(self, operators, percentage=100):
         self.operators = operators
         self.sampler = utils.RandomSampler(percentage)
-        self.hom_strategy = hom_strategy or FirstToLastHOMStrategy(order=2)
 
     def mutate(self, target_ast, to_mutate=None, coverage_injector=None, module=None):
         for op in utils.sort_operators(self.operators):
