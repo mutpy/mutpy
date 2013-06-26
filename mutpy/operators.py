@@ -424,9 +424,11 @@ class ZeroIterationLoop(MutationOperator):
         node.body = [ast.Break()]
         return node
 
+    @copy_node
     def mutate_For(self, node):
         return self.zero_iteration(node)
 
+    @copy_node
     def mutate_While(self, node):
         return self.zero_iteration(node)
 
