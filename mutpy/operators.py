@@ -34,7 +34,6 @@ class MutationOperator:
         if self.only_mutation and self.only_mutation.node != node and self.only_mutation.node not in node.children:
             return
         self.fix_lineno(node)
-        self.current_node = node
         visitors = self.find_visitors(node)
         if visitors:
             for visitor in visitors:
@@ -44,8 +43,9 @@ class MutationOperator:
                     if self.only_mutation and \
                             (self.only_mutation.node != node or self.only_mutation.visitor != visitor.__name__):
                         raise MutationResign
-                    self.visitor = visitor.__name__
                     new_node = visitor(copy.deepcopy(node))
+                    self.visitor = visitor.__name__
+                    self.current_node = node
                     self.fix_node_internals(node, new_node)
                     ast.fix_missing_locations(new_node)
                     yield new_node

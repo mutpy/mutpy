@@ -49,7 +49,7 @@ class MutationScore:
 class MutationController(views.ViewNotifier):
 
     def __init__(self, target_loader, test_loader, views, mutant_generator,
-                 timeout_factor=5, disable_stdout=False, mutate_covered=False):
+                 timeout_factor=5, disable_stdout=False, mutate_covered=False, mutation_number=None):
         super().__init__(views)
         self.target_loader = target_loader
         self.test_loader = test_loader
@@ -57,6 +57,7 @@ class MutationController(views.ViewNotifier):
         self.timeout_factor = timeout_factor
         self.stdout_manager = utils.StdoutManager(disable_stdout)
         self.mutate_covered = mutate_covered
+        self.mutation_number = mutation_number
 
     def run(self):
         self.notify_initialize(self.target_loader.names, self.test_loader.names)
@@ -122,6 +123,9 @@ class MutationController(views.ViewNotifier):
         for mutations, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate, coverage_injector,
                                                                   module=target_module):
             mutation_number = self.score.all_mutants + 1
+            if self.mutation_number and self.mutation_number != mutation_number:
+                self.score.inc_incompetent()
+                continue
             self.notify_mutation(mutation_number, mutations, filename, mutant_ast)
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
             if mutant_module:
