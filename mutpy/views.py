@@ -208,6 +208,7 @@ class YAMLReportView:
             'mutations': self.mutation_info,
             'total_time': duration,
             'time_stats': dict(utils.TimeRegister.executions),
+            'mutation_score': score.count(),
             'coverage': {
                 'covered_nodes': score.covered_nodes,
                 'all_nodes': score.all_nodes,
