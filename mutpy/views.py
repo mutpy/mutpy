@@ -173,7 +173,7 @@ class YAMLRaportView:
     def mutation(self, number, op, file, lineno, mutant):
         self.current_mutation = {'number': number,
                                  'filename': file,
-                                 'operator': op.nam(),
+                                 'operator': op.name(),
                                  'line': lineno}
 
     def killed(self, time, killer, *args):
