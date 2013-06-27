@@ -120,6 +120,8 @@ class MutationOperator:
         if not hasattr(new_node, 'parent'):
             new_node.children = old_node.children
             new_node.parent = old_node.parent
+        if hasattr(old_node, 'marker'):
+            new_node.marker = old_node.marker
 
     def find_visitors(self, node):
         method_prefix = 'mutate_' + node.__class__.__name__
