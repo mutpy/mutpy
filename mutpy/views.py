@@ -142,13 +142,13 @@ class TextView(QuietTextView):
 
 
 class DebugView:
-    
+
     def print_exception(self, exception):
         print("\n" + "".join(traceback.format_exception(None, exception, None)))
 
     def incompetent(self, exception):
         self.print_exception(exception)
-        
+
     def killed(self, time, killer, exception_traceback):
         print('\n' + exception_traceback)
 
@@ -173,7 +173,7 @@ class YAMLRaportView:
     def mutation(self, number, op, file, lineno, mutant):
         self.current_mutation = {'number': number,
                                  'filename': file,
-                                 'operator': op.__name__,
+                                 'operator': op.nam(),
                                  'line': lineno}
 
     def killed(self, time, killer, *args):
@@ -189,7 +189,7 @@ class YAMLRaportView:
         self.end_mutation('timeout', None)
 
     def end(self, score, duration):
-        self.dump({'mutations': self.mutation_info, 
+        self.dump({'mutations': self.mutation_info,
                    'total_time': duration,
                    'time_stats': dict(utils.TimeRegister.executions)})
 
