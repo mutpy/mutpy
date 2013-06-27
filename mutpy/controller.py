@@ -197,7 +197,7 @@ class MutationController(views.ViewNotifier):
                 add_skip(tests)
 
         def add_skip(test):
-            if not mutated_nodes.issubset(coverage_result.test_covered_nodes[test]):
+            if mutated_nodes.isdisjoint(coverage_result.test_covered_nodes[test]):
                 test_method = getattr(test, test._testMethodName)
                 setattr(test, test._testMethodName, unittest.skip('not covered')(test_method))
 
