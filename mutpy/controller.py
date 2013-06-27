@@ -117,6 +117,12 @@ class MutationController(views.ViewNotifier):
                 self.run_tests_with_mutant(test_modules, mutant_module)
             else:
                 self.score.inc_incompetent()
+        self.repair_tests_modules(target_module, test_modules)
+
+    def repair_tests_modules(self, target_module, test_modules):
+        for module, _, _ in test_modules:
+            injector = utils.ModuleInjector(target_module)
+            injector.inject_to(module)
 
     def get_module_base_filename(self, module):
         return path.basename(module.__file__)
