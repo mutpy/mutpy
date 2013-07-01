@@ -209,3 +209,7 @@ License
 ~~~~~~~
 
 Licensed under the Apache License, Version 2.0. See LICENSE file.
+
+MutPy was developed as part of engineer's and master’s thesis at Institute of 
+Computer Science, Faculty of Electronics and Information Technology, Warsaw 
+University of Technology.
