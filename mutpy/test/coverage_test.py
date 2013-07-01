@@ -94,4 +94,3 @@ class CoverageTestResultTest(unittest.TestCase):
         self.assertEqual(coverage_injector.covered_nodes, {1})
         self.assertEqual(result.test_covered_nodes[test_x], {1})
         self.assertFalse(result.test_covered_nodes[test_y])
-
