@@ -39,7 +39,7 @@ def build_parser():
                         help='percentage of the generated mutants (mutation sampling)')
     parser.add_argument('--coverage', action='store_true',
                         help='mutate only covered code')
-    parser.add_argument('--order', type=int, metavar='ORDER', default=1, help='mutaiton order')
+    parser.add_argument('--order', type=int, metavar='ORDER', default=1, help='mutation order')
     parser.add_argument('--hom-strategy', type=str, metavar='HOM_STRATEGY', help='HOM strategy',
                         default='FIRST_TO_LAST')
     parser.add_argument('--list-hom-strategies', action='store_true', help='list available HOM strategies')
