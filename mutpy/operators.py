@@ -137,7 +137,21 @@ class MutationOperator:
 
     @classmethod
     def long_name(cls):
-        return cls.__name__
+        return ' '.join(map(str.lower, (re.split('([A-Z][a-z]*)', cls.__name__)[1::2])))
+
+
+class AbstractUnaryOperatorDeletion(MutationOperator):
+
+    def mutate_UnaryOp(self, node):
+        if isinstance(node.op, self.get_operator_type()):
+            return node.operand
+        raise MutationResign()
+
+
+class ArithmeticOperatorDeletion(AbstractUnaryOperatorDeletion):
+
+    def get_operator_type(self):
+        return ast.UAdd, ast.USub
 
 
 class AbstractArithmeticOperatorReplacement(MutationOperator):
@@ -223,129 +237,19 @@ class AssignmentOperatorReplacement(AbstractArithmeticOperatorReplacement):
         return 'ASR'
 
 
-class AbstractUnaryOperatorDeletion(MutationOperator):
+class BreakContinueReplacement(MutationOperator):
 
-    def mutate_UnaryOp(self, node):
-        if isinstance(node.op, self.get_operator_type()):
-            return node.operand
-        raise MutationResign()
+    def mutate_Break(self, node):
+        return ast.Continue()
 
-
-class ArithmeticOperatorDeletion(AbstractUnaryOperatorDeletion):
-
-    def get_operator_type(self):
-        return ast.UAdd, ast.USub
+    def mutate_Continue(self, node):
+        return ast.Break()
 
 
-class LogicalOperatorReplacement(MutationOperator):
-
-    def mutate_BitAnd(self, node):
-        return ast.BitOr()
-
-    def mutate_BitOr(self, node):
-        return ast.BitAnd()
-
-    def mutate_BitXor(self, node):
-        return ast.BitAnd()
-
-    def mutate_LShift(self, node):
-        return ast.RShift()
-
-    def mutate_RShift(self, node):
-        return ast.LShift()
-
-
-class LogicalOperatorDeletion(AbstractUnaryOperatorDeletion):
+class ConditionalOperatorDeletion(AbstractUnaryOperatorDeletion):
 
     def get_operator_type(self):
-        return ast.Invert
-
-
-class LogicalConnectorReplacement(MutationOperator):
-
-    def mutate_And(self, node):
-        return ast.Or()
-
-    def mutate_Or(self, node):
-        return ast.And()
-
-
-class RelationalOperatorReplacement(MutationOperator):
-
-    def mutate_Lt(self, node):
-        return ast.Gt()
-
-    def mutate_Lt_to_LtE(self, node):
-        return ast.LtE()
-
-    def mutate_Gt(self, node):
-        return ast.Lt()
-
-    def mutate_Gt_to_GtE(self, node):
-        return ast.GtE()
-
-    def mutate_LtE(self, node):
-        return ast.GtE()
-
-    def mutate_LtE_to_Lt(self, node):
-        return ast.Lt()
-
-    def mutate_GtE(self, node):
-        return ast.LtE()
-
-    def mutate_GtE_to_Gt(self, node):
-        return ast.Gt()
-
-    def mutate_Eq(self, node):
-        return ast.NotEq()
-
-    def mutate_NotEq(self, node):
-        return ast.Eq()
-
-
-class ConstantReplacement(MutationOperator):
-    FIRST_CONST_STRING = 'mutpy'
-    SEOCND_CONST_STRING = 'python'
-
-    def mutate_Num(self, node):
-        return ast.Num(n=node.n + 1)
-
-    def mutate_Str(self, node):
-        if utils.is_docstring(node):
-            raise MutationResign()
-
-        if node.s != self.FIRST_CONST_STRING:
-            return ast.Str(s=self.FIRST_CONST_STRING)
-        else:
-            return ast.Str(s=self.SEOCND_CONST_STRING)
-
-    def mutate_Str_empty(self, node):
-        if not node.s or utils.is_docstring(node):
-            raise MutationResign()
-
-        return ast.Str(s='')
-
-    @classmethod
-    def name(cls):
-        return 'CRP'
-
-
-class StatementDeletion(MutationOperator):
-
-    def mutate_Assign(self, node):
-        return ast.Pass()
-
-    def mutate_Return(self, node):
-        return ast.Pass()
-
-    def mutate_Expr(self, node):
-        if utils.is_docstring(node.value):
-            raise MutationResign()
-        return ast.Pass()
-
-    @classmethod
-    def name(cls):
-        return 'SDL'
+        return ast.Not
 
 
 class ConditionalOperatorInsertion(MutationOperator):
@@ -363,41 +267,53 @@ class ConditionalOperatorInsertion(MutationOperator):
     def mutate_If(self, node):
         return self.negate_test(node)
 
-
-class ConditionalOperatorDeletion(AbstractUnaryOperatorDeletion):
-
-    def get_operator_type(self):
-        return ast.Not
-
-
-class SliceIndexRemove(MutationOperator):
-
-    def mutate_Slice_remove_lower(self, node):
-        if not node.lower:
-            raise MutationResign()
-
-        return ast.Slice(lower=None, upper=node.upper, step=node.step)
-
-    def mutate_Slice_remove_upper(self, node):
-        if not node.upper:
-            raise MutationResign()
-
-        return ast.Slice(lower=node.lower, upper=None, step=node.step)
-
-    def mutate_Slice_remove_step(self, node):
-        if not node.step:
-            raise MutationResign()
-
-        return ast.Slice(lower=node.lower, upper=node.upper, step=None)
-
-
-class MembershipTestReplacement(MutationOperator):
-
     def mutate_In(self, node):
         return ast.NotIn()
 
     def mutate_NotIn(self, node):
         return ast.In()
+
+
+class ConstantReplacement(MutationOperator):
+    FIRST_CONST_STRING = 'mutpy'
+    SECOND_CONST_STRING = 'python'
+
+    def mutate_Num(self, node):
+        return ast.Num(n=node.n + 1)
+
+    def mutate_Str(self, node):
+        if utils.is_docstring(node):
+            raise MutationResign()
+
+        if node.s != self.FIRST_CONST_STRING:
+            return ast.Str(s=self.FIRST_CONST_STRING)
+        else:
+            return ast.Str(s=self.SECOND_CONST_STRING)
+
+    def mutate_Str_empty(self, node):
+        if not node.s or utils.is_docstring(node):
+            raise MutationResign()
+
+        return ast.Str(s='')
+
+    @classmethod
+    def name(cls):
+        return 'CRP'
+
+
+class DecoratorDeletion(MutationOperator):
+
+    @copy_node
+    def mutate_FunctionDef(self, node):
+        if node.decorator_list:
+            node.decorator_list = []
+            return node
+        else:
+            raise MutationResign()
+
+    @classmethod
+    def name(cls):
+        return 'DDL'
 
 
 class ExceptionHandlerDeletion(MutationOperator):
@@ -418,103 +334,6 @@ class ExceptionSwallowing(MutationOperator):
     @classmethod
     def name(cls):
         return 'EXS'
-
-
-class ZeroIterationLoop(MutationOperator):
-
-    def zero_iteration(self, node):
-        node.body = [ast.Break()]
-        return node
-
-    @copy_node
-    def mutate_For(self, node):
-        return self.zero_iteration(node)
-
-    @copy_node
-    def mutate_While(self, node):
-        return self.zero_iteration(node)
-
-
-class OneIterationLoop(MutationOperator):
-
-    def one_iteration(self, node):
-        node.body.append(ast.Break())
-        return node
-
-    @copy_node
-    def mutate_For(self, node):
-        return self.one_iteration(node)
-
-    @copy_node
-    def mutate_While(self, node):
-        return self.one_iteration(node)
-
-
-class ReverseIterationLoop(MutationOperator):
-
-    @copy_node
-    def mutate_For(self, node):
-        old_iter = node.iter
-        node.iter = ast.Call(func=ast.Name(id=reversed.__name__, ctx=ast.Load()),
-                             args=[old_iter], keywords=[], starargs=None, kwargs=None)
-        return node
-
-
-class DecoratorDeletionMutationOperator(MutationOperator):
-
-    @copy_node
-    def mutate_FunctionDef(self, node):
-        for decorator in node.decorator_list:
-            if isinstance(decorator, ast.Call):
-                decorator_name = decorator.func.id
-            elif isinstance(decorator, ast.Attribute):
-                decorator_name = decorator.value.id
-            else:
-                decorator_name = decorator.id
-            if decorator_name == self.get_decorator_name():
-                node.decorator_list.remove(decorator)
-                return node
-        else:
-            raise MutationResign()
-
-    def get_decorator_name(self):
-        raise NotImplementedError()
-
-
-class ClassmethodDecoratorDeletion(DecoratorDeletionMutationOperator):
-
-    def get_decorator_name(self):
-        return 'classmethod'
-
-
-class MethodDecoratorInsertionMutationOperator(MutationOperator):
-
-    @copy_node
-    def mutate_FunctionDef(self, node):
-        if not isinstance(node.parent, ast.ClassDef):
-            raise MutationResign()
-        for decorator in node.decorator_list:
-            if isinstance(decorator, ast.Call):
-                decorator_name = decorator.func.id
-            elif isinstance(decorator, ast.Attribute):
-                decorator_name = decorator.value.id
-            else:
-                decorator_name = decorator.id
-            if decorator_name == self.get_decorator_name():
-                raise MutationResign()
-
-        decorator = ast.Name(id=self.get_decorator_name(), ctx=ast.Load())
-        node.decorator_list.append(decorator)
-        return node
-
-    def get_decorator_name(self):
-        raise NotImplementedError()
-
-
-class ClassmethodDecoratorInsertion(MethodDecoratorInsertionMutationOperator):
-
-    def get_decorator_name(self):
-        return 'classmethod'
 
 
 class AbstractOverriddenElementModification(MutationOperator):
@@ -538,18 +357,6 @@ class AbstractOverriddenElementModification(MutationOperator):
             if hasattr(base_klass, name):
                 return True
         return False
-
-
-class OverridingMethodDeletion(AbstractOverriddenElementModification):
-
-    def mutate_FunctionDef(self, node):
-        if self.is_overridden(node):
-            return ast.Pass()
-        raise MutationResign()
-
-    @classmethod
-    def name(cls):
-        return 'IOD'
 
 
 class HidingVariableDeletion(AbstractOverriddenElementModification):
@@ -589,6 +396,39 @@ class HidingVariableDeletion(AbstractOverriddenElementModification):
     @classmethod
     def name(cls):
         return 'IHD'
+
+
+class LogicalConnectorReplacement(MutationOperator):
+
+    def mutate_And(self, node):
+        return ast.Or()
+
+    def mutate_Or(self, node):
+        return ast.And()
+
+
+class LogicalOperatorDeletion(AbstractUnaryOperatorDeletion):
+
+    def get_operator_type(self):
+        return ast.Invert
+
+
+class LogicalOperatorReplacement(MutationOperator):
+
+    def mutate_BitAnd(self, node):
+        return ast.BitOr()
+
+    def mutate_BitOr(self, node):
+        return ast.BitAnd()
+
+    def mutate_BitXor(self, node):
+        return ast.BitAnd()
+
+    def mutate_LShift(self, node):
+        return ast.RShift()
+
+    def mutate_RShift(self, node):
+        return ast.LShift()
 
 
 class AbstractSuperCallingModification(MutationOperator):
@@ -636,6 +476,72 @@ class OverriddenMethodCallingPositionChange(AbstractSuperCallingModification):
         return 'IOP'
 
 
+class OverridingMethodDeletion(AbstractOverriddenElementModification):
+
+    def mutate_FunctionDef(self, node):
+        if self.is_overridden(node):
+            return ast.Pass()
+        raise MutationResign()
+
+    @classmethod
+    def name(cls):
+        return 'IOD'
+
+
+class RelationalOperatorReplacement(MutationOperator):
+
+    def mutate_Lt(self, node):
+        return ast.Gt()
+
+    def mutate_Lt_to_LtE(self, node):
+        return ast.LtE()
+
+    def mutate_Gt(self, node):
+        return ast.Lt()
+
+    def mutate_Gt_to_GtE(self, node):
+        return ast.GtE()
+
+    def mutate_LtE(self, node):
+        return ast.GtE()
+
+    def mutate_LtE_to_Lt(self, node):
+        return ast.Lt()
+
+    def mutate_GtE(self, node):
+        return ast.LtE()
+
+    def mutate_GtE_to_Gt(self, node):
+        return ast.Gt()
+
+    def mutate_Eq(self, node):
+        return ast.NotEq()
+
+    def mutate_NotEq(self, node):
+        return ast.Eq()
+
+
+class SliceIndexRemove(MutationOperator):
+
+    def mutate_Slice_remove_lower(self, node):
+        if not node.lower:
+            raise MutationResign()
+
+        return ast.Slice(lower=None, upper=node.upper, step=node.step)
+
+    def mutate_Slice_remove_upper(self, node):
+        if not node.upper:
+            raise MutationResign()
+
+        return ast.Slice(lower=node.lower, upper=None, step=node.step)
+
+    def mutate_Slice_remove_step(self, node):
+        if not node.step:
+            raise MutationResign()
+
+        return ast.Slice(lower=node.lower, upper=node.upper, step=None)
+
+
 class SuperCallingDeletion(AbstractSuperCallingModification):
 
     @copy_node
@@ -679,30 +585,146 @@ class SuperCallingInsert(AbstractSuperCallingModification, AbstractOverriddenEle
         return super_call
 
 
-all_operators = {
+class AbstractMethodDecoratorInsertionMutationOperator(MutationOperator):
+
+    @copy_node
+    def mutate_FunctionDef(self, node):
+        if not isinstance(node.parent, ast.ClassDef):
+            raise MutationResign()
+        for decorator in node.decorator_list:
+            if isinstance(decorator, ast.Call):
+                decorator_name = decorator.func.id
+            elif isinstance(decorator, ast.Attribute):
+                decorator_name = decorator.value.id
+            else:
+                decorator_name = decorator.id
+            if decorator_name == self.get_decorator_name():
+                raise MutationResign()
+
+        decorator = ast.Name(id=self.get_decorator_name(), ctx=ast.Load())
+        node.decorator_list.append(decorator)
+        return node
+
+    def get_decorator_name(self):
+        raise NotImplementedError()
+
+
+class ClassmethodDecoratorInsertion(AbstractMethodDecoratorInsertionMutationOperator):
+
+    def get_decorator_name(self):
+        return 'classmethod'
+
+
+class OneIterationLoop(MutationOperator):
+
+    def one_iteration(self, node):
+        node.body.append(ast.Break())
+        return node
+
+    @copy_node
+    def mutate_For(self, node):
+        return self.one_iteration(node)
+
+    @copy_node
+    def mutate_While(self, node):
+        return self.one_iteration(node)
+
+
+class ReverseIterationLoop(MutationOperator):
+
+    @copy_node
+    def mutate_For(self, node):
+        old_iter = node.iter
+        node.iter = ast.Call(
+            func=ast.Name(id=reversed.__name__, ctx=ast.Load()),
+            args=[old_iter],
+            keywords=[],
+            starargs=None,
+            kwargs=None,
+        )
+        return node
+
+
+class SelfVariableDeletion(MutationOperator):
+
+    def mutate_Attribute(self, node):
+        try:
+            if node.value.id == 'self':
+                return ast.Name(id=node.attr, ctx=ast.Load())
+            else:
+                raise MutationResign()
+        except AttributeError:
+            raise MutationResign()
+
+
+class StatementDeletion(MutationOperator):
+
+    def mutate_Assign(self, node):
+        return ast.Pass()
+
+    def mutate_Return(self, node):
+        return ast.Pass()
+
+    def mutate_Expr(self, node):
+        if utils.is_docstring(node.value):
+            raise MutationResign()
+        return ast.Pass()
+
+    @classmethod
+    def name(cls):
+        return 'SDL'
+
+
+class StaticmethodDecoratorInsertion(AbstractMethodDecoratorInsertionMutationOperator):
+
+    def get_decorator_name(self):
+        return 'staticmethod'
+
+
+class ZeroIterationLoop(MutationOperator):
+
+    def zero_iteration(self, node):
+        node.body = [ast.Break()]
+        return node
+
+    @copy_node
+    def mutate_For(self, node):
+        return self.zero_iteration(node)
+
+    @copy_node
+    def mutate_While(self, node):
+        return self.zero_iteration(node)
+
+
+standard_operators = {
     ArithmeticOperatorDeletion,
     ArithmeticOperatorReplacement,
     AssignmentOperatorReplacement,
-    ClassmethodDecoratorDeletion,
-    ClassmethodDecoratorInsertion,
+    BreakContinueReplacement,
     ConditionalOperatorDeletion,
     ConditionalOperatorInsertion,
     ConstantReplacement,
+    DecoratorDeletion,
     ExceptionHandlerDeletion,
     ExceptionSwallowing,
     HidingVariableDeletion,
     LogicalConnectorReplacement,
     LogicalOperatorDeletion,
     LogicalOperatorReplacement,
-    MembershipTestReplacement,
-    OneIterationLoop,
     OverriddenMethodCallingPositionChange,
     OverridingMethodDeletion,
     RelationalOperatorReplacement,
-    ReverseIterationLoop,
     SliceIndexRemove,
-    StatementDeletion,
     SuperCallingDeletion,
     SuperCallingInsert,
+}
+
+experimental_operators = {
+    ClassmethodDecoratorInsertion,
+    OneIterationLoop,
+    ReverseIterationLoop,
+    SelfVariableDeletion,
+    StatementDeletion,
+    StaticmethodDecoratorInsertion,
     ZeroIterationLoop,
 }
