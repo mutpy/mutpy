@@ -251,6 +251,9 @@ class ConditionalOperatorDeletion(AbstractUnaryOperatorDeletion):
     def get_operator_type(self):
         return ast.Not
 
+    def mutate_NotIn(self, node):
+        return ast.In()
+
 
 class ConditionalOperatorInsertion(MutationOperator):
 
@@ -269,9 +272,6 @@ class ConditionalOperatorInsertion(MutationOperator):
 
     def mutate_In(self, node):
         return ast.NotIn()
-
-    def mutate_NotIn(self, node):
-        return ast.In()
 
 
 class ConstantReplacement(MutationOperator):
