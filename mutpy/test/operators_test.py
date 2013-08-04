@@ -317,9 +317,6 @@ class ConditionalOperatorInsertionTest(OperatorTestCase):
     def test_in_to_not_in(self):
         self.assert_mutation('x in y', ['x not in y'])
 
-    def test_not_in_to_in(self):
-        self.assert_mutation('x not in y', ['x in y'])
-
 
 class ConditionalOperatorDeletionTest(OperatorTestCase):
 
@@ -329,6 +326,9 @@ class ConditionalOperatorDeletionTest(OperatorTestCase):
 
     def test_not(self):
         self.assert_mutation('not x', ['x'])
+
+    def test_not_in_to_in(self):
+        self.assert_mutation('x not in y', ['x in y'])
 
 
 class ExceptionSwallowingTest(OperatorTestCase):
