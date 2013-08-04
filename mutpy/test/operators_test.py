@@ -135,7 +135,7 @@ class ConstantReplacementTest(OperatorTestCase):
     def test_replace_first_const_string(self):
         self.assert_mutation(
             "x = '{}'".format(self.op.FIRST_CONST_STRING),
-            ["x = '{}'".format(self.op.SEOCND_CONST_STRING), "x = ''"],
+            ["x = '{}'".format(self.op.SECOND_CONST_STRING), "x = ''"],
         )
 
     def test_not_mutate_docstring(self):
@@ -314,6 +314,12 @@ class ConditionalOperatorInsertionTest(OperatorTestCase):
             lines=[1, 3],
         )
 
+    def test_in_to_not_in(self):
+        self.assert_mutation('x in y', ['x not in y'])
+
+    def test_not_in_to_in(self):
+        self.assert_mutation('x not in y', ['x in y'])
+
 
 class ConditionalOperatorDeletionTest(OperatorTestCase):
 
@@ -323,19 +329,6 @@ class ConditionalOperatorDeletionTest(OperatorTestCase):
 
     def test_not(self):
         self.assert_mutation('not x', ['x'])
-
-
-class MembershipTestReplacementTest(OperatorTestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.op = operators.MembershipTestReplacement()
-
-    def test_in_to_not_in(self):
-        self.assert_mutation('x in y', ['x not in y'])
-
-    def test_not_in_to_in(self):
-        self.assert_mutation('x not in y', ['x in y'])
 
 
 class ExceptionSwallowingTest(OperatorTestCase):
@@ -399,242 +392,42 @@ class ExceptionHandlerDeletionTest(OperatorTestCase):
         """), [])
 
 
-class ZeroIterationLoopTest(OperatorTestCase):
+class DecoratorDeletionTest(OperatorTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.op = operators.ZeroIterationLoop()
+        cls.op = operators.DecoratorDeletion()
 
-    def test_for_zero_iteration(self):
-        self.assert_mutation('for x in y:' + EOL + INDENT + PASS, ['for x in y:' + EOL + INDENT + 'break'])
-
-    def test_multiline_for_zero_iteration(self):
-        self.assert_mutation(
-            'for x in y:' + EOL + INDENT + PASS + EOL + INDENT + PASS,
-            ['for x in y:' + EOL + INDENT + 'break'],
-        )
-
-    def test_while_zero_iteration(self):
-        self.assert_mutation('while x:' + EOL + INDENT + PASS, ['while x:' + EOL + INDENT + 'break'])
-
-
-class OneIterationLoopTest(OperatorTestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.op = operators.OneIterationLoop()
-
-    def test_for_one_iteration(self):
-        self.assert_mutation(
-            'for x in y:' + EOL + INDENT + PASS,
-            ['for x in y:' + EOL + INDENT + PASS + EOL + INDENT + 'break'],
-        )
-
-    def test_while_one_iteration(self):
-        self.assert_mutation(
-            'while x:' + EOL + INDENT + PASS,
-            ['while x:' + EOL + INDENT + PASS + EOL + INDENT + 'break'],
-        )
-
-    def test_double_mutation(self):
+    def test_single_decorator_deletion(self):
         self.assert_mutation(utils.f("""
-        while x:
+        @a
+        def f():
             pass
-        for x in y:
+        """), [utils.f("""
+        def f():
             pass
-        """), [
-            utils.f("""
-            while x:
-                pass
-                break
-            for x in y:
-                pass
-            """),
-            utils.f("""
-            while x:
-                pass
-            for x in y:
-                pass
-                break
-            """),
-        ])
+        """)])
 
+    def test_double_decorators_deletion(self):
+        self.assert_mutation(utils.f("""
+        @a
+        @b
+        def f():
+            pass
+        """), [utils.f("""
+        def f():
+            pass
+        """)])
 
-class ReverseIterationLoopTest(OperatorTestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.op = operators.ReverseIterationLoop()
-
-    def test_for_reverse(self):
-        self.assert_mutation(
-            'for x in y:' + EOL + INDENT + PASS,
-            ['for x in reversed(y):' + EOL + INDENT + PASS],
-        )
-
-
-class StatementDeletionTest(OperatorTestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.op = operators.StatementDeletion()
-
-    def test_return_deletion(self):
-        self.assert_mutation('def f():' + EOL + INDENT + 'return 1', ['def f():' + EOL + INDENT + PASS])
-
-    def test_assign_deletion(self):
-        self.assert_mutation('x = 1', [PASS])
-
-    def test_fuction_call_deletion(self):
-        self.assert_mutation('f()', ['pass'])
-
-    def test_assign_with_call_deletion(self):
-        self.assert_mutation('x = f()', ['pass'])
-
-    def test_not_mutate_docstring(self):
-        self.assert_mutation('""""doc"""', [])
-
-
-class ClassmethodDecoratorDeletionTest(OperatorTestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.op = operators.ClassmethodDecoratorDeletion()
-
-    def test_single_classmethod_deletion(self):
-        self.assert_mutation(
-            '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass',
-            ['def f():' + EOL + INDENT + 'pass'],
-        )
-
-    def test_classmethod_deletion_with_other(self):
-        self.assert_mutation(
-            '@staticmethod' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass',
-            ['@staticmethod' + EOL + 'def f():' + EOL + INDENT + 'pass'],
-        )
-
-    def test_classmethod_deletion_with_other_and_arguments(self):
-        self.assert_mutation(
-            '@wraps(func)' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass',
-            ['@wraps(func)' + EOL + 'def f():' + EOL + INDENT + 'pass'],
-        )
-
-    def test_classmethod_deletion_with_other_from_module(self):
-        self.assert_mutation(
-            '@itertools.wraps' + EOL + '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass',
-            ['@itertools.wraps' + EOL + 'def f():' + EOL + INDENT + 'pass'],
-        )
-
-    def test_double_classmethod_deletion(self):
-        self.assert_mutation(
-            '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' + EOL +
-            '@classmethod' + EOL + 'def g():' + EOL + INDENT + 'pass',
-            [
-                'def f():' + EOL + INDENT + 'pass' + EOL +
-                '@classmethod' + EOL + 'def g():' + EOL + INDENT + 'pass',
-                '@classmethod' + EOL + 'def f():' + EOL + INDENT + 'pass' + EOL +
-                'def g():' + EOL + INDENT + 'pass'
-            ]
-        )
-
-
-class ClassmethodDecoratorInsertionTest(OperatorTestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.op = operators.ClassmethodDecoratorInsertion()
-
-    def test_add_classmethod_decorator(self):
-        self.assert_mutation(
-            utils.f("""
-            class X:
-                def f():
-                    pass
-            """),
-            utils.f("""
-            class X:
-                @classmethod
-                def f():
-                    pass
-            """)
-        )
-
-    def test_not_add_if_already_has_classmethod(self):
-        self.assert_no_mutation(utils.f("""
-            class X:
-                @classmethod
-                def f():
-                    pass
-        """))
-
-    def test_classmethod_add_with_other_and_arguments(self):
-        self.assert_mutation(
-            utils.f("""
-            class X:
-                @wraps(func)
-                def f():
-                    pass
-            """),
-            utils.f("""
-            class X:
-                @wraps(func)
-                @classmethod
-                def f():
-                    pass
-            """)
-        )
-
-    def test_add_classmethod_in_two_methods(self):
-        self.assert_mutation(
-            utils.f("""
-            class X:
-                def f():
-                    pass
-                def g():
-                    pass
-            """),
-            [
-                utils.f("""
-                class X:
-                    @classmethod
-                    def f():
-                        pass
-                    def g():
-                        pass
-                """),
-                utils.f("""
-                class X:
-                    def f():
-                        pass
-                    @classmethod
-                    def g():
-                        pass
-                """),
-            ]
-        )
-
-    def test_classmethod_add_with_other_from_module(self):
-        self.assert_mutation(
-            utils.f("""
-            class X:
-                @itertools.wraps
-                def f():
-                    pass
-            """),
-            utils.f("""
-            class X:
-                @itertools.wraps
-                @classmethod
-                def f():
-                    pass
-            """)
-        )
-
-    def test_no_add_if_pure_function(self):
-        self.assert_no_mutation(utils.f("""
-            def f():
-                pass
-        """))
+    def test_deletion_with_arguments(self):
+        self.assert_mutation(utils.f("""
+        @a(1)
+        def f():
+            pass
+        """), [utils.f("""
+        def f():
+            pass
+        """)])
 
 
 class MutateOnlyCoveredNodesTest(OperatorTestCase):
@@ -677,16 +470,10 @@ class MutateOnlyCoveredNodesTest(OperatorTestCase):
                              operator=operators.ExceptionHandlerDeletion(),
                              with_coverage=True)
 
-    def test_not_covered_for_node(self):
-        self.assert_mutation('for _ in []:' + EOL + INDENT + 'for _ in []:' + EOL + 2 * INDENT + PASS,
-                             ['for _ in reversed([]):' + EOL + INDENT + 'for _ in []:' + EOL + 2 * INDENT + PASS],
-                             operator=operators.ReverseIterationLoop(),
-                             with_coverage=True)
-
     def test_not_covered_function_def_node(self):
         self.assert_mutation('class X:' + EOL + INDENT + '@classmethod' + EOL + INDENT + 'def foo(cls):' + EOL +
                              2 * INDENT + PASS, [],
-                             operator=operators.ClassmethodDecoratorDeletion(),
+                             operator=operators.DecoratorDeletion(),
                              with_coverage=True)
 
 
@@ -883,3 +670,173 @@ class HidingVariableDeletionTest(OperatorTestCase):
         class A(B):
             pass
         """)], with_exec=True)
+
+
+class BreakContinueReplacementTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.BreakContinueReplacement()
+
+    def test_replace_break_by_continue(self):
+        self.assert_mutation(utils.f("""
+        for x in y:
+            break
+        """), [utils.f("""
+        for x in y:
+            continue
+        """)])
+
+    def test_replace_continue_by_break(self):
+        self.assert_mutation(utils.f("""
+        for x in y:
+            continue
+        """), [utils.f("""
+        for x in y:
+            break
+        """)])
+
+
+class SelfVariableDeletionTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.SelfVariableDeletion()
+
+    def test_self_deletion_with_attribute(self):
+        self.assert_mutation('self.x', ['x'])
+
+    def test_self_deletion_with_method(self):
+        self.assert_mutation('self.f()', ['f()'])
+
+    def test_self_deletion_with_multi_attribute(self):
+        self.assert_mutation('self.x.y.z', ['x.y.z'])
+
+    def test_self_deletion_with_multi_attribute_after_method(self):
+        self.assert_mutation('self.f().x.y.z', ['f().x.y.z'])
+
+
+class StaticmethodDecoratorInsertionTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.StaticmethodDecoratorInsertion()
+
+    def test_add_staticmethod_decorator(self):
+        self.assert_mutation(
+            utils.f("""
+            class X:
+                def f():
+                    pass
+            """),
+            utils.f("""
+            class X:
+                @staticmethod
+                def f():
+                    pass
+            """)
+        )
+
+    def test_not_add_if_already_has_staticmethod(self):
+        self.assert_no_mutation(utils.f("""
+            class X:
+                @staticmethod
+                def f():
+                    pass
+        """))
+
+
+class StatementDeletionTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.StatementDeletion()
+
+    def test_return_deletion(self):
+        self.assert_mutation('def f():' + EOL + INDENT + 'return 1', ['def f():' + EOL + INDENT + PASS])
+
+    def test_assign_deletion(self):
+        self.assert_mutation('x = 1', [PASS])
+
+    def test_fuction_call_deletion(self):
+        self.assert_mutation('f()', ['pass'])
+
+    def test_assign_with_call_deletion(self):
+        self.assert_mutation('x = f()', ['pass'])
+
+    def test_not_mutate_docstring(self):
+        self.assert_mutation('""""doc"""', [])
+
+
+class ZeroIterationLoopTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.ZeroIterationLoop()
+
+    def test_for_zero_iteration(self):
+        self.assert_mutation('for x in y:' + EOL + INDENT + PASS, ['for x in y:' + EOL + INDENT + 'break'])
+
+    def test_multiline_for_zero_iteration(self):
+        self.assert_mutation(
+            'for x in y:' + EOL + INDENT + PASS + EOL + INDENT + PASS,
+            ['for x in y:' + EOL + INDENT + 'break'],
+        )
+
+    def test_while_zero_iteration(self):
+        self.assert_mutation('while x:' + EOL + INDENT + PASS, ['while x:' + EOL + INDENT + 'break'])
+
+
+class OneIterationLoopTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.OneIterationLoop()
+
+    def test_for_one_iteration(self):
+        self.assert_mutation(
+            'for x in y:' + EOL + INDENT + PASS,
+            ['for x in y:' + EOL + INDENT + PASS + EOL + INDENT + 'break'],
+        )
+
+    def test_while_one_iteration(self):
+        self.assert_mutation(
+            'while x:' + EOL + INDENT + PASS,
+            ['while x:' + EOL + INDENT + PASS + EOL + INDENT + 'break'],
+        )
+
+    def test_double_mutation(self):
+        self.assert_mutation(utils.f("""
+        while x:
+            pass
+        for x in y:
+            pass
+        """), [
+            utils.f("""
+            while x:
+                pass
+                break
+            for x in y:
+                pass
+            """),
+            utils.f("""
+            while x:
+                pass
+            for x in y:
+                pass
+                break
+            """),
+        ])
+
+
+class ReverseIterationLoopTest(OperatorTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.op = operators.ReverseIterationLoop()
+
+    def test_for_reverse(self):
+        self.assert_mutation(
+            'for x in y:' + EOL + INDENT + PASS,
+            ['for x in reversed(y):' + EOL + INDENT + PASS],
+        )
