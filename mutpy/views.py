@@ -159,7 +159,7 @@ class DebugView:
     def print_exception(self, exception):
         print("\n" + "".join(traceback.format_exception(None, exception, None)))
 
-    def incompetent(self, exception, *args, **kwargs):
+    def incompetent(self, exception, tests_run, *args, **kwargs):
         self.print_exception(exception)
 
     def killed(self, time, killer, exception_traceback, *args, **kwargs):
