@@ -24,7 +24,7 @@ class ViewNotifier:
     def __getattr__(self, name):
         if name.startswith(ViewNotifier.PREFIX):
             notify = name[len(ViewNotifier.PREFIX):]
-            return lambda * args: self.notify_all_views(notify, *args)
+            return lambda *args, **kwargs: self.notify_all_views(notify, *args, **kwargs)
         else:
             raise AttributeError(name)
 
