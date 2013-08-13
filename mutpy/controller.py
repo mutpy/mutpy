@@ -74,9 +74,9 @@ class MutationController(views.ViewNotifier):
 
     def run_mutation_process(self):
         try:
-            test_modules = self.load_and_check_tests()
+            test_modules, number_of_tests = self.load_and_check_tests()
 
-            self.notify_passed(test_modules)
+            self.notify_passed(test_modules, number_of_tests)
             self.notify_start()
 
             self.score = MutationScore()
@@ -88,14 +88,16 @@ class MutationController(views.ViewNotifier):
 
     def load_and_check_tests(self):
         test_modules = []
+        number_of_tests = 0
         for test_module, target_test in self.test_loader.load():
             result, duration = self.run_test(test_module, target_test)
             if result.wasSuccessful():
                 test_modules.append((test_module, target_test, duration))
             else:
                 raise TestsFailAtOriginal(result)
+            number_of_tests += result.testsRun
 
-        return test_modules
+        return test_modules, number_of_tests
 
     def run_test(self, test_module, target_test):
         suite = self.get_test_suite(test_module, target_test)
