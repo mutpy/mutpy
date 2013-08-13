@@ -140,17 +140,17 @@ class TextView(QuietTextView):
         snippet = src_lines[max(0, lineno - 5):min(len(src_lines), lineno + 5)]
         print("\n{}\n".format('-'*80) + "\n".join(snippet) + "\n{}".format('-'*80))
 
-    def killed(self, time, killer, *args):
+    def killed(self, time, killer, *args, **kwargs):
         self.level_print(self.time_format(time) + ' ' + self.decorate('killed', 'green') + ' by ' + str(killer),
                          continuation=True)
 
-    def survived(self, time):
+    def survived(self, time, *args, **kwargs):
         self.level_print(self.time_format(time) + ' ' + self.decorate('survived', 'red'), continuation=True)
 
-    def timeout(self):
+    def timeout(self, *args, **kwargs):
         self.level_print(self.time_format() + ' ' + self.decorate('timeout', 'yellow'), continuation=True)
 
-    def incompetent(self, *args):
+    def incompetent(self, *args, **kwargs):
         self.level_print(self.time_format() + ' ' + self.decorate('incompetent', 'cyan'), continuation=True)
 
 
@@ -159,10 +159,10 @@ class DebugView:
     def print_exception(self, exception):
         print("\n" + "".join(traceback.format_exception(None, exception, None)))
 
-    def incompetent(self, exception):
+    def incompetent(self, exception, *args, **kwargs):
         self.print_exception(exception)
 
-    def killed(self, time, killer, exception_traceback):
+    def killed(self, time, killer, exception_traceback, *args, **kwargs):
         print('\n' + exception_traceback)
 
 
@@ -177,10 +177,11 @@ class YAMLReportView:
         init = {'target': target, 'tests': tests}
         self.dump(init)
 
-    def end_mutation(self, status, time, killer=None):
+    def end_mutation(self, status, time=None, killer=None, tests_run=None):
         self.current_mutation['status'] = status
         self.current_mutation['time'] = time
         self.current_mutation['killer'] = killer
+        self.current_mutation['tests_run'] = tests_run
         self.mutation_info.append(self.current_mutation)
 
     def mutation(self, number, mutations, filename, mutant):
@@ -191,17 +192,17 @@ class YAMLReportView:
             'filename': filename,
         }
 
-    def killed(self, time, killer, *args):
-        self.end_mutation('killed', time, str(killer))
+    def killed(self, time, killer, exception_traceback, tests_run, *args, **kwargs):
+        self.end_mutation('killed', time=time, killer=str(killer), tests_run=tests_run)
 
-    def survived(self, time):
-        self.end_mutation('survived', time)
+    def survived(self, time, tests_run, *args, **kwargs):
+        self.end_mutation('survived', time=time, tests_run=tests_run)
 
-    def incompetent(self, *args):
-        self.end_mutation('incompetent', None)
+    def incompetent(self, exception, tests_run, *args, **kwargs):
+        self.end_mutation('incompetent', tests_run=tests_run)
 
-    def timeout(self):
-        self.end_mutation('timeout', None)
+    def timeout(self, *args, **kwargs):
+        self.end_mutation('timeout')
 
     def end(self, score, duration):
         self.dump({

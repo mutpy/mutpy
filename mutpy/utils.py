@@ -10,7 +10,7 @@ import random
 import ast
 import re
 from _pyio import StringIO
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from multiprocessing import Process, Queue
 from queue import Empty
 
@@ -184,13 +184,25 @@ class StdoutManager:
         sys.stdout = sys.__stdout__
 
 
+SerializableMutationTestResult = namedtuple(
+    'SerializableMutationTestResult', [
+        'is_incompetent',
+        'is_survived',
+        'killer',
+        'exception_traceback',
+        'exception',
+        'tests_run',
+    ]
+)
+
+
 class MutationTestResult(unittest.TestResult):
 
     def __init__(self, *args, coverage_injector=None, **kwargs):
+        super(MutationTestResult, self).__init__(*args, **kwargs)
         self.type_error = None
         self.failfast = True
         self.coverage_injector = coverage_injector
-        super(MutationTestResult, self).__init__(*args, **kwargs)
 
     def addError(self, test, err):
         if err[0] == TypeError:
@@ -221,13 +233,14 @@ class MutationTestResult(unittest.TestResult):
             return self.type_error[1]
 
     def serialize(self):
-        return {
-            'is_incompetent': self.is_incompetent(),
-            'is_survived': self.is_survived(),
-            'killer': str(self.get_killer()),
-            'exception_traceback': str(self.get_exception_traceback()),
-            'exception': self.get_exception(),
-        }
+        return SerializableMutationTestResult(
+            self.is_incompetent(),
+            self.is_survived(),
+            str(self.get_killer()),
+            str(self.get_exception_traceback()),
+            self.get_exception(),
+            self.testsRun - len(self.skipped),
+        )
 
 
 class Timer:
