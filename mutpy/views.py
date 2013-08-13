@@ -15,11 +15,11 @@ class ViewNotifier:
     def del_view(self, views):
         self.views.remove(views)
 
-    def notify_all_views(self, notify, *args):
+    def notify_all_views(self, notify, *args, **kwargs):
         for views in self.views:
             if hasattr(views, notify):
                 attr = getattr(views, notify)
-                attr(*args)
+                attr(*args, **kwargs)
 
     def __getattr__(self, name):
         if name.startswith(ViewNotifier.PREFIX):
