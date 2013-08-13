@@ -225,28 +225,27 @@ class MutationController(views.ViewNotifier):
     def update_score_and_notify_views(self, result, mutant_duration):
         if not result:
             self.update_timeout_mutant()
-        elif result['is_incompetent']:
-            exception = result['exception']
-            self.update_incompetent_mutant(exception)
-        elif result['is_survived']:
-            self.update_survived_mutant(mutant_duration)
+        elif result.is_incompetent:
+            self.update_incompetent_mutant(result)
+        elif result.is_survived:
+            self.update_survived_mutant(result, mutant_duration)
         else:
-            self.update_killed_mutant(mutant_duration, result['killer'], result['exception_traceback'])
+            self.update_killed_mutant(result, mutant_duration)
 
     def update_timeout_mutant(self):
         self.notify_timeout()
         self.score.inc_timeout()
 
-    def update_incompetent_mutant(self, exception):
-        self.notify_incompetent(exception)
+    def update_incompetent_mutant(self, result):
+        self.notify_incompetent(result.exception, result.tests_run)
         self.score.inc_incompetent()
 
-    def update_survived_mutant(self, duration):
-        self.notify_survived(duration)
+    def update_survived_mutant(self, result, duration):
+        self.notify_survived(duration, result.tests_run)
         self.score.inc_survived()
 
-    def update_killed_mutant(self, duration, killer, exception_traceback):
-        self.notify_killed(duration, killer, exception_traceback)
+    def update_killed_mutant(self, result, duration):
+        self.notify_killed(duration, result.killer, result.exception_traceback, result.tests_run)
         self.score.inc_killed()
 
 
