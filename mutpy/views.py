@@ -100,8 +100,8 @@ class TextView(QuietTextView):
                     100 * score.covered_nodes / score.all_nodes
                 ))
 
-    def passed(self, tests):
-        self.level_print('All tests passed:')
+    def passed(self, tests, number_of_tests):
+        self.level_print('{} tests passed:'.format(number_of_tests))
 
         for test, target, time in tests:
             test_name = test.__name__ + ('.' + target if target else '')
@@ -174,8 +174,10 @@ class YAMLReportView:
         self.stream = open(self.file_name, 'w')
 
     def initialize(self, target, tests):
-        init = {'target': target, 'tests': tests}
-        self.dump(init)
+        self.dump({'target': target, 'tests': tests})
+
+    def passed(self, tests, number_of_tests):
+        self.dump({'number_of_tests': number_of_tests})
 
     def end_mutation(self, status, time=None, killer=None, tests_run=None):
         self.current_mutation['status'] = status
