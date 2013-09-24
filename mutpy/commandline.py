@@ -2,7 +2,7 @@ import argparse
 import sys
 from mutpy import controller, views, operators, utils
 
-VERSION = 0.2
+VERSION = '0.3.2'
 
 
 def main(argv):

@@ -2,9 +2,10 @@
 MutPy
 =====
 
-MutPy is a mutation testing tool for Python 3.x source code.  MutPy supports
+MutPy is a mutation testing tool for Python 3.x source code. MutPy supports
 standard unittest module, generates YAML reports and has colorful output. It's
-apply mutation on AST level.
+apply mutation on AST level. You could boost your mutation testing process with 
+high order mutations (HOM) and code coverage analysis.
 
 Mutation testing
 ~~~~~~~~~~~~~~~~
@@ -175,35 +176,48 @@ List of all arguments with which you can run MutPy:
 - ``-v``, ``--version`` - show program's version number and exit,
 - ``-q``, ``--quiet`` - quiet mode,
 - ``--debug`` - debug mode,
-- ``-c``. ``--colored-output`` - try print colored output.
+- ``-c``. ``--colored-output`` - try print colored output,
+- ``--coverage`` - mutate only covered code,
+- ``--order ORDER`` - mutation order,
+- ``--hom-strategy HOM_STRATEGY`` - HOM strategy,
+- ``--list-hom-strategies`` - list available HOM strategies,
+- ``--mutation-number MUTATION_NUMBER`` - run only one mutation (debug purpose).
 
 Mutation operators
 ~~~~~~~~~~~~~~~~~~
 
 List of MutPy mutation operators sorted by alphabetical order:
 
-- AOR - Arithmetic Operator Replacement
-- BOR - Bitwise Operator Replacement
-- CDD - Classmethod Decorator Deletion
-- CDI - Classmethod Decorator Insertion
-- COI - Conditional Operator Insertion
-- COR - Conditional Operator Replacement
-- CRP - Constant Replacement
-- EHD - Exception Handle Deletion
-- LOR - Logical Operator Replacement
-- MTR - Membership Test Replacement
-- OIL - One Iteration Loop
-- RIL - Reverse Iteration Loop
-- SDL - Statement Deletion
-- SIR - Slice Index Remove
-- UOR - Unary Operator Replacement
-- ZIL - Zero Iteration Loop
+- AOD - arithmetic operator deletion
+- AOR - arithmetic operator replacement
+- ASR - assignment operator replacement
+- BCR - break continue replacement
+- COD - conditional operator deletion
+- COI - conditional operator insertion
+- CRP - constant replacement
+- DDL - decorator deletion
+- EHD - exception handler deletion
+- EXS - exception swallowing
+- IHD - hiding variable deletion
+- IOD - overriding method deletion
+- IOP - overridden method calling position change
+- LCR - logical connector replacement
+- LOD - logical operator deletion
+- LOR - logical operator replacement
+- ROR - relational operator replacement
+- SCD - super calling deletion
+- SCI - super calling insert
+- SIR - slice index remove
 
 Experimental mutation operators:
 
-- SDD - Staticmethod Decorator Deletion
-- SDI - Staticmethod Decorator Insertion
-- SWD - Self Word Deletion
+- CDI - classmethod decorator insertion
+- OIL - one iteration loop
+- RIL - reverse iteration loop
+- SDI - staticmethod decorator insertion
+- SDL - statement deletion
+- SVD - self variable deletion
+- ZIL - zero iteration loop
 
 License
 ~~~~~~~
