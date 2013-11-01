@@ -2,6 +2,9 @@
 MutPy
 =====
 
+.. image:: https://drone.io/bitbucket.org/khalas/mutpy/status.png
+    :target: https://drone.io/bitbucket.org/khalas/mutpy/latest
+
 MutPy is a mutation testing tool for Python 3.x source code. MutPy supports
 standard unittest module, generates YAML reports and has colorful output. It's
 apply mutation on AST level. You could boost your mutation testing process with 
