@@ -25,8 +25,11 @@ class ModulesLoaderTest(unittest.TestCase):
         self.assertIsInstance(module_object, types.ModuleType)
         for attr in attrs:
             self.assertTrue(hasattr(module_object, attr))
-        self.assertMultiLineEqual(module_object.__file__, ModulesLoaderTest.tmp + module_path)
-        self.assertMultiLineEqual(module_object.__name__, module_name)
+        self.assertMultiLineEqual(
+            os.path.abspath(module_object.__file__),
+            os.path.abspath(ModulesLoaderTest.tmp + module_path),
+        )
+        self.assertMultiLineEqual(os.path.abspath(module_object.__name__), os.path.abspath(module_name))
 
     @classmethod
     def tearDownClass(cls):
