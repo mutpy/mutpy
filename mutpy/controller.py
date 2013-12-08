@@ -211,17 +211,18 @@ class MutationController(views.ViewNotifier):
         if coverage_result:
             self.mark_not_covered_tests_as_skip(mutations, coverage_result, suite)
         timer = utils.Timer()
-        result = self.run_mutation_subprocess(suite, total_duration)
+        result = self.run_mutation_test_runner(suite, total_duration)
         timer.stop()
         self.update_score_and_notify_views(result, timer.duration)
 
-    def run_mutation_subprocess(self, suite, total_duration):
+    def run_mutation_test_runner(self, suite, total_duration):
         live_time = self.timeout_factor * (total_duration if total_duration > 1 else 1)
-        process = utils.MutationSubprocess(suite=suite)
+        test_runner_class = utils.get_mutation_test_runner_class()
+        test_runner = test_runner_class(suite=suite)
         with self.stdout_manager:
-            process.start()
-            result = process.get_result(live_time)
-            process.terminate()
+            test_runner.start()
+            result = test_runner.get_result(live_time)
+            test_runner.terminate()
         return result
 
     def update_score_and_notify_views(self, result, mutant_duration):
