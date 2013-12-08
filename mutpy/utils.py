@@ -9,9 +9,12 @@ import types
 import random
 import ast
 import re
+import os
 from _pyio import StringIO
 from collections import defaultdict, namedtuple
 from multiprocessing import Process, Queue
+from threading import Thread
+import ctypes
 from queue import Empty
 
 
@@ -293,23 +296,65 @@ class RandomSampler:
         return random.randrange(100) < self.percentage
 
 
-class MutationSubprocess(Process):
+class MutationTestRunner:
 
     def __init__(self, suite):
         super().__init__()
         self.suite = suite
-        self.queue = Queue()
 
     def run(self):
         result = MutationTestResult()
         self.suite.run(result)
-        self.queue.put_nowait(result.serialize())
+        self.set_result(result)
+
+
+class MutationTestRunnerProcess(MutationTestRunner, Process):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.queue = Queue()
 
     def get_result(self, live_time):
         try:
             return self.queue.get(timeout=live_time)
         except Empty:
             return None
+
+    def set_result(self, result):
+        self.queue.put_nowait(result.serialize())
+
+
+class MutationTestRunnerThread(MutationTestRunner, Thread):
+    daemon = True
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.result = None
+
+    def terminate(self):
+        if self.isAlive():
+            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ctypes.py_object(SystemExit))
+            if res == 0:
+                raise ValueError('Invalid thread id.')
+            elif res != 1:
+                raise SystemError('Thread killing failed.')
+
+    def set_result(self, result):
+        self.result = result
+
+    def get_result(self, live_time):
+        self.join(live_time)
+        if self.is_alive():
+            return None
+        return self.result.serialize()
+
+
+def get_mutation_test_runner_class():
+    return MutationTestRunnerThread
+    if os.name == 'nt':
+        return MutationTestRunnerThread
+    else:
+        return MutationTestRunnerProcess
 
 
 class ParentNodeTransformer(ast.NodeTransformer):
