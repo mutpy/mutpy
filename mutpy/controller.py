@@ -81,7 +81,7 @@ class MutationController(views.ViewNotifier):
 
             self.score = MutationScore()
 
-            for target_module, to_mutate in self.target_loader.load():
+            for target_module, to_mutate in self.target_loader.load([module for module, *_ in test_modules]):
                 self.mutate_module(target_module, to_mutate, test_modules)
         except KeyboardInterrupt:
             pass

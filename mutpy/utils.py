@@ -46,11 +46,14 @@ class ModulesLoader:
         self.names = names
         sys.path.insert(0, path or '.')
 
-    def load(self):
+    def load(self, without_modules=None):
         results = []
+        without_modules = without_modules or []
         for name in self.names:
             results += self.load_single(name)
-        return results
+        for module, to_mutate in results:
+            if module not in without_modules:
+                yield module, to_mutate
 
     def load_single(self, name):
         if self.is_file(name):
@@ -127,13 +130,13 @@ class ModuleInjector:
                 self.try_inject_other(imported_as, target)
 
     def try_inject_module(self, imported_as, module, target):
-        if module.__name__ == self.source.__name__:
+        if self.safe_getattr(module, '__name__') == self.source.__name__:
             self.source.__file__ = module.__file__
             target.__dict__[imported_as] = self.source
 
     def try_incject_class_or_function(self, imported_as, class_or_function, target):
-        if class_or_function.__name__ in self.source.__dict__:
-            target.__dict__[imported_as] = self.source.__dict__[class_or_function.__name__]
+        if self.safe_getattr(class_or_function, '__name__') in self.source.__dict__:
+            target.__dict__[imported_as] = self.source.__dict__[self.safe_getattr(class_or_function, '__name__')]
 
     def try_inject_other(self, imported_as, target):
         if imported_as in self.source.__dict__ and not self.is_restricted(imported_as):
@@ -141,6 +144,9 @@ class ModuleInjector:
 
     def is_restricted(self, name):
         return name in ['__builtins__', '__name__', '__doc__', '__file__']
+
+    def safe_getattr(self, obj, name):
+        return object.__getattribute__(obj, name)
 
 
 class InjectImporter:
