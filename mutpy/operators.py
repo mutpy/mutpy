@@ -380,7 +380,7 @@ class HidingVariableDeletion(AbstractOverriddenElementModification):
         new_targets = []
         new_values = []
         for target_element, value_element in zip(target.elts, value.elts):
-            if not self.is_overridden(node, target_element.id):
+            if not self.is_overridden(node, getattr(target_element, 'id', None)):
                 new_targets.append(target_element)
                 new_values.append(value_element)
         if len(new_targets) == len(target.elts):
