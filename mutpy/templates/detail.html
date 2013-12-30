@@ -28,13 +28,15 @@
 <ul>
     <li><span class="label label-{% if status == 'survived' %}danger{% elif status == 'timeout' %}info{% elif status == 'incompetent' %}warning{% else %}success{% endif %}">{{ status }}</span>{% if killer %} by <code>{{ killer }}</code>{% endif %}</li>
     {% if time %}
-    <li>duration - {{ time|round(3) }}s</li>
+    <li>duration - {{ time|round(3) }} s</li>
     {% endif %}
     {% if tests_run %}
     <li>tests run - {{ tests_run }}</li>
     {% endif %}
     <li>file - <code>{{ filename }}</code></li>
 </ul>
+<h3>Exception traceback</h3>
+<pre>{{ exception_traceback }}</pre>
 <h3>Mutations</h3>
 <ul>
     {% for mutation in mutations %}

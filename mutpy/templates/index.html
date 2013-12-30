@@ -23,6 +23,9 @@
 <ul>
     <li><strong><span class="glyphicon glyphicon-signal"></span> Score</strong> - {{ score.count()|round(1) }}%</li>
     <li><strong><span class="glyphicon glyphicon-time"></span> Time</strong> - {{ duration|round(1) }} s</li>
+    {% if score.covered_nodes %}
+    <li><strong><span class="glyphicon glyphicon-adjust"></span> Coverage</strong> - {{ score.covered_nodes}} of {{ score.all_nodes }} nodes [{{ (100 * score.covered_nodes / score.all_nodes)|round(1) }}%]</li>
+    {% endif %}
 </ul>
 <h4>Mutants [{{ score.all_mutants }}]</h4>
 <ul>

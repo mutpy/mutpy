@@ -190,7 +190,13 @@ class AccReportView:
         }
 
     def killed(self, time, killer, exception_traceback, tests_run, *args, **kwargs):
-        self.end_mutation('killed', time=time, killer=str(killer), tests_run=tests_run)
+        self.end_mutation(
+            'killed',
+            time=time,
+            killer=str(killer),
+            tests_run=tests_run,
+            exception_traceback=exception_traceback,
+        )
 
     def survived(self, time, tests_run, *args, **kwargs):
         self.end_mutation('survived', time=time, tests_run=tests_run)
@@ -201,11 +207,12 @@ class AccReportView:
     def timeout(self, *args, **kwargs):
         self.end_mutation('timeout')
 
-    def end_mutation(self, status, time=None, killer=None, tests_run=None):
+    def end_mutation(self, status, time=None, killer=None, tests_run=None, exception_traceback=None):
         self.current_mutation['status'] = status
         self.current_mutation['time'] = time
         self.current_mutation['killer'] = killer
         self.current_mutation['tests_run'] = tests_run
+        self.current_mutation['exception_traceback'] = exception_traceback
         self.mutation_info.append(self.current_mutation)
 
 
