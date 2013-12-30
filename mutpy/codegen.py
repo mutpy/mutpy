@@ -195,8 +195,7 @@ class AbstractSourceGenerator(ast.NodeVisitor):
             if alias.asname:
                 name += ' as ' + alias.asname
             imports.append(name)
-
-        self.write('from {} import {}'.format(node.module, ', '.join(imports)))
+        self.write('from {}{} import {}'.format('.' * node.level, node.module or '', ', '.join(imports)))
 
     def visit_Import(self, node):
         self.newline(node)
