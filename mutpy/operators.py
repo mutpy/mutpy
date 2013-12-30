@@ -352,8 +352,11 @@ class AbstractOverriddenElementModification(MutationOperator):
                 raise MutationResign()
             parent = parent.parent
         getattr_rec = lambda obj, attr: functools.reduce(getattr, attr, obj)
-        klass = getattr_rec(self.module, reversed(parent_names))
-        for base_klass in klass.mro()[1:-1]:
+        try:
+            klass = getattr_rec(self.module, reversed(parent_names))
+        except AttributeError:
+            raise MutationResign()
+        for base_klass in type.mro(klass)[1:-1]:
             if hasattr(base_klass, name):
                 return True
         return False
