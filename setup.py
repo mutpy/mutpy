@@ -17,10 +17,11 @@ setup(
     download_url='https://bitbucket.org/khalas/mutpy',
     packages=['mutpy'],
     scripts=['bin/mut.py'],
-    install_requires=['PyYAML>=3.1'],
+    install_requires=['PyYAML>=3.1', 'Jinja2>=2.7.1'],
     test_suite='mutpy.test',
     classifiers=[
         'Programming Language :: Python :: 3.2',
+        'Programming Language :: Python :: 3.3',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Testing',

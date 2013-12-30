@@ -7,7 +7,7 @@ MutPy
 
 MutPy is a mutation testing tool for Python 3.x source code. MutPy supports
 standard unittest module, generates YAML reports and has colorful output. It's
-apply mutation on AST level. You could boost your mutation testing process with 
+apply mutation on AST level. You could boost your mutation testing process with
 high order mutations (HOM) and code coverage analysis.
 
 Mutation testing
@@ -166,6 +166,7 @@ List of all arguments with which you can run MutPy:
 - ``-u UNIT_TEST [UNIT_TEST ...]``, ``--unit-test UNIT_TEST [UNIT_TEST ...]`` - test class, test method, module or package with unit tests,
 - ``-m``, ``--show-mutants`` - show mutants source code,
 - ``-r REPORT_FILE``, ``--report REPORT_FILE`` - generate YAML report,
+- ``--report-html DIR_NAME`` - generate HTML report,
 - ``-f TIMEOUT_FACTOR``. ``--timeout-factor TIMEOUT_FACTOR`` - max timeout factor (default 5),
 - ``-d``, ``--disable-stdout`` - try disable stdout during mutation (this option can damage your tests if you interact with ``sys.stdout``),
 - ``-e``. ``--experimental-operators`` - use experimental operators,
@@ -227,6 +228,6 @@ License
 
 Licensed under the Apache License, Version 2.0. See LICENSE file.
 
-MutPy was developed as part of engineer's and master’s thesis at Institute of 
-Computer Science, Faculty of Electronics and Information Technology, Warsaw 
+MutPy was developed as part of engineer's and master’s thesis at Institute of
+Computer Science, Faculty of Electronics and Information Technology, Warsaw
 University of Technology.

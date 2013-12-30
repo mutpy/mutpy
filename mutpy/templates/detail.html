@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}MutPy mutation report - mutation #{{ number }}{% endblock %}
+
+{% block css %}
+<link href="http://alexgorbatchev.com/pub/sh/current/styles/shCore.css" rel="stylesheet" type="text/css" />
+<link href="http://alexgorbatchev.com/pub/sh/current/styles/shThemeDefault.css" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block js %}
+<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shCore.js" type="text/javascript"></script>
+<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shBrushPython.js" type="text/javascript"></script>
+<script type="text/javascript">
+    SyntaxHighlighter.all();
+    window.setTimeout(function () {
+        {% for mutation in mutations %}
+        $('.line.number{{ mutation.lineno }}').attr('title', '{{ mutation.operator }}');
+        {% endfor %}
+    }, 0);
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Mutation #{{ number }}</h1>
+</div>
+<h3>Details</h3>
+<ul>
+    <li><span class="label label-{% if status == 'survived' %}danger{% elif status == 'timeout' %}info{% elif status == 'incompetent' %}warning{% else %}success{% endif %}">{{ status }}</span>{% if killer %} by <code>{{ killer }}</code>{% endif %}</li>
+    {% if time %}
+    <li>duration - {{ time|round(3) }}s</li>
+    {% endif %}
+    {% if tests_run %}
+    <li>tests run - {{ tests_run }}</li>
+    {% endif %}
+    <li>file - <code>{{ filename }}</code></li>
+</ul>
+<h3>Mutations</h3>
+<ul>
+    {% for mutation in mutations %}
+    <li>{{ mutation.operator }} - line {{ mutation.lineno }}</li>
+    {% endfor %}
+</ul>
+<h3>Mutant</h3>
+<pre class="brush: python; highlight: [{% for mutation in mutations %}{{ mutation.lineno }}{% if not loop.last %}, {% endif %}{% endfor %}]">{{ mutant_code }}</pre>
+{% endblock %}
