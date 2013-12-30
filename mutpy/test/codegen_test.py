@@ -74,6 +74,15 @@ class CodegenTest(unittest.TestCase):
     def test_import_multi_from_as(self):
         self.assert_code_equal("from y import x as z, a as b")
 
+    def test_import_relative_level_1(self):
+        self.assert_code_equal("from . import x")
+
+    def test_import_relative_level_2(self):
+        self.assert_code_equal("from .. import x")
+
+    def test_import_relative_level_1_with_module_name(self):
+        self.assert_code_equal("from .y import x")
+
     def test_delete(self):
         self.assert_code_equal("del x")
 
