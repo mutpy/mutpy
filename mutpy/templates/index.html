@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}MutPy mutation report{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>MutPy mutation report</h1>
+    <p><span class="glyphicon glyphicon-time"></span> {{ date_now.strftime('%d.%m.%Y %H:%M') }}</p>
+</div>
+<h4>Target</h4>
+<ul>
+    {% for target in targets %}
+    <li><code>{{ target }}</code></li>
+    {% endfor %}
+</ul>
+<h4>Tests [{{ number_of_tests }}]</h4>
+<ul>
+    {% for test, target, time in tests %}
+    <li><code>{{ test.__name__ }}{% if target %}.{{ target }} {% endif %}</code> [{{ time|round(3) }} s]</li>
+    {% endfor %}
+</ul>
+<h4>Result summary</h4>
+<ul>
+    <li><strong><span class="glyphicon glyphicon-signal"></span> Score</strong> - {{ score.count()|round(1) }}%</li>
+    <li><strong><span class="glyphicon glyphicon-time"></span> Time</strong> - {{ duration|round(1) }} s</li>
+</ul>
+<h4>Mutants [{{ score.all_mutants }}]</h4>
+<ul>
+    <li><span class="label label-success">killed</span> - {{ score.killed_mutants }}</li>
+    <li><span class="label label-danger">survived</span> - {{ score.survived_mutants }}</li>
+    <li><span class="label label-warning">incompetent</span> - {{ score.incompetent_mutants }}</li>
+    <li><span class="label label-info">timeout</span> - {{ score.timeout_mutants }}</li>
+</ul>
+<div class="progress">
+    <div title="killed - {{ score.killed_mutants }}" class="progress-bar progress-bar-success" style="width: {{ 100 * score.killed_mutants / score.all_mutants }}%">
+        {{ (100 * score.killed_mutants / score.all_mutants)|round(1) }}%
+    </div>
+    <div title="survived - {{ score.survived_mutants }}" class="progress-bar progress-bar-danger" style="width: {{ 100 * score.survived_mutants / score.all_mutants }}%">
+        {{ (100 * score.survived_mutants / score.all_mutants)|round(1) }}%
+    </div>
+    <div title="incompetent - {{ score.incompetent_mutants }}" class="progress-bar progress-bar-warning" style="width: {{ 100 * score.incompetent_mutants / score.all_mutants }}%">
+        {{ (100 * score.incompetent_mutants / score.all_mutants)|round(1) }}%
+    </div>
+    <div title="timeout - {{ score.timeout_mutants }}" class="progress-bar progress-bar-info" style="width: {{ 100 * score.timeout_mutants / score.all_mutants }}%">
+        {{ (100 * score.timeout_mutants / score.all_mutants)|round(1) }}%
+    </div>
+</div>
+<table class="table">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>File</th>
+            <th>Operator</th>
+            <th>Tests run</th>
+            <th>Duration</th>
+            <th>Result</th>
+            <th></th>
+        </tr>
+    </thead>
+    {% for mutation in mutations %}
+    <tr>
+        <td><a href="{{ mutation.number}}.html">{{ mutation.number }}</a></td>
+        <td><code>{{ mutation.filename }}</code></td>
+        <td>{% for single_mutation in mutation.mutations %}{{ single_mutation.operator }} [{{ single_mutation.lineno }}]{% if not loop.last %}, {% endif %}{% endfor %}</td>
+        <td>{% if mutation.tests_run %}{{ mutation.tests_run }}{% else %}-{% endif %}</td>
+        <td>{% if mutation.time %}{{ mutation.time|round(3) }} s{% else %}-{% endif %}</td>
+        <td><span class="label label-{% if mutation.status == 'survived' %}danger{% elif mutation.status == 'timeout' %}info{% elif mutation.status == 'incompetent' %}warning{% else %}success{% endif %}">{{ mutation.status }}</span></td>
+        <td><a href="{{ mutation.number}}.html"><span class="glyphicon glyphicon-arrow-right"></span></a></td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

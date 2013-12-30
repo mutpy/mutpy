@@ -1,5 +1,8 @@
-import yaml
+import os
 import traceback
+import datetime
+import yaml
+import jinja2
 from mutpy import codegen, termcolor, utils
 
 
@@ -166,25 +169,17 @@ class DebugView:
         print('\n' + exception_traceback)
 
 
-class YAMLReportView:
+class AccReportView:
 
-    def __init__(self, file_name):
-        self.file_name = file_name
+    def __init__(self):
         self.mutation_info = []
-        self.stream = open(self.file_name, 'w')
 
     def initialize(self, target, tests):
-        self.dump({'target': target, 'tests': tests})
+        self.target = target
 
     def passed(self, tests, number_of_tests):
-        self.dump({'number_of_tests': number_of_tests})
-
-    def end_mutation(self, status, time=None, killer=None, tests_run=None):
-        self.current_mutation['status'] = status
-        self.current_mutation['time'] = time
-        self.current_mutation['killer'] = killer
-        self.current_mutation['tests_run'] = tests_run
-        self.mutation_info.append(self.current_mutation)
+        self.tests = tests
+        self.number_of_tests = number_of_tests
 
     def mutation(self, number, mutations, filename, mutant):
         mutations = [{'operator': mutation.operator.name(), 'lineno': mutation.node.lineno} for mutation in mutations]
@@ -206,20 +201,75 @@ class YAMLReportView:
     def timeout(self, *args, **kwargs):
         self.end_mutation('timeout')
 
+    def end_mutation(self, status, time=None, killer=None, tests_run=None):
+        self.current_mutation['status'] = status
+        self.current_mutation['time'] = time
+        self.current_mutation['killer'] = killer
+        self.current_mutation['tests_run'] = tests_run
+        self.mutation_info.append(self.current_mutation)
+
+
+class YAMLReportView(AccReportView):
+
+    def __init__(self, file_name):
+        super().__init__()
+        self.file_name = file_name
+
     def end(self, score, duration):
-        self.dump({
+        with open(self.file_name, 'w') as report_file:
+            yaml.dump({
+                'targets': self.target,
+                'tests': ({'name': test, 'target': target, 'time': time} for test, target, time in self.tests),
+                'number_of_tests': self.number_of_tests,
+                'mutations': self.mutation_info,
+                'total_time': duration,
+                'time_stats': dict(utils.TimeRegister.executions),
+                'mutation_score': score.count(),
+                'coverage': {
+                    'covered_nodes': score.covered_nodes,
+                    'all_nodes': score.all_nodes,
+                }
+            }, report_file, default_flow_style=False)
+
+
+class HTMLReportView(AccReportView):
+
+    def __init__(self, dir_name):
+        super().__init__()
+        self.dir_name = dir_name
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
+        templates_path = os.path.join(os.path.dirname(__file__), 'templates')
+        self.env = jinja2.Environment(loader=jinja2.FileSystemLoader(searchpath=templates_path))
+
+    def mutation(self, number, mutations, filename, mutant):
+        super().mutation(number, mutations, filename, mutant)
+        self.current_mutation['mutant'] = mutant
+
+    def end_mutation(self, *args, **kwargs):
+        super().end_mutation(*args, **kwargs)
+        template = self.env.get_template('detail.html')
+        context = {
+            'mutant_code': codegen.to_source(self.current_mutation['mutant']),
+        }
+        context.update(self.current_mutation)
+        report = template.render(context)
+        file_path = os.path.join(self.dir_name, '{}.html'.format(self.current_mutation['number']))
+        with open(file_path, 'w') as report_file:
+            report_file.write(report)
+
+    def end(self, score, duration):
+        template = self.env.get_template('index.html')
+        context = {
+            'targets': self.target,
+            'tests': self.tests,
+            'number_of_tests': self.number_of_tests,
+            'score': score,
+            'duration': duration,
             'mutations': self.mutation_info,
-            'total_time': duration,
-            'time_stats': dict(utils.TimeRegister.executions),
-            'mutation_score': score.count(),
-            'coverage': {
-                'covered_nodes': score.covered_nodes,
-                'all_nodes': score.all_nodes,
-            }
-        })
-
-    def dump(self, to_dump):
-        yaml.dump(to_dump, self.stream, default_flow_style=False)
-
-    def __del__(self):
-        self.stream.close()
+            'date_now': datetime.datetime.now(),
+        }
+        report = template.render(context)
+        file_path = os.path.join(self.dir_name, 'index.html')
+        with open(file_path, 'w') as report_file:
+            report_file.write(report)

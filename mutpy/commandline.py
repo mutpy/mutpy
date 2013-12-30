@@ -19,6 +19,7 @@ def build_parser():
     parser.add_argument('--unit-test', '-u', type=str, nargs='+',
                         help='test class, test method, module or package with unit tests')
     parser.add_argument('--report', '-r', type=str, help='generate YAML report', metavar='REPORT_FILE')
+    parser.add_argument('--report-html', type=str, help='generate HTML report', metavar='DIR_NAME')
     parser.add_argument('--timeout-factor', '-f', type=float, default=DEF_TIMEOUT_FACTOR,
                         help='max timeout factor (default {})'.format(DEF_TIMEOUT_FACTOR))
     parser.add_argument('--show-mutants', '-m', action='store_true', help='show mutants source code')
@@ -140,6 +141,9 @@ def build_views(cfg):
 
     if cfg.report:
         views_list.append(views.YAMLReportView(cfg.report))
+
+    if cfg.report_html:
+        views_list.append(views.HTMLReportView(cfg.report_html))
 
     if cfg.debug:
         views_list.append(views.DebugView())
