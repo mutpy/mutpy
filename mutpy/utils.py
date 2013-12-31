@@ -356,7 +356,6 @@ class MutationTestRunnerThread(MutationTestRunner, Thread):
 
 
 def get_mutation_test_runner_class():
-    return MutationTestRunnerThread
     if os.name == 'nt':
         return MutationTestRunnerThread
     else:
