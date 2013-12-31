@@ -52,7 +52,7 @@
     <thead>
         <tr>
             <th>#</th>
-            <th>File</th>
+            <th>Module</th>
             <th>Operator</th>
             <th>Tests run</th>
             <th>Duration</th>
@@ -63,12 +63,12 @@
     {% for mutation in mutations %}
     <tr>
         <td><a href="{{ mutation.number}}.html">{{ mutation.number }}</a></td>
-        <td><code>{{ mutation.filename }}</code></td>
+        <td><code>{{ mutation.module }}</code></td>
         <td>{% for single_mutation in mutation.mutations %}{{ single_mutation.operator }} [{{ single_mutation.lineno }}]{% if not loop.last %}, {% endif %}{% endfor %}</td>
         <td>{% if mutation.tests_run %}{{ mutation.tests_run }}{% else %}-{% endif %}</td>
         <td>{% if mutation.time %}{{ mutation.time|round(3) }} s{% else %}-{% endif %}</td>
         <td><span class="label label-{% if mutation.status == 'survived' %}danger{% elif mutation.status == 'timeout' %}info{% elif mutation.status == 'incompetent' %}warning{% else %}success{% endif %}">{{ mutation.status }}</span></td>
-        <td><a href="{{ mutation.number}}.html"><span class="glyphicon glyphicon-arrow-right"></span></a></td>
+        <td><a href="mutants/{{ mutation.number}}.html"><span class="glyphicon glyphicon-arrow-right"></span></a></td>
     </tr>
     {% endfor %}
 </table>
