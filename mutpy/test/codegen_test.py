@@ -154,3 +154,9 @@ class CodegenTest(unittest.TestCase):
 
     def test_augmented_add(self):
         self.assert_code_equal("x += 1")
+
+    def test_assert_with_message(self):
+        self.assert_code_equal("assert True, 'message'")
+
+    def test_assert_without_message(self):
+        self.assert_code_equal("assert True")
