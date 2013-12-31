@@ -576,6 +576,14 @@ class AbstractSourceGenerator(ast.NodeVisitor):
     def visit_arg(self, node):
         self.write(node.arg)
 
+    def visit_Assert(self, node):
+        self.newline(node)
+        self.write('assert ')
+        self.visit(node.test)
+        if node.msg:
+            self.write(', ')
+            self.visit(node.msg)
+
 
 class SourceGeneratorPython32(AbstractSourceGenerator):
 
