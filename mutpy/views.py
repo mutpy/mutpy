@@ -118,10 +118,10 @@ class TextView(QuietTextView):
         for fail in result.failures:
                 self.level_print('fail in {} - {}'.format(fail[0], fail[1].split("\n")[-2]), 2)
 
-    def mutation(self, number, mutations, filename, mutant):
+    def mutation(self, number, mutations, module, mutant):
         for mutation in mutations:
             self.level_print(
-                '[#{:>4}] {:<3} {}:{:<3}: '.format(number, mutation.operator.name(), filename, mutation.node.lineno),
+                '[#{:>4}] {:<3} {}:{:<3}: '.format(number, mutation.operator.name(), module, mutation.node.lineno),
                 ended=False,
                 level=2,
             )
@@ -181,12 +181,12 @@ class AccReportView:
         self.tests = tests
         self.number_of_tests = number_of_tests
 
-    def mutation(self, number, mutations, filename, mutant):
+    def mutation(self, number, mutations, module, mutant):
         mutations = [{'operator': mutation.operator.name(), 'lineno': mutation.node.lineno} for mutation in mutations]
         self.current_mutation = {
             'number': number,
             'mutations': mutations,
-            'filename': filename,
+            'module': module,
         }
 
     def killed(self, time, killer, exception_traceback, tests_run, *args, **kwargs):
@@ -226,7 +226,7 @@ class YAMLReportView(AccReportView):
         with open(self.file_name, 'w') as report_file:
             yaml.dump({
                 'targets': self.target,
-                'tests': ({'name': test, 'target': target, 'time': time} for test, target, time in self.tests),
+                'tests': [{'name': test.__name__, 'target': target, 'time': time} for test, target, time in self.tests],
                 'number_of_tests': self.number_of_tests,
                 'mutations': self.mutation_info,
                 'total_time': duration,
@@ -244,13 +244,13 @@ class HTMLReportView(AccReportView):
     def __init__(self, dir_name):
         super().__init__()
         self.dir_name = dir_name
-        if not os.path.exists(dir_name):
-            os.makedirs(dir_name)
+        os.makedirs(dir_name, exist_ok=True)
+        os.makedirs(os.path.join(dir_name, 'mutants'), exist_ok=True)
         templates_path = os.path.join(os.path.dirname(__file__), 'templates')
         self.env = jinja2.Environment(loader=jinja2.FileSystemLoader(searchpath=templates_path))
 
-    def mutation(self, number, mutations, filename, mutant):
-        super().mutation(number, mutations, filename, mutant)
+    def mutation(self, number, mutations, module, mutant):
+        super().mutation(number, mutations, module, mutant)
         self.current_mutation['mutant'] = mutant
 
     def end_mutation(self, *args, **kwargs):
@@ -261,7 +261,7 @@ class HTMLReportView(AccReportView):
         }
         context.update(self.current_mutation)
         report = template.render(context)
-        file_path = os.path.join(self.dir_name, '{}.html'.format(self.current_mutation['number']))
+        file_path = os.path.join(self.dir_name, 'mutants', '{}.html'.format(self.current_mutation['number']))
         with open(file_path, 'w') as report_file:
             report_file.write(report)
 

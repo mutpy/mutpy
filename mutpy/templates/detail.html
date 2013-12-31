@@ -26,6 +26,7 @@
 </div>
 <h3>Details</h3>
 <ul>
+    <li>module - <code>{{ module }}</code></li>
     <li><span class="label label-{% if status == 'survived' %}danger{% elif status == 'timeout' %}info{% elif status == 'incompetent' %}warning{% else %}success{% endif %}">{{ status }}</span>{% if killer %} by <code>{{ killer }}</code>{% endif %}</li>
     {% if time %}
     <li>duration - {{ time|round(3) }} s</li>
@@ -33,7 +34,6 @@
     {% if tests_run %}
     <li>tests run - {{ tests_run }}</li>
     {% endif %}
-    <li>file - <code>{{ filename }}</code></li>
 </ul>
 {% if exception_traceback %}
 <h3>Exception traceback</h3>

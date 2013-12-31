@@ -116,7 +116,6 @@ class MutationController(views.ViewNotifier):
     @utils.TimeRegister
     def mutate_module(self, target_module, to_mutate, test_modules):
         target_ast = self.create_target_ast(target_module)
-        filename = self.get_module_base_filename(target_module)
         coverage_injector, coverage_result = self.inject_coverage(target_ast, target_module, test_modules)
 
         if coverage_injector:
@@ -128,7 +127,7 @@ class MutationController(views.ViewNotifier):
             if self.mutation_number and self.mutation_number != mutation_number:
                 self.score.inc_incompetent()
                 continue
-            self.notify_mutation(mutation_number, mutations, filename, mutant_ast)
+            self.notify_mutation(mutation_number, mutations, target_module.__name__, mutant_ast)
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
             if mutant_module:
                 self.run_tests_with_mutant(test_modules, mutant_module, mutations, coverage_result)
@@ -152,9 +151,6 @@ class MutationController(views.ViewNotifier):
         with self.stdout_manager:
             suite.run(coverage_result)
         return coverage_injector, coverage_result
-
-    def get_module_base_filename(self, module):
-        return path.basename(module.__file__)
 
     @utils.TimeRegister
     def create_target_ast(self, target_module):
