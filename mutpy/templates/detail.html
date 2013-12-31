@@ -44,5 +44,5 @@
     {% endfor %}
 </ul>
 <h3>Mutant</h3>
-<pre class="brush: python; highlight: [{% for mutation in mutations %}{{ mutation.lineno }}{% if not loop.last %}, {% endif %}{% endfor %}]">{{ mutant_code }}</pre>
+<pre class="brush: python; first-line: {{ mutant_code|length - mutant_code.lstrip()|length + 1 }}; highlight: [{% for mutation in mutations %}{{ mutation.lineno }}{% if not loop.last %}, {% endif %}{% endfor %}]; toolbar: false;">{{ mutant_code }}</pre>
 {% endblock %}
