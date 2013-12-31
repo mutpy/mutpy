@@ -35,8 +35,10 @@
     {% endif %}
     <li>file - <code>{{ filename }}</code></li>
 </ul>
+{% if exception_traceback %}
 <h3>Exception traceback</h3>
 <pre>{{ exception_traceback }}</pre>
+{% endif %}
 <h3>Mutations</h3>
 <ul>
     {% for mutation in mutations %}
