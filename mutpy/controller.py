@@ -223,20 +223,20 @@ class MutationController(views.ViewNotifier):
 
     def update_score_and_notify_views(self, result, mutant_duration):
         if not result:
-            self.update_timeout_mutant()
+            self.update_timeout_mutant(mutant_duration)
         elif result.is_incompetent:
-            self.update_incompetent_mutant(result)
+            self.update_incompetent_mutant(result, mutant_duration)
         elif result.is_survived:
             self.update_survived_mutant(result, mutant_duration)
         else:
             self.update_killed_mutant(result, mutant_duration)
 
-    def update_timeout_mutant(self):
-        self.notify_timeout()
+    def update_timeout_mutant(self, duration):
+        self.notify_timeout(duration)
         self.score.inc_timeout()
 
-    def update_incompetent_mutant(self, result):
-        self.notify_incompetent(result.exception, result.tests_run)
+    def update_incompetent_mutant(self, result, duration):
+        self.notify_incompetent(duration, result.exception, result.tests_run)
         self.score.inc_incompetent()
 
     def update_survived_mutant(self, result, duration):
