@@ -150,11 +150,11 @@ class TextView(QuietTextView):
     def survived(self, time, *args, **kwargs):
         self.level_print(self.time_format(time) + ' ' + self.decorate('survived', 'red'), continuation=True)
 
-    def timeout(self, *args, **kwargs):
-        self.level_print(self.time_format() + ' ' + self.decorate('timeout', 'yellow'), continuation=True)
+    def timeout(self, time, *args, **kwargs):
+        self.level_print(self.time_format(time) + ' ' + self.decorate('timeout', 'yellow'), continuation=True)
 
-    def incompetent(self, *args, **kwargs):
-        self.level_print(self.time_format() + ' ' + self.decorate('incompetent', 'cyan'), continuation=True)
+    def incompetent(self, time, *args, **kwargs):
+        self.level_print(self.time_format(time) + ' ' + self.decorate('incompetent', 'cyan'), continuation=True)
 
 
 class DebugView:
@@ -162,7 +162,7 @@ class DebugView:
     def print_exception(self, exception):
         print("\n" + "".join(traceback.format_exception(None, exception, None)))
 
-    def incompetent(self, exception, tests_run, *args, **kwargs):
+    def incompetent(self, time, exception, tests_run, *args, **kwargs):
         self.print_exception(exception)
 
     def killed(self, time, killer, exception_traceback, *args, **kwargs):
@@ -201,11 +201,11 @@ class AccReportView:
     def survived(self, time, tests_run, *args, **kwargs):
         self.end_mutation('survived', time=time, tests_run=tests_run)
 
-    def incompetent(self, exception, tests_run, *args, **kwargs):
-        self.end_mutation('incompetent', tests_run=tests_run)
+    def incompetent(self, time, exception, tests_run, *args, **kwargs):
+        self.end_mutation('incompetent', time=time, tests_run=tests_run)
 
-    def timeout(self, *args, **kwargs):
-        self.end_mutation('timeout')
+    def timeout(self, time, *args, **kwargs):
+        self.end_mutation('timeout', time=time)
 
     def end_mutation(self, status, time=None, killer=None, tests_run=None, exception_traceback=None):
         self.current_mutation['status'] = status
