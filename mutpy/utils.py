@@ -367,6 +367,8 @@ class ParentNodeTransformer(ast.NodeTransformer):
     def visit(self, node):
         if getattr(node, 'parent', None):
             node = copy.copy(node)
+            if hasattr(node, 'lineno'):
+                del node.lineno
         node.parent = getattr(self, 'parent', None)
         node.children = []
         self.parent = node
