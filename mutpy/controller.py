@@ -166,7 +166,7 @@ class MutationController(views.ViewNotifier):
                     module_name=target_module.__name__
                 )
         except BaseException as exception:
-            self.notify_incompetent(exception, tests_run=0)
+            self.notify_incompetent(0, exception, tests_run=0)
             return None
 
     def create_test_suite(self, tests_modules, mutant_module):
