@@ -45,7 +45,7 @@ class AbstractCoverageNodeTransformer(ast.NodeTransformer):
 
     def inject_before_visit(self, node):
         node = self.generic_visit(node)
-        if self.is_future_statement(node) or (isinstance(node, ast.Expr) and utils.is_docstring(node.value)):
+        if self.is_future_statement(node):
             return node
         coverage_node = self.generate_coverage_node(node)
         return [coverage_node, node]
@@ -57,16 +57,17 @@ class AbstractCoverageNodeTransformer(ast.NodeTransformer):
         return node
 
     def generate_coverage_node(self, node):
-        if node.__class__ in self.get_definitions_nodes():
-            coverage_node = utils.create_ast('{}.add({})'.format(COVERAGE_SET_NAME, node.marker)).body[0]
-        else:
-            markers = {node.marker} | {node.marker for node in node.children}
-            if node.__class__ in self.get_branch_nodes():
-                for body_el in node.body:
-                    if hasattr(body_el, 'marker'):
-                        markers.difference_update({body_el.marker})
-                        markers.difference_update({node.marker for node in body_el.children})
-            coverage_node = utils.create_ast('{}.update({})'.format(COVERAGE_SET_NAME, repr(markers))).body[0]
+        markers = {n.marker for n in ast.walk(node) if hasattr(n, 'marker')}
+        if node.__class__ not in self.get_statements_nodes():
+            for field in node._fields:
+                if field in ['decorator_list', 'bases']:
+                    continue
+                val = getattr(node, field)
+                if isinstance(val, list):
+                    for body_el in val:
+                        if hasattr(body_el, 'marker'):
+                            markers.difference_update({n.marker for n in ast.walk(body_el) if hasattr(n, 'marker')})
+        coverage_node = utils.create_ast('{}.update({})'.format(COVERAGE_SET_NAME, repr(markers))).body[0]
         coverage_node.lineno = node.lineno
         coverage_node.col_offset = node.col_offset
         return coverage_node
@@ -186,7 +187,7 @@ class CoverageInjector:
         return child_node.marker in self.covered_nodes
 
     def get_result(self):
-        return len(self.covered_nodes), self.marker_transformer.last_marker
+        return len(self.covered_nodes), self.marker_transformer.last_marker - 1
 
 
 class CoverageTestResult(unittest.TestResult):
