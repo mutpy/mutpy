@@ -470,12 +470,6 @@ class MutateOnlyCoveredNodesTest(OperatorTestCase):
                              operator=operators.ExceptionHandlerDeletion(),
                              with_coverage=True)
 
-    def test_not_covered_function_def_node(self):
-        self.assert_mutation('class X:' + EOL + INDENT + '@classmethod' + EOL + INDENT + 'def foo(cls):' + EOL +
-                             2 * INDENT + PASS, [],
-                             operator=operators.DecoratorDeletion(),
-                             with_coverage=True)
-
 
 class OverridingMethodDeletionTest(OperatorTestCase):
 
