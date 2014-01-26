@@ -13,8 +13,6 @@ class MarkerNodeTransformer(ast.NodeTransformer):
         self.last_marker = 0
 
     def visit(self, node):
-        if hasattr(node, 'marker'):
-            node = copy.copy(node)
         node.marker = self.last_marker
         self.last_marker += 1
         return super().visit(node)
