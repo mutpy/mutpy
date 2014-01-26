@@ -54,11 +54,12 @@ class MockModulesLoader:
         self.names = [name]
         self.source = source
         self.module = types.ModuleType(name)
-        exec(self.source, self.module.__dict__)
         self.module.__file__ = '<string>'
-        sys.modules[name] = self.module
+        self.load()
 
     def load(self, *args, **kwargs):
+        exec(self.source, self.module.__dict__)
+        sys.modules[self.names[0]] = self.module
         return [(self.module, None)]
 
     def get_source(self):

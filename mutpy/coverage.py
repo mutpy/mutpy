@@ -13,9 +13,10 @@ class MarkerNodeTransformer(ast.NodeTransformer):
         self.last_marker = 0
 
     def visit(self, node):
-        if not hasattr(node, 'marker'):
-            node.marker = self.last_marker
-            self.last_marker += 1
+        if hasattr(node, 'marker'):
+            node = copy.copy(node)
+        node.marker = self.last_marker
+        self.last_marker += 1
         return super().visit(node)
 
 
@@ -23,14 +24,6 @@ class AbstractCoverageNodeTransformer(ast.NodeTransformer):
 
     @classmethod
     def get_coverable_nodes(cls):
-        return cls.get_statements_nodes() | cls.get_definitions_nodes() | cls.get_branch_nodes()
-
-    @classmethod
-    def get_statements_nodes(cls):
-        raise NotImplementedError()
-
-    @classmethod
-    def get_definitions_nodes(cls):
         raise NotImplementedError()
 
     def __init__(self):
@@ -38,7 +31,7 @@ class AbstractCoverageNodeTransformer(ast.NodeTransformer):
         for node_class in self.get_coverable_nodes():
             visit_method_name = 'visit_' + node_class.__name__
             if not hasattr(self, visit_method_name):
-                if node_class in self.get_definitions_nodes():
+                if node_class == ast.ExceptHandler:
                     setattr(self, visit_method_name, self.inject_inside_visit)
                 else:
                     setattr(self, visit_method_name, self.inject_before_visit)
@@ -57,16 +50,10 @@ class AbstractCoverageNodeTransformer(ast.NodeTransformer):
         return node
 
     def generate_coverage_node(self, node):
-        markers = {n.marker for n in ast.walk(node) if hasattr(n, 'marker')}
-        if node.__class__ not in self.get_statements_nodes():
-            for field in node._fields:
-                if field in ['decorator_list', 'bases']:
-                    continue
-                val = getattr(node, field)
-                if isinstance(val, list):
-                    for body_el in val:
-                        if hasattr(body_el, 'marker'):
-                            markers.difference_update({n.marker for n in ast.walk(body_el) if hasattr(n, 'marker')})
+        if hasattr(node, 'body'):
+            markers = self.get_markers_from_body_node(node)
+        else:
+            markers = self.get_included_markers(node)
         coverage_node = utils.create_ast('{}.update({})'.format(COVERAGE_SET_NAME, repr(markers))).body[0]
         coverage_node.lineno = node.lineno
         coverage_node.col_offset = node.col_offset
@@ -75,13 +62,30 @@ class AbstractCoverageNodeTransformer(ast.NodeTransformer):
     def is_future_statement(self, node):
         return isinstance(node, ast.ImportFrom) and node.module == '__future__'
 
+    def get_included_markers(self, node, without=None):
+        markers = {n.marker for n in ast.walk(node) if hasattr(n, 'marker')}
+        if without:
+            for n in without:
+                markers.difference_update(self.get_included_markers(n))
+        return markers
+
+    def get_markers_from_body_node(self, node):
+        if isinstance(node, (ast.If, ast.While)):
+            return {node.marker} | self.get_included_markers(node.test)
+        elif isinstance(node, ast.For):
+            return {node.marker} | self.get_included_markers(node.target) | self.get_included_markers(node.iter)
+        elif isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+            return self.get_included_markers(node, without=node.body)
+        else:
+            return {node.marker}
+
 
 class CoverageNodeTransformerPython32(AbstractCoverageNodeTransformer):
 
     __python_version__ = (3, 2)
 
     @classmethod
-    def get_statements_nodes(cls):
+    def get_coverable_nodes(cls):
         return {
             ast.Assert,
             ast.Assign,
@@ -97,21 +101,11 @@ class CoverageNodeTransformerPython32(AbstractCoverageNodeTransformer):
             ast.Pass,
             ast.Raise,
             ast.Return,
-        }
-
-    @classmethod
-    def get_definitions_nodes(cls):
-        return {
-            ast.ClassDef,
-            ast.ExceptHandler,
             ast.FunctionDef,
+            ast.ClassDef,
             ast.TryExcept,
             ast.TryFinally,
-        }
-
-    @classmethod
-    def get_branch_nodes(cls):
-        return {
+            ast.ExceptHandler,
             ast.If,
             ast.For,
             ast.While,
@@ -123,7 +117,7 @@ class CoverageNodeTransformerPython33(AbstractCoverageNodeTransformer):
     __python_version__ = (3, 3)
 
     @classmethod
-    def get_statements_nodes(cls):
+    def get_coverable_nodes(cls):
         return {
             ast.Assert,
             ast.Assign,
@@ -139,20 +133,10 @@ class CoverageNodeTransformerPython33(AbstractCoverageNodeTransformer):
             ast.Pass,
             ast.Raise,
             ast.Return,
-        }
-
-    @classmethod
-    def get_definitions_nodes(cls):
-        return {
             ast.ClassDef,
-            ast.ExceptHandler,
             ast.FunctionDef,
             ast.Try,
-        }
-
-    @classmethod
-    def get_branch_nodes(cls):
-        return {
+            ast.ExceptHandler,
             ast.If,
             ast.For,
             ast.While,
@@ -187,7 +171,7 @@ class CoverageInjector:
         return child_node.marker in self.covered_nodes
 
     def get_result(self):
-        return len(self.covered_nodes), self.marker_transformer.last_marker - 1
+        return len(self.covered_nodes), self.marker_transformer.last_marker
 
 
 class CoverageTestResult(unittest.TestResult):
@@ -205,5 +189,5 @@ class CoverageTestResult(unittest.TestResult):
 
     def stopTest(self, test):
         super().stopTest(test)
-        self.test_covered_nodes[test] = self.coverage_injector.covered_nodes.copy() | self.always_covered_nodes
+        self.test_covered_nodes[repr(test)] = self.coverage_injector.covered_nodes.copy() | self.always_covered_nodes
         self.coverage_injector.covered_nodes.update(self.covered_nodes)

@@ -4,7 +4,6 @@ import importlib
 import unittest
 import time
 import pkgutil
-import inspect
 import types
 import random
 import ast
@@ -110,43 +109,7 @@ class ModulesLoader:
                 attr = getattr(attr, part)
             else:
                 raise ModulesLoaderException(name, last_exception)
-
         return [(module, '.'.join(to_mutate) if to_mutate else None)]
-
-
-class ModuleInjector:
-
-    def __init__(self, source):
-        self.source = source
-
-    def inject_to(self, target):
-        for imported_as in target.__dict__.copy():
-            artefact = target.__dict__[imported_as]
-            if inspect.ismodule(artefact):
-                self.try_inject_module(imported_as, artefact, target)
-            elif inspect.isclass(artefact) or inspect.isfunction(artefact):
-                self.try_incject_class_or_function(imported_as, artefact, target)
-            else:
-                self.try_inject_other(imported_as, target)
-
-    def try_inject_module(self, imported_as, module, target):
-        if self.safe_getattr(module, '__name__') == self.source.__name__:
-            self.source.__file__ = module.__file__
-            target.__dict__[imported_as] = self.source
-
-    def try_incject_class_or_function(self, imported_as, class_or_function, target):
-        if self.safe_getattr(class_or_function, '__name__') in self.source.__dict__:
-            target.__dict__[imported_as] = self.source.__dict__[self.safe_getattr(class_or_function, '__name__')]
-
-    def try_inject_other(self, imported_as, target):
-        if imported_as in self.source.__dict__ and not self.is_restricted(imported_as):
-            target.__dict__[imported_as] = self.source.__dict__[imported_as]
-
-    def is_restricted(self, name):
-        return name in ['__builtins__', '__name__', '__doc__', '__file__']
-
-    def safe_getattr(self, obj, name):
-        return object.__getattribute__(obj, name)
 
 
 class InjectImporter:
