@@ -9,6 +9,7 @@
     :license: BSD.
 """
 import ast
+
 from mutpy import utils
 
 BOOLOP_SYMBOLS = {
@@ -104,6 +105,10 @@ class AbstractSourceGenerator(ast.NodeVisitor):
         self.indent_with = indent_with
         self.indentation = 0
         self.new_line = False
+
+    @classmethod
+    def _is_node_args_valid(cls, node, arg_name):
+        return hasattr(node, arg_name) and getattr(node, arg_name) is not None
 
     def write(self, x, node=None):
         self.correct_line_number(node)
@@ -237,11 +242,11 @@ class AbstractSourceGenerator(ast.NodeVisitor):
                 paren_or_comma()
                 self.write(keyword.arg + '=')
                 self.visit(keyword.value)
-            if node.starargs is not None:
+            if self._is_node_args_valid(node, 'starargs'):
                 paren_or_comma()
                 self.write('*')
                 self.visit(node.starargs)
-            if node.kwargs is not None:
+            if self._is_node_args_valid(node, 'kwargs'):
                 paren_or_comma()
                 self.write('**')
                 self.visit(node.kwargs)
@@ -330,7 +335,6 @@ class AbstractSourceGenerator(ast.NodeVisitor):
             self.write(' ')
             self.visit(node.value)
 
-
     def visit_Break(self, node):
         self.newline(node)
         self.write('break')
@@ -379,13 +383,14 @@ class AbstractSourceGenerator(ast.NodeVisitor):
             self.visit(arg)
         for keyword in node.keywords:
             write_comma()
-            self.write(keyword.arg + '=')
+            if keyword.arg:
+                self.write(keyword.arg + '=')
             self.visit(keyword.value)
-        if node.starargs is not None:
+        if self._is_node_args_valid(node, 'starargs'):
             write_comma()
             self.write('*')
             self.visit(node.starargs)
-        if node.kwargs is not None:
+        if self._is_node_args_valid(node, 'kwargs'):
             write_comma()
             self.write('**')
             self.visit(node.kwargs)
@@ -432,8 +437,11 @@ class AbstractSourceGenerator(ast.NodeVisitor):
         for idx, (key, value) in enumerate(zip(node.keys, node.values)):
             if idx:
                 self.write(', ')
-            self.visit(key)
-            self.write(': ')
+            if key:
+                self.visit(key)
+                self.write(': ')
+            else:
+                self.write('**')
             self.visit(value)
         self.write('}')
 
@@ -645,8 +653,51 @@ class SourceGeneratorPython33(AbstractSourceGenerator):
         self.body(node.body)
 
 
+class SourceGeneratorPython34(SourceGeneratorPython33):
+
+    __python_version__ = (3, 4)
+
+    def visit_NameConstant(self, node):
+        self.write(str(node.value))
+
+    def visit_Name(self, node):
+        if isinstance(node.id, ast.arg):
+            self.write(node.id.arg, node)
+        else:
+            self.write(node.id, node)
+
+    def signature(self, node):
+        want_comma = []
+
+        def write_comma():
+            if want_comma:
+                self.write(', ')
+            else:
+                want_comma.append(True)
+
+        padding = [None] * (len(node.args) - len(node.defaults))
+        for arg, default in zip(node.args, padding + node.defaults):
+            write_comma()
+            self.visit(arg)
+            if default is not None:
+                self.write('=')
+                self.visit(default)
+        if node.vararg is not None:
+            write_comma()
+            self.write('*' + node.vararg.arg)
+        if node.kwarg is not None:
+            write_comma()
+            self.write('**' + node.kwarg.arg)
+
+
+class SourceGeneratorPython35(SourceGeneratorPython34):
+
+    __python_version__ = (3, 5)
+
+
 SourceGenerator = utils.get_by_python_version([
     SourceGeneratorPython32,
-    SourceGeneratorPython33
+    SourceGeneratorPython33,
+    SourceGeneratorPython34,
+    SourceGeneratorPython35
 ])
-
