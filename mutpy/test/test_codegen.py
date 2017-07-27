@@ -160,3 +160,7 @@ class CodegenTest(unittest.TestCase):
 
     def test_assert_without_message(self):
         self.assert_code_equal("assert True")
+
+    @unittest.skipIf(sys.version_info < (3, 5), 'checked statement not available for Python version')
+    def test_kwargs_in_dict(self):
+        self.assert_code_equal("{**kwargs}")
