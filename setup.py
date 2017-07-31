@@ -7,6 +7,9 @@ if sys.hexversion < 0x3020000:
     print('MutPy requires Python 3.2 or newer!')
     sys.exit()
 
+with open('requirements.txt') as f:
+    requirements = f.read().splitlines()
+
 setup(
     name='MutPy',
     version='0.4.0',
@@ -17,7 +20,7 @@ setup(
     download_url='https://github.com/mutpy/mutpy',
     packages=['mutpy'],
     scripts=['bin/mut.py'],
-    install_requires=['PyYAML>=3.1', 'Jinja2>=2.7.1'],
+    install_requires=requirements,
     test_suite='mutpy.test',
     classifiers=[
         'Programming Language :: Python :: 3.2',
