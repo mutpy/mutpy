@@ -188,7 +188,6 @@ List of all arguments with which you can run MutPy:
 - `-q`, `--quiet` - quiet mode,
 - `--debug` - debug mode,
 - `-c`. `--colored-output` - try print colored output,
-- `--coverage` - mutate only covered code,
 - `--order ORDER` - mutation order,
 - `--hom-strategy HOM_STRATEGY` - HOM strategy,
 - `--list-hom-strategies` - list available HOM strategies,
