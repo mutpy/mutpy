@@ -1,8 +1,7 @@
 import argparse
 import sys
 from mutpy import controller, views, operators, utils
-
-VERSION = '0.3.2'
+from mutpy import __version__ as version
 
 
 def main(argv):
@@ -14,7 +13,7 @@ def build_parser():
     DEF_TIMEOUT_FACTOR = 5
     parser = argparse.ArgumentParser(description='Mutation testing tool for Python 3.x source code. ',
                                      fromfile_prefix_chars='@')
-    parser.add_argument('--version', '-v', action='version', version='%(prog)s {}'.format(VERSION))
+    parser.add_argument('--version', '-v', action='version', version='%(prog)s {}'.format(version))
     parser.add_argument('--target', '-t', type=str, nargs='+', help='target module or package to mutate')
     parser.add_argument('--unit-test', '-u', type=str, nargs='+',
                         help='test class, test method, module or package with unit tests')
