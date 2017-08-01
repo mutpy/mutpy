@@ -3,8 +3,8 @@
 import sys
 from setuptools import setup
 
-if sys.hexversion < 0x3020000:
-    print('MutPy requires Python 3.2 or newer!')
+if sys.hexversion < 0x3030000:
+    print('MutPy requires Python 3.3 or newer!')
     sys.exit()
 
 with open('requirements.txt') as f:
@@ -23,8 +23,10 @@ setup(
     install_requires=requirements,
     test_suite='mutpy.test',
     classifiers=[
-        'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Testing',
