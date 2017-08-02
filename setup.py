@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import sys
+
+import mutpy
 from setuptools import setup
 
 if sys.hexversion < 0x3030000:
@@ -12,7 +14,7 @@ with open('requirements.txt') as f:
 
 setup(
     name='MutPy',
-    version='0.4.0',
+    version=mutpy.__version__,
     description='Mutation testing tool for Python 3.x source code.',
     author='Konrad Hałas',
     author_email='halas.konrad@gmail.com',
