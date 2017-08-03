@@ -12,10 +12,14 @@ if sys.hexversion < 0x3030000:
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
+with open('README.rst') as f:
+    long_description = f.read()
+
 setup(
     name='MutPy',
     version=mutpy.__version__,
     description='Mutation testing tool for Python 3.x source code.',
+    long_description=long_description,
     author='Konrad Hałas',
     author_email='halas.konrad@gmail.com',
     url='https://github.com/mutpy/mutpy',
