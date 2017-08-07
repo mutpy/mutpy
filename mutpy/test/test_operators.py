@@ -77,10 +77,10 @@ class OperatorTestCase(unittest.TestCase):
 
     def assert_location(self, mutant):
         for node in ast.walk(mutant):
-            if 'lineno' in node._attributes and not hasattr(node, 'lineno'):
-                self.fail('Missing lineno in ' + str(node))
-            if 'col_offset' in node._attributes and not hasattr(node, 'col_offset'):
-                self.fail('Missing col_offset in ' + str(node))
+            if 'lineno' in node._attributes:
+                self.assertTrue(hasattr(node, 'lineno'), 'Missing lineno in ' + str(node))
+            if 'col_offset' in node._attributes:
+                self.assertTrue(hasattr(node, 'col_offset'), 'Missing col_offset in ' + str(node))
 
     def assert_mutation_lineo(self, lineno, lines):
         mutation_line = lines.pop(0)
