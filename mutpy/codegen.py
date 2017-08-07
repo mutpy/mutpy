@@ -180,7 +180,7 @@ class AbstractSourceGenerator(ast.NodeVisitor):
         self.newline(node)
         for idx, target in enumerate(node.targets):
             if idx:
-                self.write(', ')
+                self.write(' = ')
             self.visit(target)
         self.write(' = ')
         self.visit(node.value)
@@ -235,21 +235,6 @@ class AbstractSourceGenerator(ast.NodeVisitor):
         for base in node.bases:
             paren_or_comma()
             self.visit(base)
-        # XXX: the if here is used to keep this module compatible
-        #      with python 2.6.
-        if hasattr(node, 'keywords'):
-            for keyword in node.keywords:
-                paren_or_comma()
-                self.write(keyword.arg + '=')
-                self.visit(keyword.value)
-            if self._is_node_args_valid(node, 'starargs'):
-                paren_or_comma()
-                self.write('*')
-                self.visit(node.starargs)
-            if self._is_node_args_valid(node, 'kwargs'):
-                paren_or_comma()
-                self.write('**')
-                self.visit(node.kwargs)
         self.write(have_args and '):' or ':')
         self.body(node.body)
 
@@ -294,23 +279,6 @@ class AbstractSourceGenerator(ast.NodeVisitor):
         self.newline(node)
         self.write('pass', node)
 
-    def visit_Print(self, node):
-        # XXX: python 2.6 only
-        self.newline(node)
-        self.write('print ')
-        want_comma = False
-        if node.dest is not None:
-            self.write(' >> ')
-            self.visit(node.dest)
-            want_comma = True
-        for value in node.values:
-            if want_comma:
-                self.write(', ')
-            self.visit(value)
-            want_comma = True
-        if not node.nl:
-            self.write(',')
-
     def visit_Delete(self, node):
         self.newline(node)
         self.write('del ')
@@ -344,8 +312,6 @@ class AbstractSourceGenerator(ast.NodeVisitor):
         self.write('continue')
 
     def visit_Raise(self, node):
-        # XXX: Python 2.6 / 3.0 compatibility
-        self.newline(node)
         self.write('raise')
         if hasattr(node, 'exc') and node.exc is not None:
             self.write(' ')
@@ -493,9 +459,9 @@ class AbstractSourceGenerator(ast.NodeVisitor):
                 self.visit(node.step)
 
     def visit_ExtSlice(self, node):
-        for idx, item in node.dims:
+        for idx, item in enumerate(node.dims):
             if idx:
-                self.write(', ')
+                self.write(',')
             self.visit(item)
 
     def visit_Yield(self, node):
@@ -546,12 +512,6 @@ class AbstractSourceGenerator(ast.NodeVisitor):
     def visit_Starred(self, node):
         self.write('*')
         self.visit(node.value)
-
-    def visit_Repr(self, node):
-        # XXX: python 2.6 only
-        self.write('`')
-        self.visit(node.value)
-        self.write('`')
 
     # Helper Nodes
 
