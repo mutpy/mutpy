@@ -593,36 +593,6 @@ class AbstractSourceGenerator(ast.NodeVisitor):
             self.visit(node.msg)
 
 
-class SourceGeneratorPython32(AbstractSourceGenerator):
-
-    __python_version__ = (3, 2)
-
-    def visit_TryExcept(self, node):
-        self.newline(node)
-        self.write('try:')
-        self.body(node.body)
-        for handler in node.handlers:
-            self.visit(handler)
-
-    def visit_TryFinally(self, node):
-        self.newline(node)
-        self.write('try:')
-        self.body(node.body)
-        self.newline(node)
-        self.write('finally:')
-        self.body(node.finalbody)
-
-    def visit_With(self, node):
-        self.newline(node)
-        self.write('with ')
-        self.visit(node.context_expr)
-        if node.optional_vars is not None:
-            self.write(' as ')
-            self.visit(node.optional_vars)
-        self.write(':')
-        self.body(node.body)
-
-
 class SourceGeneratorPython33(AbstractSourceGenerator):
 
     __python_version__ = (3, 3)
@@ -696,7 +666,6 @@ class SourceGeneratorPython35(SourceGeneratorPython34):
 
 
 SourceGenerator = utils.get_by_python_version([
-    SourceGeneratorPython32,
     SourceGeneratorPython33,
     SourceGeneratorPython34,
     SourceGeneratorPython35
