@@ -1,7 +1,7 @@
-import unittest
 import sys
-from mutpy import codegen, utils
+import unittest
 
+from mutpy import codegen, utils
 
 EOL = '\n'
 SIMPLE_ASSIGN = 'x = 1'
@@ -58,6 +58,9 @@ class CodegenTest(unittest.TestCase):
 
     def test_import(self):
         self.assert_code_equal("import x")
+
+    def test_aliased_import(self):
+        self.assert_code_equal("import x as y")
 
     def test_import_package(self):
         self.assert_code_equal("import x.y.z")
@@ -139,8 +142,14 @@ class CodegenTest(unittest.TestCase):
     def test_empty_return(self):
         self.assert_code_equal("def f():" + EOL + INDENT + 'return')
 
+    def test_return_value(self):
+        self.assert_code_equal("def f():" + EOL + INDENT + 'return 5')
+
     def test_empty_yield(self):
         self.assert_code_equal("def f():" + EOL + INDENT + 'yield')
+
+    def test_yield_value(self):
+        self.assert_code_equal("def f():" + EOL + INDENT + 'yield 5')
 
     def test_with(self):
         self.assert_code_equal("with x:" + EOL + INDENT + 'pass')
@@ -164,3 +173,48 @@ class CodegenTest(unittest.TestCase):
     @unittest.skipIf(sys.version_info < (3, 5), 'checked statement not available for Python version')
     def test_kwargs_in_dict(self):
         self.assert_code_equal("{**kwargs}")
+
+    def test_starred(self):
+        self.assert_code_equal("*args")
+
+    def test_list_comprehension(self):
+        self.assert_code_equal("x = [y.value for y in z if y.value >= 3]")
+
+    def test_dict_comprehension(self):
+        self.assert_code_equal("x = {y: z for (y, z) in a}")
+
+    def test_if_expression(self):
+        self.assert_code_equal("a if b else c")
+
+    def test_lambda(self):
+        self.assert_code_equal("lambda x: x ** 2 + 2 * x - 5")
+
+    def test_slice(self):
+        self.assert_code_equal("a[:2,:2]")
+
+    def test_dict(self):
+        self.assert_code_equal("{a: 3, b: 'c'}")
+
+    def test_global(self):
+        self.assert_code_equal("global x")
+
+    def test_nonlocal(self):
+        self.assert_code_equal("nonlocal x")
+
+    def test_multi_assign(self):
+        self.assert_code_equal("a = b = c")
+
+    def test_multi_assign_with_tuple(self):
+        self.assert_code_equal("(a, b) = enumerate(c)")
+
+    def test_for_else(self):
+        self.assert_code_equal("for a in b:" + EOL + INDENT + PASS + EOL + "else:" + EOL + INDENT + PASS)
+
+    def test_raise_exception(self):
+        self.assert_code_equal("raise Exception()")
+
+    def test_raise_exception_from(self):
+        self.assert_code_equal("raise Exception() from exc")
+
+    def test_class_with_multi_inheritance(self):
+        self.assert_code_equal("class A(B, C):" + EOL + INDENT + PASS)
