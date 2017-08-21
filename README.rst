@@ -1,7 +1,7 @@
 MutPy
 =====
 
-|Build Status| |Coverage Status| |Code Climate|
+|Python Versions| |Build Status| |Coverage Status| |Code Climate|
 
 MutPy is a mutation testing tool for Python 3.3+ source code. MutPy
 supports standard unittest module, generates YAML/HTML reports and has
@@ -243,6 +243,8 @@ MutPy was developed as part of engineer's and master’s thesis at
 Institute of Computer Science, Faculty of Electronics and Information
 Technology, Warsaw University of Technology.
 
+.. |Python Versions| image:: https://img.shields.io/pypi/pyversions/MutPy.svg
+   :target: https://github.com/mutpy/mutpy
 .. |Build Status| image:: https://travis-ci.org/mutpy/mutpy.svg?branch=master
    :target: https://travis-ci.org/mutpy/mutpy
 .. |Coverage Status| image:: https://coveralls.io/repos/github/mutpy/mutpy/badge.svg?branch=master
