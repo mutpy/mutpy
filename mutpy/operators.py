@@ -1,7 +1,8 @@
 import ast
-import re
 import copy
 import functools
+import re
+
 from mutpy import utils
 
 
@@ -10,7 +11,6 @@ class MutationResign(Exception):
 
 
 class Mutation:
-
     def __init__(self, operator, node, visitor=None):
         self.operator = operator
         self.node = node
@@ -23,11 +23,11 @@ def copy_node(mutate):
             id(node.parent): node.parent,
         })
         return mutate(self, copied_node)
+
     return f
 
 
 class MutationOperator:
-
     def mutate(self, node, to_mutate=None, sampler=None, coverage_injector=None, module=None, only_mutation=None):
         self.to_mutate = to_mutate
         self.sampler = sampler
@@ -85,7 +85,7 @@ class MutationOperator:
             if isinstance(value, ast.AST):
                 for new_value in self.visit(value):
                     if not isinstance(new_value, ast.AST):
-                        old_value[position:position+1] = new_value
+                        old_value[position:position + 1] = new_value
                     elif value is None:
                         del old_value[position]
                     else:
@@ -141,7 +141,6 @@ class MutationOperator:
 
 
 class AbstractUnaryOperatorDeletion(MutationOperator):
-
     def mutate_UnaryOp(self, node):
         if isinstance(node.op, self.get_operator_type()):
             return node.operand
@@ -149,13 +148,11 @@ class AbstractUnaryOperatorDeletion(MutationOperator):
 
 
 class ArithmeticOperatorDeletion(AbstractUnaryOperatorDeletion):
-
     def get_operator_type(self):
         return ast.UAdd, ast.USub
 
 
 class AbstractArithmeticOperatorReplacement(MutationOperator):
-
     def should_mutate(self, node):
         raise NotImplementedError()
 
@@ -216,7 +213,6 @@ class AbstractArithmeticOperatorReplacement(MutationOperator):
 
 
 class ArithmeticOperatorReplacement(AbstractArithmeticOperatorReplacement):
-
     def should_mutate(self, node):
         return not isinstance(node.parent, ast.AugAssign)
 
@@ -228,7 +224,6 @@ class ArithmeticOperatorReplacement(AbstractArithmeticOperatorReplacement):
 
 
 class AssignmentOperatorReplacement(AbstractArithmeticOperatorReplacement):
-
     def should_mutate(self, node):
         return isinstance(node.parent, ast.AugAssign)
 
@@ -238,7 +233,6 @@ class AssignmentOperatorReplacement(AbstractArithmeticOperatorReplacement):
 
 
 class BreakContinueReplacement(MutationOperator):
-
     def mutate_Break(self, node):
         return ast.Continue()
 
@@ -247,7 +241,6 @@ class BreakContinueReplacement(MutationOperator):
 
 
 class ConditionalOperatorDeletion(AbstractUnaryOperatorDeletion):
-
     def get_operator_type(self):
         return ast.Not
 
@@ -256,7 +249,6 @@ class ConditionalOperatorDeletion(AbstractUnaryOperatorDeletion):
 
 
 class ConditionalOperatorInsertion(MutationOperator):
-
     def negate_test(self, node):
         not_node = ast.UnaryOp(op=ast.Not(), operand=node.test)
         node.test = not_node
@@ -302,7 +294,6 @@ class ConstantReplacement(MutationOperator):
 
 
 class DecoratorDeletion(MutationOperator):
-
     @copy_node
     def mutate_FunctionDef(self, node):
         if node.decorator_list:
@@ -317,7 +308,6 @@ class DecoratorDeletion(MutationOperator):
 
 
 class ExceptionHandlerDeletion(MutationOperator):
-
     def mutate_ExceptHandler(self, node):
         if node.body and isinstance(node.body[0], ast.Raise):
             raise MutationResign()
@@ -325,7 +315,6 @@ class ExceptionHandlerDeletion(MutationOperator):
 
 
 class ExceptionSwallowing(MutationOperator):
-
     def mutate_ExceptHandler(self, node):
         if len(node.body) == 1 and isinstance(node.body[0], ast.Pass):
             raise MutationResign()
@@ -337,7 +326,6 @@ class ExceptionSwallowing(MutationOperator):
 
 
 class AbstractOverriddenElementModification(MutationOperator):
-
     def is_overridden(self, node, name=None):
         if not isinstance(node.parent, ast.ClassDef):
             raise MutationResign()
@@ -363,7 +351,6 @@ class AbstractOverriddenElementModification(MutationOperator):
 
 
 class HidingVariableDeletion(AbstractOverriddenElementModification):
-
     def mutate_Assign(self, node):
         if len(node.targets) > 1:
             raise MutationResign()
@@ -402,7 +389,6 @@ class HidingVariableDeletion(AbstractOverriddenElementModification):
 
 
 class LogicalConnectorReplacement(MutationOperator):
-
     def mutate_And(self, node):
         return ast.Or()
 
@@ -411,13 +397,11 @@ class LogicalConnectorReplacement(MutationOperator):
 
 
 class LogicalOperatorDeletion(AbstractUnaryOperatorDeletion):
-
     def get_operator_type(self):
         return ast.Invert
 
 
 class LogicalOperatorReplacement(MutationOperator):
-
     def mutate_BitAnd(self, node):
         return ast.BitOr()
 
@@ -435,12 +419,11 @@ class LogicalOperatorReplacement(MutationOperator):
 
 
 class AbstractSuperCallingModification(MutationOperator):
-
     def is_super_call(self, node, stmt):
         return isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call) and \
-            isinstance(stmt.value.func, ast.Attribute) and isinstance(stmt.value.func.value, ast.Call) and \
-            isinstance(stmt.value.func.value.func, ast.Name) and stmt.value.func.value.func.id == 'super' and \
-            stmt.value.func.attr == node.name
+               isinstance(stmt.value.func, ast.Attribute) and isinstance(stmt.value.func.value, ast.Call) and \
+               isinstance(stmt.value.func.value.func, ast.Name) and stmt.value.func.value.func.id == 'super' and \
+               stmt.value.func.attr == node.name
 
     def should_mutate(self, node):
         return isinstance(node.parent, ast.ClassDef)
@@ -455,7 +438,6 @@ class AbstractSuperCallingModification(MutationOperator):
 
 
 class OverriddenMethodCallingPositionChange(AbstractSuperCallingModification):
-
     def should_mutate(self, node):
         return super().should_mutate(node) and len(node.body) > 1
 
@@ -480,7 +462,6 @@ class OverriddenMethodCallingPositionChange(AbstractSuperCallingModification):
 
 
 class OverridingMethodDeletion(AbstractOverriddenElementModification):
-
     def mutate_FunctionDef(self, node):
         if self.is_overridden(node):
             return ast.Pass()
@@ -492,7 +473,6 @@ class OverridingMethodDeletion(AbstractOverriddenElementModification):
 
 
 class RelationalOperatorReplacement(MutationOperator):
-
     def mutate_Lt(self, node):
         return ast.Gt()
 
@@ -525,7 +505,6 @@ class RelationalOperatorReplacement(MutationOperator):
 
 
 class SliceIndexRemove(MutationOperator):
-
     def mutate_Slice_remove_lower(self, node):
         if not node.lower:
             raise MutationResign()
@@ -546,7 +525,6 @@ class SliceIndexRemove(MutationOperator):
 
 
 class SuperCallingDeletion(AbstractSuperCallingModification):
-
     @copy_node
     def mutate_FunctionDef(self, node):
         if not self.should_mutate(node):
@@ -558,7 +536,8 @@ class SuperCallingDeletion(AbstractSuperCallingModification):
         return node
 
 
-class SuperCallingInsert(AbstractSuperCallingModification, AbstractOverriddenElementModification):
+class SuperCallingInsertPython27(AbstractSuperCallingModification, AbstractOverriddenElementModification):
+    __python_version__ = (2, 7)
 
     def should_mutate(self, node):
         return super().should_mutate(node) and self.is_overridden(node)
@@ -582,14 +561,39 @@ class SuperCallingInsert(AbstractSuperCallingModification, AbstractOverriddenEle
         for arg, default in zip(node.args.kwonlyargs, node.args.kw_defaults):
             super_call.value.keywords.append(ast.keyword(arg=arg.arg, value=default))
         if node.args.vararg:
-            super_call.value.starargs = ast.Name(id=node.args.vararg, ctx=ast.Load())
+            self.add_vararg_to_super_call(super_call, node.args.vararg)
         if node.args.kwarg:
-            super_call.value.kwargs = ast.Name(id=node.args.kwarg, ctx=ast.Load())
+            self.add_kwarg_to_super_call(super_call, node.args.kwarg)
         return super_call
+
+    @staticmethod
+    def add_kwarg_to_super_call(super_call, kwarg):
+        super_call.value.kwargs = ast.Name(id=kwarg, ctx=ast.Load())
+
+    @staticmethod
+    def add_vararg_to_super_call(super_call, vararg):
+        super_call.value.starargs = ast.Name(id=vararg, ctx=ast.Load())
+
+
+class SuperCallingInsertPython35(SuperCallingInsertPython27):
+    __python_version__ = (3, 5)
+
+    @staticmethod
+    def add_kwarg_to_super_call(super_call, kwarg):
+        super_call.value.keywords.append(ast.keyword(arg=None, value=ast.Name(id=kwarg.arg, ctx=ast.Load())))
+
+    @staticmethod
+    def add_vararg_to_super_call(super_call, vararg):
+        super_call.value.args.append(ast.Starred(ctx=ast.Load(), value=ast.Name(id=vararg.arg, ctx=ast.Load())))
+
+
+SuperCallingInsert = utils.get_by_python_version([
+    SuperCallingInsertPython27,
+    SuperCallingInsertPython35,
+])
 
 
 class AbstractMethodDecoratorInsertionMutationOperator(MutationOperator):
-
     @copy_node
     def mutate_FunctionDef(self, node):
         if not isinstance(node.parent, ast.ClassDef):
@@ -613,13 +617,11 @@ class AbstractMethodDecoratorInsertionMutationOperator(MutationOperator):
 
 
 class ClassmethodDecoratorInsertion(AbstractMethodDecoratorInsertionMutationOperator):
-
     def get_decorator_name(self):
         return 'classmethod'
 
 
 class OneIterationLoop(MutationOperator):
-
     def one_iteration(self, node):
         node.body.append(ast.Break())
         return node
@@ -634,7 +636,6 @@ class OneIterationLoop(MutationOperator):
 
 
 class ReverseIterationLoop(MutationOperator):
-
     @copy_node
     def mutate_For(self, node):
         old_iter = node.iter
@@ -649,7 +650,6 @@ class ReverseIterationLoop(MutationOperator):
 
 
 class SelfVariableDeletion(MutationOperator):
-
     def mutate_Attribute(self, node):
         try:
             if node.value.id == 'self':
@@ -661,7 +661,6 @@ class SelfVariableDeletion(MutationOperator):
 
 
 class StatementDeletion(MutationOperator):
-
     def mutate_Assign(self, node):
         return ast.Pass()
 
@@ -679,13 +678,11 @@ class StatementDeletion(MutationOperator):
 
 
 class StaticmethodDecoratorInsertion(AbstractMethodDecoratorInsertionMutationOperator):
-
     def get_decorator_name(self):
         return 'staticmethod'
 
 
 class ZeroIterationLoop(MutationOperator):
-
     def zero_iteration(self, node):
         node.body = [ast.Break()]
         return node
