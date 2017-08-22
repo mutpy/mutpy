@@ -234,6 +234,13 @@ Experimental mutation operators:
 -  SVD - self variable deletion
 -  ZIL - zero iteration loop
 
+Supported Test Runners
+----------------------
+
+Currently the following test runners are supported by MutPy:
+
+- `unittest <https://docs.python.org/3/library/unittest.html>`_
+
 License
 -------
 
