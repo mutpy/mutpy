@@ -16,6 +16,8 @@ from multiprocessing import Process, Queue
 from queue import Empty
 from threading import Thread
 
+from astmonkey.transformers import ParentChildNodeTransformer
+
 
 def create_module(ast_node, module_name='mutant', module_dict=None):
     code = compile(ast_node, module_name, 'exec')
@@ -351,7 +353,7 @@ class ParentNodeTransformer(ast.NodeTransformer):
 
 
 def create_ast(code):
-    return ParentNodeTransformer().visit(ast.parse(code))
+    return ParentChildNodeTransformer().visit(ast.parse(code))
 
 
 def is_docstring(node):
