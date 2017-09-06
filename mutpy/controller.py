@@ -2,6 +2,7 @@ import random
 import sys
 import unittest
 from mutpy import views, utils, coverage
+from mutpy.test_runner import UnittestTestRunner
 
 
 class TestsFailAtOriginal(Exception):
@@ -191,23 +192,9 @@ class MutationController(views.ViewNotifier):
 
     @utils.TimeRegister
     def run_tests_with_mutant(self, total_duration, mutant_module, mutations, coverage_result):
-        suite = self.create_test_suite(mutant_module)
-        if coverage_result:
-            self.mark_not_covered_tests_as_skip(mutations, coverage_result, suite)
-        timer = utils.Timer()
-        result = self.run_mutation_test_runner(suite, total_duration)
-        timer.stop()
-        self.update_score_and_notify_views(result, timer.duration)
-
-    def run_mutation_test_runner(self, suite, total_duration):
-        live_time = self.timeout_factor * (total_duration if total_duration > 1 else 1)
-        test_runner_class = utils.get_mutation_test_runner_class()
-        test_runner = test_runner_class(suite=suite)
-        with self.stdout_manager:
-            test_runner.start()
-            result = test_runner.get_result(live_time)
-            test_runner.terminate()
-        return result
+        runner = UnittestTestRunner(self.test_loader, self.timeout_factor,self.stdout_manager, self.init_modules)
+        result, duration = runner.run_tests_with_mutant(total_duration, mutant_module, mutations, coverage_result)
+        self.update_score_and_notify_views(result, duration)
 
     def update_score_and_notify_views(self, result, mutant_duration):
         if not result:
