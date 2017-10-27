@@ -9,7 +9,7 @@ if sys.hexversion < 0x3030000:
     print('MutPy requires Python 3.3 or newer!')
     sys.exit()
 
-with open('requirements.txt') as f:
+with open('requirements/production.txt') as f:
     requirements = f.read().splitlines()
 
 with open('README.rst') as f:
