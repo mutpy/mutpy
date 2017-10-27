@@ -5,9 +5,9 @@ python:
   - 3.5
   - 3.6
 install:
-  - pip install -r requirements.txt
+  - pip install tox-travis
   - pip install coveralls
 script:
-  - coverage run --source=mutpy -m unittest discover -s mutpy/test
+  - tox
 after_success:
   coveralls
