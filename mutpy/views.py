@@ -1,8 +1,10 @@
+import datetime
 import os
 import traceback
-import datetime
-import yaml
+
 import jinja2
+import yaml
+
 from mutpy import codegen, termcolor, utils
 
 
@@ -112,11 +114,9 @@ class TextView(QuietTextView):
 
     def original_tests_fail(self, result):
         self.level_print(self.decorate('Tests failed:', 'red', attrs=['bold']))
-        for error in result.errors:
-                self.level_print('error in {} - {} '.format(error[0], error[1].split("\n")[-2]), 2)
 
-        for fail in result.failures:
-                self.level_print('fail in {} - {}'.format(fail[0], fail[1].split("\n")[-2]), 2)
+        for fail in result.failed:
+            self.level_print('fail in {} - {}'.format(fail.name, fail.short_message), 2)
 
     def mutation(self, number, mutations, module, mutant):
         for mutation in mutations:
@@ -132,7 +132,8 @@ class TextView(QuietTextView):
 
     def cant_load(self, name, exception):
         self.level_print(self.decorate('Can\'t load module: ', 'red', attrs=['bold']) + '{} ({}: {})'.format(name,
-                         exception.__class__.__name__, exception))
+                                                                                                             exception.__class__.__name__,
+                                                                                                             exception))
 
     def print_code(self, mutant, lineno):
         mutant_src = codegen.to_source(mutant)
@@ -141,7 +142,7 @@ class TextView(QuietTextView):
         lineno = min(lineno, len(src_lines))
         src_lines[lineno - 1] = self.decorate('~' + src_lines[lineno - 1][1:], 'yellow')
         snippet = src_lines[max(0, lineno - 5):min(len(src_lines), lineno + 5)]
-        print("\n{}\n".format('-'*80) + "\n".join(snippet) + "\n{}".format('-'*80))
+        print("\n{}\n".format('-' * 80) + "\n".join(snippet) + "\n{}".format('-' * 80))
 
     def killed(self, time, killer, *args, **kwargs):
         self.level_print(self.time_format(time) + ' ' + self.decorate('killed', 'green') + ' by ' + str(killer),

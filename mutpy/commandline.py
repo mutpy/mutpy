@@ -1,7 +1,8 @@
 import argparse
 import sys
-from mutpy import controller, views, operators, utils
+
 from mutpy import __version__ as version
+from mutpy import controller, views, operators, utils
 
 
 def main(argv):
@@ -17,6 +18,8 @@ def build_parser():
     parser.add_argument('--target', '-t', type=str, nargs='+', help='target module or package to mutate')
     parser.add_argument('--unit-test', '-u', type=str, nargs='+',
                         help='test class, test method, module or package with unit tests')
+    parser.add_argument('--runner', type=str, choices=['unittest', 'pytest'], metavar='RUNNER',
+                        help='test runner')
     parser.add_argument('--report', '-r', type=str, help='generate YAML report', metavar='REPORT_FILE')
     parser.add_argument('--report-html', type=str, help='generate HTML report', metavar='DIR_NAME')
     parser.add_argument('--timeout-factor', '-f', type=float, default=DEF_TIMEOUT_FACTOR,
@@ -27,7 +30,7 @@ def build_parser():
     parser.add_argument('--colored-output', '-c', action='store_true', help='try print colored output')
     parser.add_argument('--disable-stdout', '-d', action='store_true',
                         help='try disable stdout during mutation '
-                        '(this option can damage your tests if you interact with sys.stdout)')
+                             '(this option can damage your tests if you interact with sys.stdout)')
     parser.add_argument('--experimental-operators', '-e', action='store_true', help='use experimental operators')
     parser.add_argument('--operator', '-o', type=str, nargs='+',
                         help='use only selected operators', metavar='OPERATOR')
@@ -62,11 +65,13 @@ def run_mutpy(parser):
 
 
 def build_controller(cfg):
+    runner_cls = get_runner_cls(cfg.runner)
     built_views = build_views(cfg)
     mutant_generator = build_mutator(cfg)
     target_loader = utils.ModulesLoader(cfg.target, cfg.path)
     test_loader = utils.ModulesLoader(cfg.unit_test, cfg.path)
     return controller.MutationController(
+        runner_cls=runner_cls,
         target_loader=target_loader,
         test_loader=test_loader,
         views=built_views,
@@ -76,6 +81,16 @@ def build_controller(cfg):
         mutate_covered=cfg.coverage,
         mutation_number=cfg.mutation_number,
     )
+
+
+def get_runner_cls(runner):
+    if runner == 'unittest':
+        from mutpy.test_runners import UnittestTestRunner
+        return UnittestTestRunner
+    elif runner == 'pytest':
+        from mutpy.test_runners import PytestTestRunner
+        return PytestTestRunner
+    raise ValueError('Unknown runner: {0}'.format(runner))
 
 
 def build_mutator(cfg):

@@ -39,7 +39,10 @@ class ModulesLoaderTest(unittest.TestCase):
         self.loader = utils.ModulesLoader(None, ModulesLoaderTest.tmp)
 
     def test_load_file(self):
-        self.assertRaises(NotImplementedError, lambda: self.loader.load_single('sample.py'))
+        module, to_mutate = self.loader.load_single('a/b/c/sample.py')[0]
+
+        self.assert_module(module, 'sample', 'a/b/c/sample.py', ['X'])
+        self.assertIsNone(to_mutate)
 
     def test_load_module(self):
         module, to_mutate = self.loader.load_single('a.b.c.sample')[0]

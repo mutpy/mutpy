@@ -1,6 +1,6 @@
 import ast
 import copy
-import unittest
+
 from mutpy import utils
 
 COVERAGE_SET_NAME = '__covered_nodes__'
@@ -79,7 +79,6 @@ class AbstractCoverageNodeTransformer(ast.NodeTransformer):
 
 
 class CoverageNodeTransformerPython32(AbstractCoverageNodeTransformer):
-
     __python_version__ = (3, 2)
 
     @classmethod
@@ -111,7 +110,6 @@ class CoverageNodeTransformerPython32(AbstractCoverageNodeTransformer):
 
 
 class CoverageNodeTransformerPython33(AbstractCoverageNodeTransformer):
-
     __python_version__ = (3, 3)
 
     @classmethod
@@ -170,22 +168,3 @@ class CoverageInjector:
 
     def get_result(self):
         return len(self.covered_nodes), self.marker_transformer.last_marker
-
-
-class CoverageTestResult(unittest.TestResult):
-
-    def __init__(self, *args, coverage_injector=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.coverage_injector = coverage_injector
-        self.always_covered_nodes = coverage_injector.covered_nodes.copy()
-        self.test_covered_nodes = {}
-
-    def startTest(self, test):
-        super().startTest(test)
-        self.covered_nodes = self.coverage_injector.covered_nodes.copy()
-        self.coverage_injector.covered_nodes.clear()
-
-    def stopTest(self, test):
-        super().stopTest(test)
-        self.test_covered_nodes[repr(test)] = self.coverage_injector.covered_nodes.copy() | self.always_covered_nodes
-        self.coverage_injector.covered_nodes.update(self.covered_nodes)

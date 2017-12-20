@@ -1,8 +1,8 @@
 import random
 import sys
-import unittest
-from mutpy import views, utils, coverage
-from mutpy.test_runner import UnittestTestRunner
+import time
+
+from mutpy import views, utils
 
 
 class TestsFailAtOriginal(Exception):
@@ -48,7 +48,7 @@ class MutationScore:
 
 class MutationController(views.ViewNotifier):
 
-    def __init__(self, target_loader, test_loader, views, mutant_generator,
+    def __init__(self, runner_cls, target_loader, test_loader, views, mutant_generator,
                  timeout_factor=5, disable_stdout=False, mutate_covered=False, mutation_number=None):
         super().__init__(views)
         self.target_loader = target_loader
@@ -56,9 +56,8 @@ class MutationController(views.ViewNotifier):
         self.mutant_generator = mutant_generator
         self.timeout_factor = timeout_factor
         self.stdout_manager = utils.StdoutManager(disable_stdout)
-        self.mutate_covered = mutate_covered
         self.mutation_number = mutation_number
-        self.store_init_modules()
+        self.runner = runner_cls(self.test_loader, self.timeout_factor, self.stdout_manager, mutate_covered)
 
     def run(self):
         self.notify_initialize(self.target_loader.names, self.test_loader.names)
@@ -93,34 +92,22 @@ class MutationController(views.ViewNotifier):
         total_duration = 0
         for test_module, target_test in self.test_loader.load():
             result, duration = self.run_test(test_module, target_test)
-            if result.wasSuccessful():
+            if result.was_successful():
                 test_modules.append((test_module, target_test, duration))
             else:
                 raise TestsFailAtOriginal(result)
-            number_of_tests += result.testsRun
+            number_of_tests += result.tests_run()
             total_duration += duration
 
         return test_modules, total_duration, number_of_tests
 
     def run_test(self, test_module, target_test):
-        suite = self.get_test_suite(test_module, target_test)
-        result = unittest.TestResult()
-        timer = utils.Timer()
-        with self.stdout_manager:
-            suite.run(result)
-        return result, timer.stop()
-
-    def get_test_suite(self, test_module, target_test):
-        if target_test:
-            return unittest.TestLoader().loadTestsFromName(target_test, test_module)
-        else:
-            return unittest.TestLoader().loadTestsFromModule(test_module)
+        return self.runner.run_test(test_module, target_test)
 
     @utils.TimeRegister
     def mutate_module(self, target_module, to_mutate, total_duration):
         target_ast = self.create_target_ast(target_module)
         coverage_injector, coverage_result = self.inject_coverage(target_ast, target_module)
-
         if coverage_injector:
             self.score.update_coverage(*coverage_injector.get_result())
         for mutations, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate, coverage_injector,
@@ -137,15 +124,7 @@ class MutationController(views.ViewNotifier):
                 self.score.inc_incompetent()
 
     def inject_coverage(self, target_ast, target_module):
-        if not self.mutate_covered:
-            return None, None
-        coverage_injector = coverage.CoverageInjector()
-        coverage_module = coverage_injector.inject(target_ast, target_module.__name__)
-        suite = self.create_test_suite(coverage_module)
-        coverage_result = coverage.CoverageTestResult(coverage_injector=coverage_injector)
-        with self.stdout_manager:
-            suite.run(coverage_result)
-        return coverage_injector, coverage_result
+        return self.runner.inject_coverage(target_ast, target_module)
 
     @utils.TimeRegister
     def create_target_ast(self, target_module):
@@ -164,36 +143,8 @@ class MutationController(views.ViewNotifier):
             self.notify_incompetent(0, exception, tests_run=0)
             return None
 
-    def create_test_suite(self, mutant_module):
-        suite = unittest.TestSuite()
-        utils.InjectImporter(mutant_module).install()
-        self.remove_loaded_modules()
-        for test_module, target_test in self.test_loader.load():
-            suite.addTests(self.get_test_suite(test_module, target_test))
-        utils.InjectImporter.uninstall()
-        return suite
-
-    def mark_not_covered_tests_as_skip(self, mutations, coverage_result, suite):
-        mutated_nodes = {mutation.node.marker for mutation in mutations}
-
-        def iter_tests(tests):
-            try:
-                for test in tests:
-                    iter_tests(test)
-            except TypeError:
-                add_skip(tests)
-
-        def add_skip(test):
-            if mutated_nodes.isdisjoint(coverage_result.test_covered_nodes[repr(test)]):
-                test_method = getattr(test, test._testMethodName)
-                setattr(test, test._testMethodName, unittest.skip('not covered')(test_method))
-
-        iter_tests(suite)
-
-    @utils.TimeRegister
     def run_tests_with_mutant(self, total_duration, mutant_module, mutations, coverage_result):
-        runner = UnittestTestRunner(self.test_loader, self.timeout_factor,self.stdout_manager, self.init_modules)
-        result, duration = runner.run_tests_with_mutant(total_duration, mutant_module, mutations, coverage_result)
+        result, duration = self.runner.run_tests_with_mutant(total_duration, mutant_module, mutations, coverage_result)
         self.update_score_and_notify_views(result, duration)
 
     def update_score_and_notify_views(self, result, mutant_duration):
@@ -222,17 +173,6 @@ class MutationController(views.ViewNotifier):
         self.notify_killed(duration, result.killer, result.exception_traceback, result.tests_run)
         self.score.inc_killed()
 
-    def store_init_modules(self):
-        test_runner_class = utils.get_mutation_test_runner_class()
-        test_runner = test_runner_class(suite=unittest.TestSuite())
-        test_runner.start()
-        self.init_modules = list(sys.modules.keys())
-
-    def remove_loaded_modules(self):
-        for module in list(sys.modules.keys()):
-            if module not in self.init_modules:
-                del sys.modules[module]
-
 
 class HOMStrategy:
 
@@ -243,9 +183,9 @@ class HOMStrategy:
         for mutation_to_apply in mutations_to_apply:
             for available_mutation in available_mutations[:]:
                 if mutation_to_apply.node == available_mutation.node or \
-                   mutation_to_apply.node in available_mutation.node.children or \
-                   available_mutation.node in mutation_to_apply.node.children or \
-                   (not allow_same_operators and mutation_to_apply.operator == available_mutation.operator):
+                        mutation_to_apply.node in available_mutation.node.children or \
+                        available_mutation.node in mutation_to_apply.node.children or \
+                        (not allow_same_operators and mutation_to_apply.operator == available_mutation.operator):
                     available_mutations.remove(available_mutation)
 
 
