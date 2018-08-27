@@ -28,6 +28,7 @@ setup(
     scripts=['bin/mut.py'],
     install_requires=requirements,
     test_suite='mutpy.test',
+    package_data={'mutpy': ['*.py', 'templates/*html', 'operators/*py']},
     classifiers=[
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
