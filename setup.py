@@ -19,6 +19,7 @@ with open('README.rst') as f:
 setup(
     name='MutPy',
     version=mutpy.__version__,
+    python_requires='>=3.3',
     description='Mutation testing tool for Python 3.x source code.',
     long_description=long_description,
     author='Konrad Hałas',
