@@ -26,7 +26,7 @@ setup(
     author_email='halas.konrad@gmail.com',
     url='https://github.com/mutpy/mutpy',
     download_url='https://github.com/mutpy/mutpy',
-    packages=['mutpy'],
+    packages=['mutpy', 'mutpy.operators'],
     scripts=['bin/mut.py'],
     install_requires=requirements,
     extras_require={
