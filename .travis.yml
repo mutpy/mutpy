@@ -5,6 +5,8 @@ python:
   - 3.5
   - 3.6
 install:
+  # python 3.3 compatibility
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.3 ]]; then pip install virtualenv==15.1.0 setuptools==39.2.0; fi
   - pip install tox-travis
   - pip install coveralls
 script:
