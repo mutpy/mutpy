@@ -5,7 +5,7 @@ MutPy
 
 MutPy is a mutation testing tool for Python 3.3+ source code. MutPy
 supports standard unittest module, generates YAML/HTML reports and has
-colorful output. It's apply mutation on AST level. You could boost your
+colorful output. It applies mutation on AST level. You could boost your
 mutation testing process with high order mutations (HOM) and code
 coverage analysis.
 
