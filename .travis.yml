@@ -13,3 +13,12 @@ script:
   - tox
 after_success:
   coveralls
+deploy:
+  provider: pypi
+  user: khalas
+  password:
+    secure: pj92Jas0WUVO3lCi6WfYyMgfCVKFpPJkYNr2C0zs3DPWw4VlV78OBXQnauXe0kePDIMIU/4Ye+Mm4u49M8aAbrPgxUaZGL6wJffKgD+DuD6HQooRdSn930tZHUVRAPosQAOFQpD3PwCj+GcVJJs8RuhJpThtLsArPMYmLM0DrDA1pSY/kwJzCnfJSfV5HeydmVDYTg3insDZ3w/+wfjQSlvtuUTo4nsie9MMtj/it7ESy/EBtHL6NDfISPrx/G7O30vGe818YCUxD0inn2ZoU5u8xJxDFnoltB5YRsS2IP6dk6SsUWtA87aqBwjwiYnOVd0X++OJPYCcC5YIyNwcUPK44QJw9nV1+guRAtrQn8R+W4T6JLvu+P547yHHIjUt5h+is1Z7fVC8dzN+Zwxjw6ilI9jNzGuneO7hlsa5PJNdyvK2ELVCH2x7gQN7BDm1BpP7B1QdLbXTP0vByMVcDWoCyZpaVKoIqAU989Zxm/cUvyCg4JKst3IdcgTMGhZelbvx3WMbrEBj/vcQlWQX/F9jbiYF/LP3/6e8U7koJzceh4jhMLO8scG8JnQGp+nfFwLm4XmIU+ziW4F5+pgb3rg+L7PqakpWZ9+HRVqU7hw4kPPB5IByTzpKf5s7osB7ZsKcBZDIJscSQqWDeYITGKQ5cHLe3lxX67oVoIaRW0o=
+  on:
+    tags: true
+  distributions: sdist bdist_wheel
+  skip_existing: true
