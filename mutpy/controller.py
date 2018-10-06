@@ -1,9 +1,9 @@
 import random
 import sys
 import unittest
-from mutpy import views, utils, coverage
-
-
+from mutpy import views, utils, coverage, annotations
+	
+		
 class TestsFailAtOriginal(Exception):
 
     def __init__(self, result=None):
@@ -73,9 +73,9 @@ class MutationController(views.ViewNotifier):
             sys.exit(-2)
 
     def run_mutation_process(self):
-        try:
+        try:		
             test_modules, total_duration, number_of_tests = self.load_and_check_tests()
-
+			
             self.notify_passed(test_modules, number_of_tests)
             self.notify_start()
 
@@ -122,8 +122,7 @@ class MutationController(views.ViewNotifier):
 
         if coverage_injector:
             self.score.update_coverage(*coverage_injector.get_result())
-        for mutations, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate, coverage_injector,
-                                                                  module=target_module):
+        for mutations, mutant_ast in self.mutant_generator.mutate(target_ast, to_mutate, coverage_injector,module=target_module):
             mutation_number = self.score.all_mutants + 1
             if self.mutation_number and self.mutation_number != mutation_number:
                 self.score.inc_incompetent()
@@ -197,7 +196,8 @@ class MutationController(views.ViewNotifier):
         timer = utils.Timer()
         result = self.run_mutation_test_runner(suite, total_duration)
         timer.stop()
-        self.update_score_and_notify_views(result, timer.duration)
+        
+        res = self.update_score_and_notify_views(result, timer.duration)
 
     def run_mutation_test_runner(self, suite, total_duration):
         live_time = self.timeout_factor * (total_duration if total_duration > 1 else 1)
@@ -210,15 +210,34 @@ class MutationController(views.ViewNotifier):
         return result
 
     def update_score_and_notify_views(self, result, mutant_duration):
+        def extract_exception_name(traceback):
+            l = traceback.splitlines()
+            if len(l)<2:
+                return ""
+            toReturn = ""
+            for line in l[1:]:
+                if line[0] != ' ':
+                    for c in line:
+                        if c.isalpha():
+                            toReturn+=c
+                        else:
+                            return toReturn
+            return toReturn
         if not result:
             self.update_timeout_mutant(mutant_duration)
+            return "timeout"
         elif result.is_incompetent:
             self.update_incompetent_mutant(result, mutant_duration)
+            return "incompetent"
         elif result.is_survived:
             self.update_survived_mutant(result, mutant_duration)
-        else:
+            return "survived"
+        elif extract_exception_name(result.exception_traceback) == 'AssertionError':
             self.update_killed_mutant(result, mutant_duration)
-
+            return "killed"
+        else:
+            self.update_incompetent_mutant(result, mutant_duration)
+            return "incompetent"
     def update_timeout_mutant(self, duration):
         self.notify_timeout(duration)
         self.score.inc_timeout()
@@ -356,13 +375,16 @@ hom_strategies = [
 
 class FirstOrderMutator:
 
-    def __init__(self, operators, percentage=100):
+    def __init__(self, operators, percentage=100, type_check = False):
         self.operators = operators
         self.sampler = utils.RandomSampler(percentage)
+        self.type_check = type_check
 
     def mutate(self, target_ast, to_mutate=None, coverage_injector=None, module=None):
+        annotationsMarker = annotations.get_annotation_marker(self.type_check)
+        annotationsMarker.mark_ast_tree(target_ast)
         for op in utils.sort_operators(self.operators):
-            for mutation, mutant in op().mutate(target_ast, to_mutate, self.sampler, coverage_injector, module=module):
+            for mutation, mutant in op().mutate(target_ast, to_mutate, self.sampler, coverage_injector, module,None,self.type_check):
                 yield [mutation], mutant
 
 
@@ -373,12 +395,16 @@ class HighOrderMutator(FirstOrderMutator):
         self.hom_strategy = hom_strategy or FirstToLastHOMStrategy(order=2)
 
     def mutate(self, target_ast, to_mutate=None, coverage_injector=None, module=None):
+        annotationsMarker = annotations.get_annotation_marker(self.type_check)
+        annotationsMarker.mark_ast_tree(target_ast)	
         mutations = self.generate_all_mutations(coverage_injector, module, target_ast, to_mutate)
+        
         for mutations_to_apply in self.hom_strategy.generate(mutations):
             generators = []
             applied_mutations = []
             mutant = target_ast
             for mutation in mutations_to_apply:
+                annotationsMarker.mark_ast_tree(mutant)	
                 generator = mutation.operator().mutate(
                     mutant,
                     to_mutate=to_mutate,
@@ -386,6 +412,7 @@ class HighOrderMutator(FirstOrderMutator):
                     coverage_injector=coverage_injector,
                     module=module,
                     only_mutation=mutation,
+					type_check = self.type_check
                 )
                 try:
                     new_mutation, mutant = generator.__next__()
@@ -399,7 +426,7 @@ class HighOrderMutator(FirstOrderMutator):
     def generate_all_mutations(self, coverage_injector, module, target_ast, to_mutate):
         mutations = []
         for op in utils.sort_operators(self.operators):
-            for mutation, _ in op().mutate(target_ast, to_mutate, None, coverage_injector, module=module):
+            for mutation, _ in op().mutate(target_ast, to_mutate, None, coverage_injector, module, None, self.type_check):
                 mutations.append(mutation)
         return mutations
 

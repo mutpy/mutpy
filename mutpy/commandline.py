@@ -8,6 +8,10 @@ def main(argv):
     parser = build_parser()
     run_mutpy(parser)
 
+def main2(argv):
+    parser = build_parser()	
+    cfg = parser.parse_args(argv)
+    run_mutpy_with_cfg(cfg)
 
 def build_parser():
     DEF_TIMEOUT_FACTOR = 5
@@ -45,6 +49,7 @@ def build_parser():
     parser.add_argument('--list-hom-strategies', action='store_true', help='list available HOM strategies')
     parser.add_argument('--mutation-number', type=int, metavar='MUTATION_NUMBER',
                         help='run only one mutation (debug purpose)')
+    parser.add_argument('--type-check', action='store_true',help='tries to keep track of types and prevents some mutants incompetent from TypeError')
     return parser
 
 
@@ -60,7 +65,18 @@ def run_mutpy(parser):
     else:
         parser.print_usage()
 
-
+def run_mutpy_with_cfg(cfg):
+    if cfg.list_operators:
+        list_operators()
+    elif cfg.list_hom_strategies:
+        list_hom_strategies()
+    elif cfg.target and cfg.unit_test:
+        mutation_controller = build_controller(cfg)
+        mutation_controller.run()
+    else:
+        parser.print_usage()
+    		
+		
 def build_controller(cfg):
     built_views = build_views(cfg)
     mutant_generator = build_mutator(cfg)
@@ -96,10 +112,10 @@ def build_mutator(cfg):
                       for name in cfg.disable_operator}
 
     if cfg.order == 1:
-        return controller.FirstOrderMutator(operators_set, cfg.percentage)
+        return controller.FirstOrderMutator(operators_set, cfg.percentage,cfg.type_check)
     else:
         hom_strategy = build_hom_strategy(cfg)
-        return controller.HighOrderMutator(operators_set, cfg.percentage, hom_strategy=hom_strategy)
+        return controller.HighOrderMutator(operators_set, cfg.percentage, cfg.type_check, hom_strategy=hom_strategy)
 
 
 def build_hom_strategy(cfg):
@@ -163,3 +179,6 @@ def list_hom_strategies():
     print('HOM strategies:')
     for strategy in controller.hom_strategies:
         print(' - {}'.format(strategy.name))
+
+if __name__ == "__main__":
+	main(sys.argv)

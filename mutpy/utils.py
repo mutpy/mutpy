@@ -1,20 +1,20 @@
-import ast
 import copy
-import ctypes
-import importlib
-import os
-import pkgutil
-import random
-import re
 import sys
-import time
-import types
+import importlib
 import unittest
+import time
+import pkgutil
+import types
+import random
+import ast
+import re
+import os
 from _pyio import StringIO
 from collections import defaultdict, namedtuple
 from multiprocessing import Process, Queue
-from queue import Empty
 from threading import Thread
+import ctypes
+from queue import Empty
 
 
 def create_module(ast_node, module_name='mutant', module_dict=None):
@@ -30,6 +30,7 @@ def notmutate(sth):
 
 
 class ModulesLoaderException(Exception):
+
     def __init__(self, name, exception):
         self.name = name
         self.exception = exception
@@ -39,6 +40,7 @@ class ModulesLoaderException(Exception):
 
 
 class ModulesLoader:
+
     def __init__(self, names, path):
         self.names = names
         sys.path.insert(0, path or '.')
@@ -47,6 +49,10 @@ class ModulesLoader:
         results = []
         without_modules = without_modules or []
         for name in self.names:
+            if '\\' in name:   
+                k = name.rfind('\\')
+                sys.path.insert(0,name[:k])
+                name = name[k+1:]
             results += self.load_single(name)
         for module, to_mutate in results:
             if module not in without_modules:
@@ -60,12 +66,10 @@ class ModulesLoader:
         else:
             return self.load_module(name)
 
-    @staticmethod
-    def is_file(name):
+    def is_file(self, name):
         return name.endswith('.py')
 
-    @staticmethod
-    def is_package(name):
+    def is_package(self, name):
         try:
             module = importlib.import_module(name)
             return module.__file__.endswith('__init__.py')
@@ -77,8 +81,7 @@ class ModulesLoader:
     def load_file(self, name):
         raise NotImplementedError('File loading is not supported!')
 
-    @staticmethod
-    def load_package(name):
+    def load_package(self, name):
         try:
             package = importlib.import_module(name)
             result = []
@@ -91,43 +94,30 @@ class ModulesLoader:
             raise ModulesLoaderException(name, error)
 
     def load_module(self, name):
-        module, remainder_path, last_exception = self._split_by_module_and_remainder(name)
-        if not self._module_has_member(module, remainder_path):
-            raise ModulesLoaderException(name, last_exception)
-        return [(module, '.'.join(remainder_path) if remainder_path else None)]
-
-    @staticmethod
-    def _split_by_module_and_remainder(name):
-        """Takes a path string and returns the contained module and the remaining path after it.
-
-        Example: "mymodule.mysubmodule.MyClass.my_func" -> mysubmodule, "MyClass.my_func"
-        """
-        module_path = name.split('.')
-        member_path = []
+        parts = name.split('.')
+        to_mutate = []
         last_exception = None
         while True:
+            if not parts:
+                raise ModulesLoaderException(name, last_exception)
             try:
-                module = importlib.import_module('.'.join(module_path))
+                module = importlib.import_module('.'.join(parts))
                 break
             except ImportError as error:
-                member_path = [module_path.pop()] + member_path
+                to_mutate = [parts.pop()] + to_mutate
                 last_exception = error
-                if not module_path:
-                    raise ModulesLoaderException(name, last_exception)
-        return module, member_path, last_exception
 
-    @staticmethod
-    def _module_has_member(module, member_path):
         attr = module
-        for part in member_path:
+        for part in to_mutate:
             if hasattr(attr, part):
                 attr = getattr(attr, part)
             else:
-                return False
-        return True
+                raise ModulesLoaderException(name, last_exception)
+        return [(module, '.'.join(to_mutate) if to_mutate else None)]
 
 
 class InjectImporter:
+
     def __init__(self, module):
         try:
             del sys.modules[module.__name__]
@@ -158,6 +148,7 @@ class InjectImporter:
 
 
 class StdoutManager:
+
     def __init__(self, disable=True):
         self.disable = disable
 
@@ -182,6 +173,7 @@ SerializableMutationTestResult = namedtuple(
 
 
 class MutationTestResult(unittest.TestResult):
+
     def __init__(self, *args, coverage_injector=None, **kwargs):
         super(MutationTestResult, self).__init__(*args, **kwargs)
         self.type_error = None
@@ -269,6 +261,7 @@ class TimeRegister:
 
 
 class RandomSampler:
+
     def __init__(self, percentage):
         self.percentage = percentage if 0 < percentage < 100 else 100
 
@@ -277,6 +270,7 @@ class RandomSampler:
 
 
 class MutationTestRunner:
+
     def __init__(self, suite):
         super().__init__()
         self.suite = suite
@@ -288,6 +282,7 @@ class MutationTestRunner:
 
 
 class MutationTestRunnerProcess(MutationTestRunner, Process):
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.queue = Queue()
@@ -335,6 +330,7 @@ def get_mutation_test_runner_class():
 
 
 class ParentNodeTransformer(ast.NodeTransformer):
+
     def visit(self, node):
         if getattr(node, 'parent', None):
             node = copy.copy(node)
@@ -349,7 +345,6 @@ class ParentNodeTransformer(ast.NodeTransformer):
             self.parent.children += [node] + node.children
         return result_node
 
-
 def create_ast(code):
     return ParentNodeTransformer().visit(ast.parse(code))
 
@@ -362,12 +357,16 @@ def is_docstring(node):
 
 
 def get_by_python_version(classes, python_version=sys.version_info):
-    candidates = [cls for cls in classes if cls.__python_version__ <= python_version]
-    if not candidates:
+    result = None
+    for cls in classes:
+        if cls.__python_version__ <= python_version:
+            if not result or cls.__python_version__ > result.__python_version__:
+                result = cls
+    if not result:
         raise NotImplementedError('MutPy does not support Python {}.'.format(sys.version))
-    return max([candidate for candidate in candidates], key=lambda cls: cls.__python_version__)
+    return result
 
-
+	
 def sort_operators(operators):
     return sorted(operators, key=lambda cls: cls.name())
 
