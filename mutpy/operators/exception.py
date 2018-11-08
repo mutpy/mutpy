@@ -3,18 +3,26 @@ import ast
 from mutpy.operators.base import MutationOperator, MutationResign
 
 
-class ExceptionHandlerDeletion(MutationOperator):
+class BaseExceptionHandlerOperator(MutationOperator):
+
+    @staticmethod
+    def _replace_exception_body(exception_node, body):
+        return ast.ExceptHandler(type=exception_node.type, name=exception_node.name, lineno=exception_node.lineno,
+                                 body=body)
+
+
+class ExceptionHandlerDeletion(BaseExceptionHandlerOperator):
     def mutate_ExceptHandler(self, node):
         if node.body and isinstance(node.body[0], ast.Raise):
             raise MutationResign()
-        return ast.ExceptHandler(type=node.type, name=node.name, body=[ast.Raise()])
+        return self._replace_exception_body(node, [ast.Raise(lineno=node.body[0].lineno)])
 
 
-class ExceptionSwallowing(MutationOperator):
+class ExceptionSwallowing(BaseExceptionHandlerOperator):
     def mutate_ExceptHandler(self, node):
         if len(node.body) == 1 and isinstance(node.body[0], ast.Pass):
             raise MutationResign()
-        return ast.ExceptHandler(type=node.type, name=node.name, body=[ast.Pass()])
+        return self._replace_exception_body(node, [ast.Pass(lineno=node.body[0].lineno)])
 
     @classmethod
     def name(cls):
