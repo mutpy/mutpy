@@ -1,7 +1,7 @@
-import unittest
 import ast
-from mutpy import operators, codegen, coverage, utils
+import unittest
 
+from mutpy import operators, codegen, coverage, utils
 
 EOL = '\n'
 INDENT = ' ' * 4
@@ -9,7 +9,6 @@ PASS = 'pass'
 
 
 class MutationOperatorTest(unittest.TestCase):
-
     class PassIdOperator(operators.MutationOperator):
 
         def mutate_Pass(self, node):
@@ -20,7 +19,6 @@ class MutationOperatorTest(unittest.TestCase):
         self.target_ast = utils.create_ast(PASS)
 
     def test_generate_all_mutations_if_always_sampler(self):
-
         class AlwaysSampler:
 
             def is_mutation_time(self):
@@ -31,7 +29,6 @@ class MutationOperatorTest(unittest.TestCase):
         self.assertEqual(len(mutations), 1)
 
     def test_no_mutations_if_never_sampler(self):
-
         class NeverSampler:
 
             def is_mutation_time(self):
@@ -67,8 +64,11 @@ class OperatorTestCase(unittest.TestCase):
             self.assertIn(mutant_code, mutants, msg)
             mutants.remove(mutant_code)
             self.assert_location(mutatnt)
-            if not lines is None:
-                self.assert_mutation_lineo(mutation.node.lineno, lines)
+            if lines is not None:
+                if not hasattr(mutation.node, 'lineno'):
+                    self.assert_mutation_lineo(mutation.node.parent.lineno, lines)
+                else:
+                    self.assert_mutation_lineo(mutation.node.lineno, lines)
 
         self.assertListEqual(mutants, [], 'did not generate all mutants')
 
@@ -94,7 +94,7 @@ class ConstantReplacementTest(OperatorTestCase):
         cls.op = operators.ConstantReplacement()
 
     def test_numbers_increment(self):
-        self.assert_mutation('2 + 3 - 99', ['3 + 3 - 99', '2 + 4 - 99', '2 + 3 - 100'])
+        self.assert_mutation('2 + 3 - 99', ['(3 + 3) - 99', '(2 + 4) - 99', '(2 + 3) - 100'])
 
     def test_string_replacement(self):
         self.assert_mutation(
@@ -149,7 +149,7 @@ class ArithmeticOperatorReplacementTest(OperatorTestCase):
         cls.op = operators.ArithmeticOperatorReplacement()
 
     def test_add_to_sub_replacement(self):
-        self.assert_mutation('x + y + z', ['x - y + z', 'x + y - z'])
+        self.assert_mutation('x + y + z', ['(x - y) + z', '(x + y) - z'])
 
     def test_sub_to_add_replacement(self):
         self.assert_mutation('x - y', ['x + y'])
@@ -180,10 +180,10 @@ class ArithmeticOperatorReplacementTest(OperatorTestCase):
         self.assert_mutation('x += y', [])
 
     def test_usub(self):
-        self.assert_mutation('(-x)', ['(+x)'])
+        self.assert_mutation('(-x)', ['+x'])
 
     def test_uadd(self):
-        self.assert_mutation('(+x)', ['(-x)'])
+        self.assert_mutation('(+x)', ['-x'])
 
 
 class AssignmentOperatorReplacementTest(OperatorTestCase):
@@ -299,17 +299,17 @@ class ConditionalOperatorInsertionTest(OperatorTestCase):
         cls.op = operators.ConditionalOperatorInsertion()
 
     def test_negate_while_condition(self):
-        self.assert_mutation("while x:\n    pass", ["while (not x):\n    pass"])
+        self.assert_mutation("while x:\n    pass", ["while not x:\n    pass"])
 
     def test_negate_if_condition(self):
-        self.assert_mutation('if x:\n    pass', ['if (not x):\n    pass'])
+        self.assert_mutation('if x:\n    pass', ['if not x:\n    pass'])
 
     def test_negate_if_and_elif_condition(self):
         self.assert_mutation(
             'if x:' + EOL + INDENT + 'pass' + EOL + 'elif y:' + EOL + INDENT + 'pass',
             [
-                'if (not x):' + EOL + INDENT + 'pass' + EOL + 'elif y:' + EOL + INDENT + 'pass',
-                'if x:' + EOL + INDENT + 'pass' + EOL + 'elif (not y):' + EOL + INDENT + 'pass',
+                'if not x:' + EOL + INDENT + 'pass' + EOL + 'elif y:' + EOL + INDENT + 'pass',
+                'if x:' + EOL + INDENT + 'pass' + EOL + 'elif not y:' + EOL + INDENT + 'pass',
             ],
             lines=[1, 3],
         )
@@ -440,7 +440,7 @@ class MutateOnlyCoveredNodesTest(OperatorTestCase):
 
     def test_not_covered_if_node(self):
         self.assert_mutation('if False:' + EOL + INDENT + 'if False:' + EOL + 2 * INDENT + PASS,
-                             ['if (not False):' + EOL + INDENT + 'if False:' + EOL + 2 * INDENT + PASS],
+                             ['if not False:' + EOL + INDENT + 'if False:' + EOL + 2 * INDENT + PASS],
                              operator=operators.ConditionalOperatorInsertion(),
                              with_coverage=True)
 
@@ -452,7 +452,7 @@ class MutateOnlyCoveredNodesTest(OperatorTestCase):
 
     def test_not_covered_while_node(self):
         self.assert_mutation('while False:' + EOL + INDENT + 'while False:' + EOL + 2 * INDENT + PASS,
-                             ['while (not False):' + EOL + INDENT + 'while False:' + EOL + 2 * INDENT + PASS],
+                             ['while not False:' + EOL + INDENT + 'while False:' + EOL + 2 * INDENT + PASS],
                              operator=operators.ConditionalOperatorInsertion(),
                              with_coverage=True)
 

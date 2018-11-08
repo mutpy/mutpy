@@ -306,10 +306,10 @@ class HighOrderMutatorTest(unittest.TestCase):
                 self.assertEqual('a', codegen.to_source(mutant))
                 self.assertEqual(len(mutations), 1)
             elif number == 1:
-                self.assertEqual('(+a)', codegen.to_source(mutant))
+                self.assertEqual('+a', codegen.to_source(mutant))
                 self.assertEqual(len(mutations), 1)
         self.assertEqual(number, 1)
-        self.assertEqual(codegen.to_source(target_ast), '(-a)')
+        self.assertEqual(codegen.to_source(target_ast), '-a')
 
     def test_second_order_mutation_with_multiple_visitors(self):
         mutator = controller.HighOrderMutator(
