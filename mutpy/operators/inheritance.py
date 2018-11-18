@@ -101,8 +101,12 @@ class OverriddenMethodCallingPositionChange(AbstractSuperCallingModification):
         super_call = node.body[index]
         del node.body[index]
         if index == 0:
+            self.set_lineno(super_call, node.body[-1].lineno)
+            self.shift_lines(node.body, -1)
             node.body.append(super_call)
         else:
+            self.set_lineno(super_call, node.body[0].lineno)
+            self.shift_lines(node.body, 1)
             node.body.insert(0, super_call)
         return node
 
@@ -130,7 +134,7 @@ class SuperCallingDeletion(AbstractSuperCallingModification):
         index, _ = self.get_super_call(node)
         if index is None:
             raise MutationResign()
-        node.body[index] = ast.Pass()
+        node.body[index] = ast.Pass(lineno=node.body[index].lineno)
         return node
 
 
@@ -148,8 +152,10 @@ class SuperCallingInsertPython27(AbstractSuperCallingModification, AbstractOverr
         if index is not None:
             raise MutationResign()
         node.body.insert(0, self.create_super_call(node))
+        self.shift_lines(node.body[1:], 1)
         return node
 
+    @copy_node
     def create_super_call(self, node):
         super_call = utils.create_ast('super().{}()'.format(node.name)).body[0]
         for arg in node.args.args[1:-len(node.args.defaults) or None]:
@@ -162,6 +168,7 @@ class SuperCallingInsertPython27(AbstractSuperCallingModification, AbstractOverr
             self.add_vararg_to_super_call(super_call, node.args.vararg)
         if node.args.kwarg:
             self.add_kwarg_to_super_call(super_call, node.args.kwarg)
+        self.set_lineno(super_call, node.body[0].lineno)
         return super_call
 
     @staticmethod

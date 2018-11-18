@@ -31,8 +31,12 @@ class AbstractMethodDecoratorInsertionMutationOperator(MutationOperator):
                 decorator_name = decorator.id
             if decorator_name == self.get_decorator_name():
                 raise MutationResign()
-
-        decorator = ast.Name(id=self.get_decorator_name(), ctx=ast.Load())
+        if node.decorator_list:
+            lineno = node.decorator_list[-1].lineno
+        else:
+            lineno = node.lineno
+        decorator = ast.Name(id=self.get_decorator_name(), ctx=ast.Load(), lineno=lineno)
+        self.shift_lines(node.body, 1)
         node.decorator_list.append(decorator)
         return node
 

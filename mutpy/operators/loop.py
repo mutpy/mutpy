@@ -5,7 +5,7 @@ from mutpy.operators import copy_node, MutationOperator
 
 class OneIterationLoop(MutationOperator):
     def one_iteration(self, node):
-        node.body.append(ast.Break())
+        node.body.append(ast.Break(lineno=node.body[-1].lineno + 1))
         return node
 
     @copy_node
@@ -33,7 +33,7 @@ class ReverseIterationLoop(MutationOperator):
 
 class ZeroIterationLoop(MutationOperator):
     def zero_iteration(self, node):
-        node.body = [ast.Break()]
+        node.body = [ast.Break(lineno=node.body[0].lineno)]
         return node
 
     @copy_node

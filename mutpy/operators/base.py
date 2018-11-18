@@ -119,6 +119,8 @@ class MutationOperator:
         if not hasattr(new_node, 'parent'):
             new_node.children = old_node.children
             new_node.parent = old_node.parent
+        if not hasattr(new_node, 'lineno') and hasattr(old_node, 'lineno'):
+            new_node.lineno = old_node.lineno
         if hasattr(old_node, 'marker'):
             new_node.marker = old_node.marker
 
@@ -129,6 +131,15 @@ class MutationOperator:
     def getattrs_like(ob, attr_like):
         pattern = re.compile(attr_like + "($|(_\w+)+$)")
         return [getattr(ob, attr) for attr in dir(ob) if pattern.match(attr)]
+
+    def set_lineno(self, node, lineno):
+        for n in ast.walk(node):
+            if hasattr(n, 'lineno'):
+                n.lineno = lineno
+
+    def shift_lines(self, nodes, shift_by=1):
+        for node in nodes:
+            ast.increment_lineno(node, shift_by)
 
     @classmethod
     def name(cls):
