@@ -2,6 +2,7 @@ import ast
 import copy
 import ctypes
 import importlib
+import inspect
 import os
 import pkgutil
 import random
@@ -11,6 +12,12 @@ import time
 import types
 from _pyio import StringIO
 from collections import defaultdict
+
+if sys.version_info >= (3, 5):
+    from importlib._bootstrap_external import EXTENSION_SUFFIXES, ExtensionFileLoader
+else:
+    from importlib._bootstrap import ExtensionFileLoader, EXTENSION_SUFFIXES
+
 from multiprocessing import Process, Queue
 from queue import Empty
 from threading import Thread
@@ -43,13 +50,14 @@ class ModulesLoader:
         self.path = path or '.'
         self.ensure_in_path(self.path)
 
-    def load(self, without_modules=None):
+    def load(self, without_modules=None, exclude_c_extensions=True):
         results = []
         without_modules = without_modules or []
         for name in self.names:
             results += self.load_single(name)
         for module, to_mutate in results:
-            if module not in without_modules:
+            # yield only if module is not explicitly excluded and only source modules (.py) if demanded
+            if module not in without_modules and not (exclude_c_extensions and self._is_c_extension(module)):
                 yield module, to_mutate
 
     def load_single(self, name):
@@ -171,6 +179,14 @@ class ModulesLoader:
             else:
                 return False
         return True
+
+    @staticmethod
+    def _is_c_extension(module):
+        if isinstance(getattr(module, '__loader__', None), ExtensionFileLoader):
+            return True
+        module_filename = inspect.getfile(module)
+        module_filetype = os.path.splitext(module_filename)[1]
+        return module_filetype in EXTENSION_SUFFIXES
 
 
 class InjectImporter:
