@@ -179,6 +179,10 @@ class SuperCallingInsertPython27(AbstractSuperCallingModification, AbstractOverr
     def add_vararg_to_super_call(super_call, vararg):
         super_call.value.starargs = ast.Name(id=vararg, ctx=ast.Load())
 
+    @classmethod
+    def name(cls):
+        return 'SCI'
+
 
 class SuperCallingInsertPython35(SuperCallingInsertPython27):
     __python_version__ = (3, 5)
