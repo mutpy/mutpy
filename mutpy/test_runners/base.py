@@ -73,7 +73,7 @@ class MutationTestResult:
         self.skipped = []
 
     def was_successful(self):
-        return len(self.failed) == 0
+        return len(self.failed) == 0 and not self.is_incompetent()
 
     def is_incompetent(self):
         return bool(self.type_error)
@@ -202,18 +202,16 @@ class BaseTestRunner:
         return result, timer.stop()
 
     def find_init_modules(self):
-        #test_runner_class = utils.get_mutation_test_runner_class()
-        #test_runner = test_runner_class(suite=self.create_empty_test_suite())
-        #test_runner.start()
-        #suite = self.create_empty_test_suite()
-        #suite.run()
+        test_runner_class = utils.get_mutation_test_runner_class()
+        test_runner = test_runner_class(suite=self.create_empty_test_suite())
+        test_runner.start()
+        test_runner.terminate()
         return list(sys.modules.keys())
 
     def remove_loaded_modules(self):
         for module in list(sys.modules.keys()):
             if module not in self.init_modules:
-                pass
-                #del sys.modules[module]
+                del sys.modules[module]
 
     def mark_not_covered_tests_as_skip(self, mutations, coverage_result, suite):
         mutated_nodes = {mutation.node.marker for mutation in mutations}

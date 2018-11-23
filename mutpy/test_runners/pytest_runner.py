@@ -27,21 +27,16 @@ class PytestMutpyPlugin:
             self.mutation_test_result.add_skipped(report.nodeid)
         elif report.failed and not self.has_failed_before(report.nodeid):
             if 'TypeError' in report.longrepr.reprcrash.message:
-                self.mutation_test_result.set_type_error(self._recreate_type_error(report.longrepr.reprcrash.message))
+                self.mutation_test_result.set_type_error(TypeError(str(report.longrepr.reprcrash)))
             else:
                 if not hasattr(report, 'longreprtext'):
                     with open("Output.txt", "w") as text_file:
-                        text_file.write(report.nodeid+' '+vars(report))
+                        text_file.write(report.nodeid + ' ' + vars(report))
                 self.mutation_test_result.add_failed(report.nodeid, report.longrepr.reprcrash.message.splitlines()[0],
                                                      report.longreprtext)
         elif report.passed and report.when == 'teardown' and not self.has_failed_before(report.nodeid) \
                 and not self.has_been_skipped_before(report.nodeid):
             self.mutation_test_result.add_passed(report.nodeid)
-
-    @staticmethod
-    def _recreate_type_error(string):
-        _, message = string.split(":", maxsplit=1)
-        return TypeError(message.lstrip())
 
 
 class PytestMutpyCoveragePlugin:

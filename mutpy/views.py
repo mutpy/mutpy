@@ -117,6 +117,8 @@ class TextView(QuietTextView):
 
         for fail in result.failed:
             self.level_print('fail in {} - {}'.format(fail.name, fail.short_message), 2)
+        if result.is_incompetent():
+            self.level_print(str(result.get_exception()), 2)
 
     def mutation(self, number, mutations, module, mutant):
         for mutation in mutations:
