@@ -1,6 +1,5 @@
-from pprint import pprint
-
 import pytest
+from _pytest.config import default_plugins
 
 from mutpy.test_runners.base import BaseTestSuite, BaseTestRunner, MutationTestResult, CoverageTestResult, BaseTest
 
@@ -81,7 +80,7 @@ class PytestTestSuite(BaseTestSuite):
 
     def run(self):
         mutpy_plugin = PytestMutpyPlugin(skipped_tests=self.skipped_tests)
-        pytest.main(list(self.tests) + ['-x', '-p', 'no:terminal'], plugins=[mutpy_plugin])
+        pytest.main(args=list(self.tests) + ['-x', '-p', 'no:terminal'], plugins=[*default_plugins, mutpy_plugin])
         return mutpy_plugin.mutation_test_result
 
     def run_with_coverage(self, coverage_injector=None):
@@ -91,7 +90,8 @@ class PytestTestSuite(BaseTestSuite):
 
     def __iter__(self):
         mutpy_plugin = PytestMutpyTestDiscoveryPlugin()
-        pytest.main(list(self.tests) + ['--collect-only', '-p', 'no:terminal'], plugins=[mutpy_plugin])
+        pytest.main(args=list(self.tests) + ['--collect-only', '-p', 'no:terminal'],
+                    plugins=[*default_plugins, mutpy_plugin])
         for test in mutpy_plugin.tests:
             yield PytestTest(test)
 
