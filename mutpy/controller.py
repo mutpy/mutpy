@@ -128,7 +128,7 @@ class MutationController(views.ViewNotifier):
             if self.mutation_number and self.mutation_number != mutation_number:
                 self.score.inc_incompetent()
                 continue
-            self.notify_mutation(mutation_number, mutations, target_module.__name__, mutant_ast)
+            self.notify_mutation(mutation_number, mutations, target_module, mutant_ast)
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
             if mutant_module:
                 self.run_tests_with_mutant(total_duration, mutant_module, mutations, coverage_result)

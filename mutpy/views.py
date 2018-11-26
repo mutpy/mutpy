@@ -1,8 +1,13 @@
+import ast
+import datetime
+import inspect
 import os
 import traceback
-import datetime
-import yaml
+from difflib import unified_diff
+
 import jinja2
+import yaml
+
 from mutpy import codegen, termcolor, utils
 
 
@@ -121,27 +126,36 @@ class TextView(QuietTextView):
     def mutation(self, number, mutations, module, mutant):
         for mutation in mutations:
             self.level_print(
-                '[#{:>4}] {:<3} {}:{:<3}: '.format(number, mutation.operator.name(), module, mutation.node.lineno),
+                '[#{:>4}] {:<3} {}: '.format(number, mutation.operator.name(), module.__name__),
                 ended=False,
                 level=2,
             )
             if mutation != mutations[-1]:
                 print()
             if self.show_mutants:
-                self.print_code(mutant, mutation.node.lineno)
+                self.print_code(mutant, ast.parse(inspect.getsource(module)))
 
     def cant_load(self, name, exception):
         self.level_print(self.decorate('Can\'t load module: ', 'red', attrs=['bold']) + '{} ({}: {})'.format(name,
                          exception.__class__.__name__, exception))
 
-    def print_code(self, mutant, lineno):
+    def print_code(self, mutant, original):
         mutant_src = codegen.to_source(mutant)
         mutant_src = codegen.add_line_numbers(mutant_src)
-        src_lines = mutant_src.split("\n")
-        lineno = min(lineno, len(src_lines))
-        src_lines[lineno - 1] = self.decorate('~' + src_lines[lineno - 1][1:], 'yellow')
-        snippet = src_lines[max(0, lineno - 5):min(len(src_lines), lineno + 5)]
-        print("\n{}\n".format('-'*80) + "\n".join(snippet) + "\n{}".format('-'*80))
+        original_src = codegen.to_source(original)
+        original_src = codegen.add_line_numbers(original_src)
+        self._print_diff(mutant_src, original_src)
+
+    def _print_diff(self, mutant_src, original_src):
+        diff = self._create_diff(mutant_src, original_src)
+        diff = [line for line in diff if not line.startswith(('---', '+++', '@@'))]
+        diff = [self.decorate(line, 'blue') if line.startswith('- ') else line for line in diff]
+        diff = [self.decorate(line, 'green') if line.startswith('+ ') else line for line in diff]
+        print("\n{}\n".format('-' * 80) + "\n".join(diff) + "\n{}".format('-' * 80))
+
+    @staticmethod
+    def _create_diff(mutant_src, original_src):
+        return list(unified_diff(original_src.split('\n'), mutant_src.split('\n'), n=4, lineterm=''))
 
     def killed(self, time, killer, *args, **kwargs):
         self.level_print(self.time_format(time) + ' ' + self.decorate('killed', 'green') + ' by ' + str(killer),
