@@ -91,7 +91,7 @@ class PytestTestSuite(BaseTestSuite):
     def __iter__(self):
         mutpy_plugin = PytestMutpyTestDiscoveryPlugin()
         pytest.main(args=list(self.tests) + ['--collect-only', '-p', 'no:terminal'],
-                    plugins=[*default_plugins, mutpy_plugin])
+                    plugins=list(default_plugins) + [mutpy_plugin])
         for test in mutpy_plugin.tests:
             yield PytestTest(test)
 
