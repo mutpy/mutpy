@@ -1,4 +1,3 @@
 -r production.txt
 
 coverage
-pytest
