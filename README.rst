@@ -169,6 +169,7 @@ List of all arguments with which you can run MutPy:
 -  ``-u UNIT_TEST [UNIT_TEST ...]``,
    ``--unit-test UNIT_TEST [UNIT_TEST ...]`` - test class, test method,
    module or package with unit tests,
+-  ``--runner RUNNER`` - currently supported are: unittest (default), pytest (experimental)
 -  ``-m``, ``--show-mutants`` - show mutants source code,
 -  ``-r REPORT_FILE``, ``--report REPORT_FILE`` - generate YAML report,
 -  ``--report-html DIR_NAME`` - generate HTML report,
@@ -240,6 +241,7 @@ Supported Test Runners
 Currently the following test runners are supported by MutPy:
 
 - `unittest <https://docs.python.org/3/library/unittest.html>`_
+- `pytest <https://docs.pytest.org/en/latest/>`_
 
 License
 -------
