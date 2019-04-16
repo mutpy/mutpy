@@ -117,11 +117,11 @@ class TextView(QuietTextView):
 
     def original_tests_fail(self, result):
         self.level_print(self.decorate('Tests failed:', 'red', attrs=['bold']))
-        for error in result.errors:
-                self.level_print('error in {} - {} '.format(error[0], error[1].split("\n")[-2]), 2)
 
-        for fail in result.failures:
-                self.level_print('fail in {} - {}'.format(fail[0], fail[1].split("\n")[-2]), 2)
+        for fail in result.failed:
+            self.level_print('fail in {} - {}'.format(fail.name, fail.short_message), 2)
+        if result.is_incompetent():
+            self.level_print(str(result.get_exception()), 2)
 
     def mutation(self, number, mutations, module, mutant):
         for mutation in mutations:
@@ -137,7 +137,8 @@ class TextView(QuietTextView):
 
     def cant_load(self, name, exception):
         self.level_print(self.decorate('Can\'t load module: ', 'red', attrs=['bold']) + '{} ({}: {})'.format(name,
-                         exception.__class__.__name__, exception))
+                                                                                                             exception.__class__.__name__,
+                                                                                                             exception))
 
     def print_code(self, mutant, original):
         mutant_src = codegen.to_source(mutant)

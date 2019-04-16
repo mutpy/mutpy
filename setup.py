@@ -2,8 +2,9 @@
 
 import sys
 
-import mutpy
 from setuptools import setup
+
+import mutpy
 
 if sys.hexversion < 0x3030000:
     print('MutPy requires Python 3.3 or newer!')
@@ -25,10 +26,13 @@ setup(
     author_email='halas.konrad@gmail.com',
     url='https://github.com/mutpy/mutpy',
     download_url='https://github.com/mutpy/mutpy',
-    packages=['mutpy', 'mutpy.operators'],
+    packages=['mutpy', 'mutpy.operators', 'mutpy.test_runners'],
     package_data={'mutpy': ['templates/*.html']},
     scripts=['bin/mut.py'],
     install_requires=requirements,
+    extras_require={
+        'pytest': ["pytest>=3.0"]
+    },
     test_suite='mutpy.test',
     classifiers=[
         'Programming Language :: Python :: 3.3',

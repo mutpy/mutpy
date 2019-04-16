@@ -2,6 +2,7 @@ import ast
 import copy
 import ctypes
 import importlib
+import inspect
 import os
 import pkgutil
 import random
@@ -9,9 +10,14 @@ import re
 import sys
 import time
 import types
-import unittest
 from _pyio import StringIO
-from collections import defaultdict, namedtuple
+from collections import defaultdict
+
+if sys.version_info >= (3, 5):
+    from importlib._bootstrap_external import EXTENSION_SUFFIXES, ExtensionFileLoader
+else:
+    from importlib._bootstrap import ExtensionFileLoader, EXTENSION_SUFFIXES
+
 from multiprocessing import Process, Queue
 from queue import Empty
 from threading import Thread
@@ -41,60 +47,108 @@ class ModulesLoaderException(Exception):
 class ModulesLoader:
     def __init__(self, names, path):
         self.names = names
-        sys.path.insert(0, path or '.')
+        self.path = path or '.'
+        self.ensure_in_path(self.path)
 
-    def load(self, without_modules=None):
+    def load(self, without_modules=None, exclude_c_extensions=True):
         results = []
         without_modules = without_modules or []
         for name in self.names:
             results += self.load_single(name)
         for module, to_mutate in results:
-            if module not in without_modules:
+            # yield only if module is not explicitly excluded and only source modules (.py) if demanded
+            if module not in without_modules and not (exclude_c_extensions and self._is_c_extension(module)):
                 yield module, to_mutate
 
     def load_single(self, name):
-        if self.is_file(name):
-            return self.load_file(name)
-        elif self.is_package(name):
+        full_path = self.get_full_path(name)
+        if os.path.exists(full_path):
+            if self.is_file(full_path):
+                return self.load_file(full_path)
+            elif self.is_directory(full_path):
+                return self.load_directory(full_path)
+        if self.is_package(name):
             return self.load_package(name)
         else:
             return self.load_module(name)
 
+    def get_full_path(self, name):
+        if os.path.isabs(name):
+            return name
+        return os.path.abspath(os.path.join(self.path, name))
+
     @staticmethod
     def is_file(name):
-        return name.endswith('.py')
+        return os.path.isfile(name)
+
+    @staticmethod
+    def is_directory(name):
+        return os.path.exists(name) and os.path.isdir(name)
 
     @staticmethod
     def is_package(name):
         try:
             module = importlib.import_module(name)
-            return module.__file__.endswith('__init__.py')
+            return hasattr(module, '__file__') and module.__file__.endswith('__init__.py')
         except ImportError:
             return False
         finally:
             sys.path_importer_cache.clear()
 
     def load_file(self, name):
-        raise NotImplementedError('File loading is not supported!')
+        if name.endswith('.py'):
+            dirname = os.path.dirname(name)
+            self.ensure_in_path(dirname)
+            module_name = self.get_filename_without_extension(name)
+            return self.load_module(module_name)
+
+    def ensure_in_path(self, directory):
+        if directory not in sys.path:
+            sys.path.insert(0, directory)
+
+    @staticmethod
+    def get_filename_without_extension(path):
+        return os.path.basename(os.path.splitext(path)[0])
 
     @staticmethod
     def load_package(name):
+        result = []
         try:
             package = importlib.import_module(name)
-            result = []
             for _, module_name, ispkg in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
                 if not ispkg:
-                    module = importlib.import_module(module_name)
-                    result.append((module, None))
+                    try:
+                        module = importlib.import_module(module_name)
+                        result.append((module, None))
+                    except ImportError as _:
+                        pass
+        except ImportError as _:
+            pass
+        return result
+
+    def load_directory(self, name):
+        if os.path.isfile(os.path.join(name, '__init__.py')):
+            parent_dir = self._get_parent_directory(name)
+            self.ensure_in_path(parent_dir)
+            return self.load_package(os.path.basename(name))
+        else:
+            result = []
+            for file in os.listdir(name):
+                modules = self.load_single(os.path.join(name, file))
+                if modules:
+                    result += modules
             return result
-        except ImportError as error:
-            raise ModulesLoaderException(name, error)
 
     def load_module(self, name):
         module, remainder_path, last_exception = self._split_by_module_and_remainder(name)
         if not self._module_has_member(module, remainder_path):
             raise ModulesLoaderException(name, last_exception)
         return [(module, '.'.join(remainder_path) if remainder_path else None)]
+
+    @staticmethod
+    def _get_parent_directory(name):
+        parent_dir = os.path.abspath(os.path.join(name, os.pardir))
+        return parent_dir
 
     @staticmethod
     def _split_by_module_and_remainder(name):
@@ -125,6 +179,14 @@ class ModulesLoader:
             else:
                 return False
         return True
+
+    @staticmethod
+    def _is_c_extension(module):
+        if isinstance(getattr(module, '__loader__', None), ExtensionFileLoader):
+            return True
+        module_filename = inspect.getfile(module)
+        module_filetype = os.path.splitext(module_filename)[1]
+        return module_filetype in EXTENSION_SUFFIXES
 
 
 class InjectImporter:
@@ -160,71 +222,16 @@ class InjectImporter:
 class StdoutManager:
     def __init__(self, disable=True):
         self.disable = disable
+        self.original_stdout = None
 
     def __enter__(self):
         if self.disable:
+            self.original_stdout = sys.stdout
             sys.stdout = StringIO()
 
     def __exit__(self, type, value, traceback):
-        sys.stdout = sys.__stdout__
-
-
-SerializableMutationTestResult = namedtuple(
-    'SerializableMutationTestResult', [
-        'is_incompetent',
-        'is_survived',
-        'killer',
-        'exception_traceback',
-        'exception',
-        'tests_run',
-    ]
-)
-
-
-class MutationTestResult(unittest.TestResult):
-    def __init__(self, *args, coverage_injector=None, **kwargs):
-        super(MutationTestResult, self).__init__(*args, **kwargs)
-        self.type_error = None
-        self.failfast = True
-        self.coverage_injector = coverage_injector
-
-    def addError(self, test, err):
-        if err[0] == TypeError:
-            self.type_error = err
-        else:
-            super(MutationTestResult, self).addError(test, err)
-
-    def is_incompetent(self):
-        return bool(self.type_error)
-
-    def is_survived(self):
-        return self.wasSuccessful()
-
-    def get_killer(self):
-        if self.failures:
-            return self.failures[0][0]
-        elif self.errors:
-            return self.errors[0][0]
-
-    def get_exception_traceback(self):
-        if self.failures:
-            return self.failures[0][1]
-        elif self.errors:
-            return self.errors[0][1]
-
-    def get_exception(self):
-        if self.type_error:
-            return self.type_error[1]
-
-    def serialize(self):
-        return SerializableMutationTestResult(
-            self.is_incompetent(),
-            self.is_survived(),
-            str(self.get_killer()),
-            str(self.get_exception_traceback()),
-            self.get_exception(),
-            self.testsRun - len(self.skipped),
-        )
+        if self.disable:
+            sys.stdout = self.original_stdout
 
 
 class Timer:
@@ -282,8 +289,7 @@ class MutationTestRunner:
         self.suite = suite
 
     def run(self):
-        result = MutationTestResult()
-        self.suite.run(result)
+        result = self.suite.run()
         self.set_result(result)
 
 

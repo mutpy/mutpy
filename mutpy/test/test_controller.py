@@ -4,6 +4,8 @@ import types
 import unittest
 
 from mutpy import controller, operators, utils, codegen
+from mutpy.test.utils import MockModulesLoader
+from mutpy.test_runners import UnittestTestRunner
 
 
 class MutationScoreTest(unittest.TestCase):
@@ -48,23 +50,6 @@ class MutationScoreTest(unittest.TestCase):
         self.assertEqual(self.score.all_nodes, 1)
 
 
-class MockModulesLoader:
-    def __init__(self, name, source):
-        self.names = [name]
-        self.source = source
-        self.module = types.ModuleType(name)
-        self.module.__file__ = '<string>'
-        self.load()
-
-    def load(self, *args, **kwargs):
-        exec(self.source, self.module.__dict__)
-        sys.modules[self.names[0]] = self.module
-        return [(self.module, None)]
-
-    def get_source(self):
-        return self.source
-
-
 class MockMutationController(controller.MutationController):
     def create_target_ast(self, target_module):
         return utils.create_ast(self.target_loader.get_source())
@@ -93,6 +78,7 @@ class MutationControllerTest(unittest.TestCase):
         self.score_view = MutationScoreStoreView()
         mutator = controller.FirstOrderMutator([operators.ArithmeticOperatorReplacement], percentage=100)
         self.mutation_controller = MockMutationController(
+            runner_cls=UnittestTestRunner,
             target_loader=target_loader,
             test_loader=test_loader,
             views=[self.score_view],

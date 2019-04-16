@@ -1,6 +1,7 @@
 import unittest
 
 from mutpy import coverage, utils
+from mutpy.test_runners.unittest_runner import UnittestCoverageResult
 
 
 class MarkerNodeTransformerTest(unittest.TestCase):
@@ -189,7 +190,7 @@ class CoverageInjectorTest(unittest.TestCase):
         self.assert_not_covered([for_body_el])
 
 
-class CoverageTestResultTest(unittest.TestCase):
+class UnittestCoverageResultTest(unittest.TestCase):
     def test_run(self):
         coverage_injector = coverage.CoverageInjector()
 
@@ -204,7 +205,7 @@ class CoverageTestResultTest(unittest.TestCase):
             def test_y(self):
                 pass
 
-        result = coverage.CoverageTestResult(coverage_injector=coverage_injector)
+        result = UnittestCoverageResult(coverage_injector=coverage_injector)
         suite = unittest.TestSuite()
         test_x = ATest(methodName='test_x')
         suite.addTest(test_x)
