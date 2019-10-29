@@ -156,11 +156,12 @@ class BaseTestRunner:
         if not issubclass(self.test_suite_cls, BaseTestSuite):
             raise ValueError('{0} is not a subclass of {1}'.format(self.test_suite_cls, BaseTestSuite))
         suite = self.create_empty_test_suite()
-        utils.InjectImporter(mutant_module).install()
-        self.remove_loaded_modules()
+        injector = utils.ModuleInjector(mutant_module)
         for test_module, target_test in self.test_loader.load():
+            injector.inject_to(test_module)
             suite.add_tests(test_module, target_test)
-        utils.InjectImporter.uninstall()
+        importer = utils.InjectImporter(mutant_module)
+        importer.install()
         return suite
 
     @utils.TimeRegister
