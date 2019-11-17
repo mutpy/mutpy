@@ -2,9 +2,11 @@
 """Wrapper module for astmonkey code generator."""
 
 from astmonkey.visitors import to_source as astmonkey_to_source
+import copy
 
 
 def to_source(node, indent_with=' ' * 4):
+    node = copy.deepcopy(node)
     return astmonkey_to_source(node=node, indent_with=indent_with)
 
 
