@@ -27,7 +27,7 @@ class BaseTestCases:
                 target_loader.load()
                 runner = self.TEST_RUNNER_CLS(test_loader, 5, utils.StdoutManager(True), False)
                 test_module, target_test = test_loader.load()[0]
-                result, time = runner.run_test(test_module, target_test)
+                result, _ = runner.run_test(test_module, target_test)
             return result
 
         def test_run_test_success(self):

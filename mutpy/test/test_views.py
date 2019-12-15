@@ -50,7 +50,7 @@ class TextViewTest(unittest.TestCase):
         original = utils.create_ast('x = x + 1')
         mutant = utils.create_ast('x = x - 1')
         # when
-        with captured_output() as (out, err):
+        with captured_output() as (out, _):
             text_view.print_code(mutant, original)
         # then
         output = out.getvalue().strip()

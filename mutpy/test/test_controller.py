@@ -1,6 +1,4 @@
 import ast
-import sys
-import types
 import unittest
 
 from mutpy import controller, operators, utils, codegen
