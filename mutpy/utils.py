@@ -409,7 +409,7 @@ def get_by_python_version(classes, python_version=sys.version_info):
     candidates = [cls for cls in classes if cls.__python_version__ <= python_version]
     if not candidates:
         raise NotImplementedError('MutPy does not support Python {}.'.format(sys.version))
-    return max([candidate for candidate in candidates], key=lambda cls: cls.__python_version__)
+    return max((candidate for candidate in candidates), key=lambda cls: cls.__python_version__)
 
 
 def sort_operators(operators):
