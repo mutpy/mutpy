@@ -95,7 +95,7 @@ class OverriddenMethodCallingPositionChange(AbstractSuperCallingModification):
     def mutate_FunctionDef(self, node):
         if not self.should_mutate(node):
             raise MutationResign()
-        index, stmt = self.get_super_call(node)
+        index, _ = self.get_super_call(node)
         if index is None:
             raise MutationResign()
         super_call = node.body[index]
@@ -148,7 +148,7 @@ class SuperCallingInsertPython27(AbstractSuperCallingModification, AbstractOverr
     def mutate_FunctionDef(self, node):
         if not self.should_mutate(node):
             raise MutationResign()
-        index, stmt = self.get_super_call(node)
+        index, _ = self.get_super_call(node)
         if index is not None:
             raise MutationResign()
         node.body.insert(0, self.create_super_call(node))

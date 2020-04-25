@@ -143,7 +143,7 @@ class MutationOperator:
 
     @classmethod
     def name(cls):
-        return ''.join([c for c in cls.__name__ if str.isupper(c)])
+        return ''.join(c for c in cls.__name__ if str.isupper(c))
 
     @classmethod
     def long_name(cls):
