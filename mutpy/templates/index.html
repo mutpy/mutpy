@@ -62,7 +62,7 @@
     </thead>
     {% for mutation in mutations %}
     <tr>
-        <td><a href="{{ mutation.number}}.html">{{ mutation.number }}</a></td>
+        <td><a href="mutants/{{ mutation.number}}.html">{{ mutation.number }}</a></td>
         <td><code>{{ mutation.module }}</code></td>
         <td>{% for single_mutation in mutation.mutations %}{{ single_mutation.operator }} [{{ single_mutation.lineno }}]{% if not loop.last %}, {% endif %}{% endfor %}</td>
         <td>{% if mutation.tests_run %}{{ mutation.tests_run }}{% else %}-{% endif %}</td>
