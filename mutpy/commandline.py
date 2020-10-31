@@ -26,7 +26,7 @@ def build_parser():
                         help='max timeout factor (default {})'.format(DEF_TIMEOUT_FACTOR))
     parser.add_argument('--show-mutants', '-m', action='store_true', help='show mutants source code')
     parser.add_argument('--quiet', '-q', action='store_true', help='quiet mode')
-    parser.add_argument('--debug', action='store_true', help='dubug mode')
+    parser.add_argument('--debug', action='store_true', help='debug mode')
     parser.add_argument('--colored-output', '-c', action='store_true', help='try print colored output')
     parser.add_argument('--disable-stdout', '-d', action='store_true',
                         help='try disable stdout during mutation '
