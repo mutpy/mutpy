@@ -354,7 +354,7 @@ class MutationTestRunnerThread(MutationTestRunner, Thread):
         self.result = None
 
     def terminate(self):
-        if self.isAlive():
+        if self.is_alive():
             res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ctypes.py_object(SystemExit))
             if res == 0:
                 raise ValueError('Invalid thread id.')
