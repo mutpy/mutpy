@@ -26,6 +26,30 @@ class ConstantReplacement(MutationOperator):
     FIRST_CONST_STRING = 'mutpy'
     SECOND_CONST_STRING = 'python'
 
+    def mutate_Constant_num(self, node):
+        if isinstance(node.value, (int, float)) and not isinstance(node.value, bool):
+            return ast.Constant(n=node.n + 1)
+        else:
+            raise MutationResign()
+
+    def mutate_Constant_str(self, node):
+        if isinstance(node.value, str):
+            if utils.is_docstring(node):
+                raise MutationResign()
+
+            if node.s != self.FIRST_CONST_STRING:
+                return ast.Constant(s=self.FIRST_CONST_STRING)
+            else:
+                return ast.Constant(s=self.SECOND_CONST_STRING)
+        else:
+            raise MutationResign()
+
+    def mutate_Constant_str_empty(self, node):
+        if isinstance(node.value, str):
+            return ast.Constant(s='')
+        else:
+            raise MutationResign()
+
     def mutate_Num(self, node):
         return ast.Num(n=node.n + 1)
 
