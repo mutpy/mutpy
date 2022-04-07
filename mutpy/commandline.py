@@ -7,7 +7,7 @@ from mutpy import controller, views, operators, utils
 
 def main(argv):
     parser = build_parser()
-    run_mutpy(parser)
+    run_mutpy(parser, argv)
 
 
 def build_parser():
@@ -51,8 +51,8 @@ def build_parser():
     return parser
 
 
-def run_mutpy(parser):
-    cfg = parser.parse_args()
+def run_mutpy(parser, argv):
+    cfg = parser.parse_args(argv)
     if cfg.list_operators:
         list_operators()
     elif cfg.list_hom_strategies:
