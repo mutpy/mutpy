@@ -28,10 +28,15 @@ setup(
     download_url='https://github.com/mutpy/mutpy',
     packages=['mutpy', 'mutpy.operators', 'mutpy.test_runners'],
     package_data={'mutpy': ['templates/*.html']},
-    scripts=['bin/mut.py'],
+    scripts=[],
     install_requires=requirements,
     extras_require={
         'pytest': ["pytest>=3.0"]
+    },
+    entry_points={
+        'console_scripts': [
+            'mutpy=mutpy.mut:main'
+        ]
     },
     test_suite='mutpy.test',
     classifiers=[
